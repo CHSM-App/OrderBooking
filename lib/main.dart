@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/screens/near_shop_screen.dart';
-import 'screens/login_screen.dart';
+import 'screens/landing_Screen.dart';
 import 'screens/otp_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/product_catalog_screen.dart';
+
+
+import 'screens/admin_dashboard_screen.dart';
+
+
 
 import 'screens/order_history_screen.dart';
 import 'screens/create_order_screen.dart';
@@ -68,15 +73,19 @@ class EmployeeApp extends StatelessWidget {
           color: Colors.white,
         ),
       ),
-      initialRoute: '/login',
+      initialRoute: '/landing',
       routes: {
-        '/login': (context) => const LoginScreen(),
+        '/landing': (context) => const EmployeePortalApp(),
         '/otp': (context) => const OTPScreen(),
         '/home': (context) => const HomeScreen(),
         '/product-catalog': (context) => const ProductCatalogScreen(),
         '/nearby-shops': (context) => const NearbyShopsScreen(),
         '/order-history': (context) => const OrderHistoryScreen(),
         '/create-order': (context) => const CreateOrderScreen(),
+
+        // Admin
+        '/dashboard': (context) => const AdminDashboardScreen(),
+        
       },
     );
   }
