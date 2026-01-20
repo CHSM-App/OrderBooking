@@ -1,29 +1,9 @@
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const EmployeePortalApp());
-}
-
-class EmployeePortalApp extends StatelessWidget {
-  const EmployeePortalApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Order Portal',
-      theme: ThemeData(
-        primaryColor: const Color(0xFF6366F1),
-        scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Roboto',
-        useMaterial3: true,
-      ),
-      home: const LoginSelectionScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
 // Login Selection Screen
+import 'package:flutter/material.dart';
+import 'package:order_booking_app/screens/admin_screen/home_screen.dart';
+import 'package:order_booking_app/screens/employee_screen/otp_screen.dart';
+
+
 class LoginSelectionScreen extends StatefulWidget {
   const LoginSelectionScreen({Key? key}) : super(key: key);
 
@@ -581,39 +561,50 @@ class _EmployeeLoginScreenState extends State<EmployeeLoginScreen>
                           ),
                           const SizedBox(height: 40),
                           // Send OTP Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 58,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Handle OTP send
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6366F1),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                                shadowColor: const Color(0xFF6366F1).withOpacity(0.3),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Send OTP',
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-                                ],
-                              ),
-                            ),
-                          ),
+                         // After validating the mobile number
+SizedBox(
+  width: double.infinity,
+  height: 58,
+  child: ElevatedButton(
+    onPressed: () {
+      final mobile = _mobileController.text.trim();
+      if (mobile.length != 10) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter a valid 10-digit mobile number')),
+        );
+        return;
+      }
+
+      // Navigate to OTP Screen (for demo, directly go to HomePage)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => OTPScreen(
+              phoneNumber: _mobileController.text,
+            ),
+          ),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF6366F1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    child: const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Send OTP',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        SizedBox(width: 8),
+        Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+      ],
+    ),
+  ),
+),
+
                           const SizedBox(height: 24),
                           Center(
                             child: Text(
@@ -844,36 +835,41 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                               ),
                             ),
                             const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 58,
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF8B5CF6),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Sign In',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-                                  ],
-                                ),
-                              ),
-                            ),
+                         SizedBox(
+  width: double.infinity,
+  height: 58,
+  child: ElevatedButton(
+    onPressed: () {
+      // Validate admin credentials here (API/login logic)
+      // For demo, directly go to HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF8B5CF6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 0,
+    ),
+    child: const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Sign In',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        SizedBox(width: 8),
+        Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+      ],
+    ),
+  ),
+),
+
                             const SizedBox(height: 32),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
