@@ -29,5 +29,4 @@ Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
  Future<List<EmployeeLogin>> fetchEmployeeDetails(
   @Path("emp_id") int empId,
 );
-
 }
