@@ -277,24 +277,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-             Color(0xFF1976D2), // Deep Blue
-                Color(0xFF42A5F5),
-              ],
+         Color.fromARGB(255, 79, 114, 230),
+          Color.fromARGB(255, 6, 25, 91),
+        ],
+              
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFC107).withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: const Color(0xFFFFC107).withOpacity(0.3),
+            //     blurRadius: 12,
+            //     offset: const Offset(0, 4),
+            //   ),
+            // ],
           ),
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             centerTitle: false,
             leading: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(5.0),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -310,7 +311,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
                 child: const Icon(
                   Icons.person,
                   color: Color(0xFFFFC107),
-                  size: 24,
+                  size: 35,
                 ),
               ),
             ),
@@ -321,7 +322,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
                 const Text(
                   'Hello,',
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                   ),
@@ -329,7 +330,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
                 Text(
                   _employeeName,
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -341,8 +342,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Single
                 children: [
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined),
-                    color: Colors.black87,
-                    iconSize: 26,
+                    color: Colors.white,
+                    iconSize: 35,
                     onPressed: () {
                       // Open notifications
                     },

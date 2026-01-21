@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
+                  //const SizedBox(height: 2),
                   
                   // Quick Actions Card
                   Container(
@@ -76,13 +76,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFC107).withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      // boxShadow: [
+                      //   BoxShadow(
+                      //     color: const Color(0xFFFFC107).withOpacity(0.4),
+                      //     blurRadius: 20,
+                      //     offset: const Offset(0, 8),
+                      //   ),
+                      // ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

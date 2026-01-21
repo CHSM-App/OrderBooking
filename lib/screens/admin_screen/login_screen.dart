@@ -1,7 +1,8 @@
 
 // Admin Login Screen
 import 'package:flutter/material.dart';
-import 'package:order_booking_app/screens/admin_screen/home_screen.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
+
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({Key? key}) : super(key: key);
@@ -217,7 +218,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
+          builder: (context) => const AdminDashboardScreen(),
         ),
       );
     },

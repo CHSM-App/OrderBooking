@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/employee_login.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 
 
-class AddEmployeeForm extends StatefulWidget {
+class AddEmployeeForm extends ConsumerStatefulWidget {
   const AddEmployeeForm({super.key});
 
   @override
-  State<AddEmployeeForm> createState() => _AddEmployeeFormState();
+  ConsumerState<AddEmployeeForm> createState() => _AddEmployeeFormState();
 }
 
-class _AddEmployeeFormState extends State<AddEmployeeForm> {
+class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
   final _formKey = GlobalKey<FormState>();
 
   String name = '';
@@ -18,13 +21,6 @@ class _AddEmployeeFormState extends State<AddEmployeeForm> {
   String? region;
   // PlatformFile? idProof;
 
-  final List<String> regions = [
-    "Sindhudurg",
-    "Ratnagiri",
-    "Kolhapur",
-    "Goa",
-    "Pune"
-  ];
 
   Future<void> pickIDProof() async {
     // FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -37,52 +33,52 @@ class _AddEmployeeFormState extends State<AddEmployeeForm> {
     //   });
     // }
   }
+  Future<void> submitForm() async {
+  if (!_formKey.currentState!.validate()) return;
 
-  void submitForm() {
-    if (_formKey.currentState!.validate()) {
-      if (region == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Please enter a region"),
-            backgroundColor: Colors.orange[700],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        return;
-      }
-      // if (idProof == null) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //       content: const Text("Please select ID proof PDF"),
-      //       backgroundColor: Colors.orange[700],
-      //       behavior: SnackBarBehavior.floating,
-      //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      //     ),
-      //   );
-      //   return;
-      // }
+  // Save all form fields
+  _formKey.currentState!.save();
 
-      _formKey.currentState!.save();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Text("Employee $name added successfully!"),
-            ],
-          ),
-          backgroundColor: Colors.green[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-
-      Navigator.pop(context);
-    }
+  // region is now saved; check for empty string
+  if (region == null || region!.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please enter a region")),
+    );
+    return;
   }
+
+  final employee = EmployeeLogin(
+    empName: name,
+    empMobile: mobile,
+    empEmail: email,
+    empAddress: address,
+    regionId: 1, // you can map region to actual ID if needed
+  );
+
+  await ref
+      .read(employeeloginViewModelProvider.notifier)
+      .addEmployee(employee);
+
+  final state = ref.read(employeeloginViewModelProvider);
+
+  if (state.error != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(state.error!),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Employee $name added successfully"),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pop(context);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {

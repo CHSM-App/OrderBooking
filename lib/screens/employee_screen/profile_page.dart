@@ -63,6 +63,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               pinned: true,
               backgroundColor: Colors.white,
               elevation: 0,
+               automaticallyImplyLeading: false, 
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(

@@ -91,12 +91,18 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
 
 
 
+
 void main() {
-  runApp(const EmployeePortalApp());
+  runApp(
+    ProviderScope( // <-- Add this
+      child: EmployeePortalApp(),
+    ),
+  );
 }
 
 class EmployeePortalApp extends StatelessWidget {
