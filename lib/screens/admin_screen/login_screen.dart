@@ -2,6 +2,8 @@
 // Admin Login Screen
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_signUp.dart';
+
 
 
 class AdminLoginScreen extends StatefulWidget {
@@ -244,49 +246,51 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
 ),
 
                             const SizedBox(height: 32),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Don't have an account? ",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      PageRouteBuilder(
-                                        pageBuilder: (context, animation, secondaryAnimation) =>
-                                            const AdminSignUpScreen(),
-                                        transitionsBuilder:
-                                            (context, animation, secondaryAnimation, child) {
-                                          return FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 0),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    foregroundColor: const Color(0xFF8B5CF6),
-                                  ),
-                                  child: const Text(
-                                    'Sign Up',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Text(
+      "Don't have an account? ",
+      style: TextStyle(
+        fontSize: 14,
+        color: Colors.grey[600],
+      ),
+    ),
+    TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const AdminSignupScreen(), // Your SignUp page
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              // Fade transition
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
+      },
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(0, 0),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: const Color(0xFF8B5CF6),
+      ),
+      child: const Text(
+        'Sign Up',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ],
+),
+
                           ],
                         ),
                       ),
