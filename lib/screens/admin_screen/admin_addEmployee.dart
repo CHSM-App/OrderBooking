@@ -47,7 +47,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     return;
   }
 
-  final employee = EmployeeLogin(
+  final employee = EmployeeLogin(         
     empName: name,
     empMobile: mobile,
     empEmail: email,
