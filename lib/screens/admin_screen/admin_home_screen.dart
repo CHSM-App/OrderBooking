@@ -4,6 +4,10 @@ import 'admin_addEmployee.dart';
 import 'admin_addProduct.dart';
 import 'admin_employeeDetails.dart';
 import 'admin_notifications.dart';
+import 'admin_regionDetails.dart';
+import 'admin_shopDetails.dart';
+
+
 
 class AdminHomePage extends StatelessWidget {
   final Function(int, {int ordersTab}) onNavigate;
@@ -57,90 +61,54 @@ class AdminHomePage extends StatelessWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.4,
               children: [
-                // _modernDashboardCard(
-                //   title: "Pending Orders",
-                //   value: "24",
-                //   icon: Icons.pending_actions_rounded,
-                //   gradient: const LinearGradient(
-                //     colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-                //   ),
-                //   trend: "+12%",
-                // ),
-                // _modernDashboardCard(
-                //   title: "Active Employees",
-                //   value: "12",
-                //   icon: Icons.people_rounded,
-                //   gradient: const LinearGradient(
-                //     colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-                //   ),
-                //   trend: "+5%",
-                // ),
-                // _modernDashboardCard(
-                //   title: "Total Revenue",
-                //   value: "₹45K",
-                //   icon: Icons.attach_money_rounded,
-                //   gradient: const LinearGradient(
-                //     colors: [Color(0xFF2196F3), Color(0xFF1565C0)],
-                //   ),
-                //   trend: "+18%",
-                // ),
-                // _modernDashboardCard(
-                //   title: "Products",
-                //   value: "156",
-                //   icon: Icons.inventory_2_rounded,
-                //   gradient: const LinearGradient(
-                //     colors: [Color(0xFF9C27B0), Color(0xFF6A1B9A)],
-                //   ),
-                //   trend: "+3%",
-                // ),
                 // 🔸 Pending Orders
-_modernDashboardCard(
-  title: "Pending Orders",
-  value: "24",
-  icon: Icons.pending_actions_rounded,
-  gradient: const LinearGradient(
-    colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-  ),
-  trend: "",
-  onTap: () => onNavigate(2, ordersTab: 0), // Orders → Pending
-),
+                _modernDashboardCard(
+                  title: "Pending Orders",
+                  value: "24",
+                  icon: Icons.pending_actions_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
+                  ),
+                  trend: "",
+                  onTap: () => onNavigate(2, ordersTab: 0), // Orders → Pending
+                ),
 
-// 🔸 Active Employees
-_modernDashboardCard(
-  title: "Active Employees",
-  value: "12",
-  icon: Icons.people_rounded,
-  gradient: const LinearGradient(
-    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-  ),
-  trend: "",
-  onTap: () => onNavigate(3), // Employees
-),
+                // 🔸 Active Employees
+                _modernDashboardCard(
+                  title: "Active Employees",
+                  value: "12",
+                  icon: Icons.people_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                  ),
+                  trend: "",
+                  onTap: () => onNavigate(3), // Employees
+                ),
 
-// 🔸 Products
-_modernDashboardCard(
-  title: "Products",
-  value: "156",
-  icon: Icons.inventory_2_rounded,
-  gradient: const LinearGradient(
-    colors: [Color(0xFF9C27B0), Color(0xFF6A1B9A)],
-  ),
-  trend: "",
-  onTap: () => onNavigate(1), // Catalog
-),
+                // 🔸 Products
+                _modernDashboardCard(
+                  title: "Products",
+                  value: "156",
+                  icon: Icons.inventory_2_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9C27B0), Color(0xFF6A1B9A)],
+                  ),
+                  trend: "",
+                  onTap: () => onNavigate(1), // Catalog
+                ),
                 // 🔸 Total Revenue
-_modernDashboardCard(   
-  title: "Total Revenue",
-  value: "₹45K",
-  icon: Icons.attach_money_rounded,
-  gradient: const LinearGradient(
-    colors: [Color(0xFF2196F3), Color(0xFF1565C0)],
-  ),  
-  trend: "",
-  onTap: () {   
-    // No navigation for revenue
-  },
-),
+                _modernDashboardCard(
+                  title: "Total Revenue",
+                  value: "₹45K",
+                  icon: Icons.attach_money_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2196F3), Color(0xFF1565C0)],
+                  ),
+                  trend: "",
+                  onTap: () {
+                    // No navigation for revenue
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 32),
@@ -276,7 +244,7 @@ _modernDashboardCard(
             Expanded(
               child: _quickActionCard(
                 title: "Add Product",
-                icon: Icons.add_circle_outline,
+                icon: Icons.add_box_outlined,
                 color: const Color(0xFF2196F3),
                 onTap: () {
                   Navigator.push(
@@ -304,7 +272,44 @@ _modernDashboardCard(
                 },
               ),
             ),
+            
+            
           ],
+        ),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+            child: _quickActionCard(
+              title: "View Regions",
+              icon: Icons.location_on_outlined,
+              color: const Color(0xFFFF5722),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RegionListPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _quickActionCard(
+              title: "View Shops",
+              icon: Icons.store_outlined,
+              color: const Color(0xFF9C27B0),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ShopListPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
         ),
       ],
     );
@@ -490,6 +495,8 @@ class AdminCatalogPage extends StatelessWidget {
 
 
 
+//===================================== ORDERS PAGE ====================================//
+
 class AdminOrdersPage extends StatefulWidget {
   final int initialTabIndex;
 
@@ -534,11 +541,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage>
     },
   ];
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _tabController = TabController(length: 2, vsync: this);
-  // }
+  
 @override
 void initState() {
   super.initState();
@@ -785,11 +788,6 @@ class OrderDetailsPage extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
 
 
 
