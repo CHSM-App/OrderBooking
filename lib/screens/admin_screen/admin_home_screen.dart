@@ -349,8 +349,6 @@ _modernDashboardCard(
 
 
 //===================================== CATALOG PAGE ====================================//
-
-
 class AdminCatalogPage extends StatelessWidget {
   const AdminCatalogPage({super.key});
 

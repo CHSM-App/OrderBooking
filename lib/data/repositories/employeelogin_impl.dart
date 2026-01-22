@@ -1,8 +1,7 @@
  
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
-import 'package:order_booking_app/domain/models/token_response.dart';
-import 'package:order_booking_app/domain/repository/auth_repo.dart';
+
 import 'package:order_booking_app/domain/repository/employeelogin_repo.dart';
 
 class EmployeeloginImpl implements EmployeeloginRepository {

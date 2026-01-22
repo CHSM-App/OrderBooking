@@ -32,7 +32,7 @@ class _AdminEmployeesPageState
     final state = ref.watch(employeeloginViewModelProvider);
 
     /// 🔁 API DATA → UI MAP (DESIGN SAME)
-   final employees = state.employeeList?.when(
+ final employees = state.employeeList?.when(
   data: (list) => list
       .map((e) => {
             "name": e.empName ?? "N/A",
@@ -40,9 +40,10 @@ class _AdminEmployeesPageState
             "status": e.activeStatus == 0 ? "Active" : "Inactive",
           })
       .toList(),
-  loading: () => [],
-  error: (_, __) => [],
+  loading: () => <Map<String, dynamic>>[],
+  error: (_, __) => <Map<String, dynamic>>[],
 );
+
 final activeCount =
     employees?.where((e) => e["status"] == "Active").length;
 
@@ -137,7 +138,7 @@ final inactiveCount =
                                 ),
                               );
                             },
-                              child: _employeeCard(context, employees?[index], index),
+                              child: _employeeCard(context, employees![index], index),
       );
     },
   ),
@@ -193,8 +194,8 @@ final inactiveCount =
 
   // 🔹 EMPLOYEE CARD (STATUS BOTTOM-RIGHT)
   Widget _employeeCard(
-      BuildContext context, Map<String, String> employee, int index) {
-    final isActive = employee["status"] == "Active";
+      BuildContext context, Map<String, dynamic> employee, int index) {
+   final isActive = employee["status"] == "Active";
 
     final avatarColors = [
       const Color(0xFF2196F3),

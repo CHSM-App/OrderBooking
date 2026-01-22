@@ -1,6 +1,5 @@
 import 'package:order_booking_app/domain/models/employee_login.dart';
 
-import '../models/token_response.dart';
 
 abstract class EmployeeloginRepository {
 

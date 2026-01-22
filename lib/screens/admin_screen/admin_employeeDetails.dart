@@ -722,6 +722,7 @@
 //     );
 //   }
 // }
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
@@ -798,7 +799,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
 
     final EmployeeLogin employee = list.first;
-    final bool isActive = employee.activeStatus == 1;
+    final bool isActive = employee.activeStatus == 0;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -911,7 +912,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   _infoRow(Icons.calendar_today, "Joining Date",
-                      "1/1/2025" ?? "N/A"),
+                      employee.joiningDate ?? "N/A"),
                 ]),
 
                 const SizedBox(height: 24),
