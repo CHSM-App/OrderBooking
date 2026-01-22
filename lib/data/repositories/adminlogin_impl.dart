@@ -14,4 +14,8 @@ class AdminloginImpl implements AdminloginRepository {
   Future<dynamic> addAdminDetails(AdminLogin adminLogin) {
     return apiService.addAdminDetails(adminLogin);
   }
+     @override
+  Future<List<AdminLogin>> fetchAdminDetails(String mobileNo) {
+    return apiService.fetchAdminDetails(mobileNo);
+  }
 }

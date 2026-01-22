@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
+import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -43,8 +44,19 @@ abstract class ApiService {
   Future<List<EmployeeLogin>> fetchEmployeeDetails(
   @Path("emp_id") int empId,
 );
+ @GET("users/fetchEmployeeInfo/{mobile_no}")
+  Future<List<EmployeeLogin>> fetchEmployeeInfo(
+  @Path("emp_mobile") String mobileNo
+);
+
   @GET("users/regionList")
   Future<List<Region>> fetchRegionList();
 
+ @GET("users/adminDetails/{mobile_no}")
+  Future<List<AdminLogin>> fetchAdminDetails(
+  @Path("mobile_no") String mobileNo,
+);
+  @GET("users/shopList")
+  Future<List<Shop>> getShopList();
 
 }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_catalog_page.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_home_screen.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_orderdetails.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_profilescreen.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
 import 'admin_addEmployee.dart';
 import 'admin_addProduct.dart';
@@ -57,7 +60,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 3:
         return const AdminEmployeesPage();
       case 4:
-        return const AdminProfilePage();
+        return const AdminProfilePage(mobileNo: '9876543210',);
       default:
         return AdminHomePage(onNavigate: navigateToTab);
     }

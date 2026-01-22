@@ -10,5 +10,7 @@ class AdminloginUsecase {
   Future<dynamic> addAdminDetails(AdminLogin adminLogin) {
     return adminloginRepository.addAdminDetails(adminLogin);
   }
-  
+      Future<List<AdminLogin>>fetchAdminDetails(String mobileNo){
+    return adminloginRepository.fetchAdminDetails(mobileNo);
+  }
 }
