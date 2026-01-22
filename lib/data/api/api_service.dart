@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
+import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -31,9 +32,15 @@ abstract class ApiService {
   @POST("insert/addRegion")
   Future<dynamic> addRegion(@Body() Region region);
 
+  @GET("users/regionList")
+  Future<List<Region>> fetchRegionList();
+
     
   @POST("insert/addShopDetails")
   Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
+
+  @GET("users/shopList")
+  Future<List<Shop>> getShopList();
 
 //GET METHODS
   @GET("users/employeeList")
