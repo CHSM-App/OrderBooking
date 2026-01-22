@@ -43,5 +43,8 @@ abstract class ApiService {
   Future<List<EmployeeLogin>> fetchEmployeeDetails(
   @Path("emp_id") int empId,
 );
+  @GET("users/regionList")
+  Future<List<Region>> fetchRegionList();
+
 
 }
