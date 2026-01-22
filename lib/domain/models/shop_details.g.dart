@@ -1,11 +1,11 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
- 
+
 part of 'shop_details.dart';
- 
+
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
- 
+
 ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
       shopId: (json['shop_id'] as num?)?.toInt(),
       shopName: json['shop_name'] as String?,
@@ -16,7 +16,7 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
       regionId: (json['region_id'] as num?)?.toInt(),
       createdBy: (json['created_by'] as num?)?.toInt(),
     );
- 
+
 Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
     <String, dynamic>{
       'shop_id': instance.shopId,
@@ -28,4 +28,3 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'region_id': instance.regionId,
       'created_by': instance.createdBy,
     };
- 
