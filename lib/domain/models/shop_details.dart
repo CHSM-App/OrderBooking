@@ -37,7 +37,7 @@ class ShopDetails {
     this.mobileNo,
     this.email,
     this.regionId,
-    this.createdBy,
+    this.createdBy
   });
 
   

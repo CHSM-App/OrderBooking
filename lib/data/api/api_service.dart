@@ -32,9 +32,15 @@ abstract class ApiService {
   @POST("insert/addRegion")
   Future<dynamic> addRegion(@Body() Region region);
 
+  @GET("users/regionList")
+  Future<List<Region>> fetchRegionList();
+
     
   @POST("insert/addShopDetails")
   Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
+
+  @GET("users/shopList")
+  Future<List<Shop>> getShopList();
 
 //GET METHODS
   @GET("users/employeeList")
@@ -49,14 +55,10 @@ abstract class ApiService {
   @Path("emp_mobile") String mobileNo
 );
 
-  @GET("users/regionList")
-  Future<List<Region>> fetchRegionList();
-
  @GET("users/adminDetails/{mobile_no}")
   Future<List<AdminLogin>> fetchAdminDetails(
   @Path("mobile_no") String mobileNo,
 );
-  @GET("users/shopList")
-  Future<List<Shop>> getShopList();
+ 
 
 }
