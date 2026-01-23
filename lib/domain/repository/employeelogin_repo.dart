@@ -8,4 +8,5 @@ abstract class EmployeeloginRepository {
 Future<List<EmployeeLogin>>getEmployeeList();
 
 Future<List<EmployeeLogin>>fetchEmployeeDetails(int empId);
+  Future<List<EmployeeLogin>>fetchEmployeeInfo(String mobileNo);
 }

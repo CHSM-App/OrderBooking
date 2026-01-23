@@ -52,7 +52,7 @@ abstract class ApiService {
 );
  @GET("users/fetchEmployeeInfo/{mobile_no}")
   Future<List<EmployeeLogin>> fetchEmployeeInfo(
-  @Path("emp_mobile") String mobileNo
+  @Path("mobile_no") String mobileNo
 );
 
  @GET("users/adminDetails/{mobile_no}")
