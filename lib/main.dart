@@ -113,7 +113,7 @@ class EmployeePortalApp extends StatelessWidget {
     return MaterialApp(
       title: 'Order Portal',
       theme: ThemeData(
-        primaryColor: const Color(0xFF6366F1),
+        primaryColor: const Color(0xFFF57C00),
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
         useMaterial3: true,

@@ -33,18 +33,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // Page titles
   String get _currentTitle {
     switch (_selectedIndex) {
-      case 0:
-        return "Admin Dashboard";
-      case 1:
-        return "Catalog";
-      case 2:
-        return "Orders";
-      case 3:
-        return "Employees";
-      case 4:
-        return "Profile";
+      // case 0:
+      //   return "Admin Dashboard";
+      // case 1:
+      //   return "Catalog";
+      // case 2:
+      //   return "Orders";
+      // case 3:
+      //   return "Employees";
+      // case 4:
+      //   return "Profile";
       default:
-        return "Admin Dashboard";
+        return "Admin";
     }
   }
 
@@ -71,7 +71,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       // ============ APPBAR ============
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFF57C00),
         elevation: 0,
         automaticallyImplyLeading: false,
         titleSpacing: 16,
@@ -86,7 +86,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 backgroundColor: Colors.white,
                 child: Icon(
                   Icons.person,
-                  color: Color(0xFF2196F3),
+                  color: Color(0xFFF57C00),
                 ),
               ),
             ),
@@ -131,7 +131,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         currentIndex: _selectedIndex,
         onTap: (index) => navigateToTab(index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2196F3),
+        selectedItemColor: const Color(0xFFF57C00),
         unselectedItemColor: Colors.grey,
         selectedFontSize: 12,
         unselectedFontSize: 11,

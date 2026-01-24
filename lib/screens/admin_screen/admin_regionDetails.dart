@@ -26,7 +26,6 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
       duration: const Duration(milliseconds: 800),
     );
 
-    /// Call API after first frame
     Future.microtask(() {
       ref.read(regionViewModelProvider.notifier).getRegionList();
       _controller.forward();
@@ -44,15 +43,33 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
     final state = ref.watch(regionViewModelProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
 
       appBar: AppBar(
         elevation: 0,
-        title: const Text(
-          "Regions",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        toolbarHeight: 70,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Regions",
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 24,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              "Manage your service areas",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: Colors.white.withOpacity(0.9),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFFF6F00),
         foregroundColor: Colors.white,
       ),
 
@@ -62,18 +79,19 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
           curve: Curves.elasticOut,
         ),
         child: FloatingActionButton(
-          backgroundColor: const Color(0xFF2196F3),
+          backgroundColor: const Color(0xFFFF6F00),
           foregroundColor: Colors.white,
+          elevation: 8,
+          child: const Icon(Icons.add_rounded, size: 22),
           onPressed: () async {
             await Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddRegionPage()),
             );
-
-            /// Refresh list after adding region
             ref.read(regionViewModelProvider.notifier).getRegionList();
           },
-          child: const Icon(Icons.add),
+          
+          
         ),
       ),
 
@@ -83,28 +101,121 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
 
   Widget _buildBody(RegionState state) {
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
+        ),
+      );
     }
 
     if (state.error != null) {
       return Center(
-        child: Text(
-          state.error!,
-          style: const TextStyle(color: Colors.red),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.error!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
     return state.regionList!.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text(e.toString())),
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
+        ),
+      ),
+      error: (e, _) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              e.toString(),
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
       data: (regions) {
         if (regions.isEmpty) {
-          return const Center(child: Text("No regions found"));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6F00).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.location_off_rounded,
+                    size: 64,
+                    color: const Color(0xFFFF6F00).withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "No regions found",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF37474F),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Add your first region to get started",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
           itemCount: regions.length,
           itemBuilder: (context, index) {
             final Region region = regions[index];
@@ -127,7 +238,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
               opacity: _controller,
               child: SlideTransition(
                 position: animation,
-                child: _RegionCard(region: region),
+                child: _RegionCard(region: region, index: index),
               ),
             );
           },
@@ -140,84 +251,146 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
 
 class _RegionCard extends StatelessWidget {
   final Region region;
+  final int index;
 
-  const _RegionCard({required this.region});
+  const _RegionCard({required this.region, required this.index});
 
   @override
   Widget build(BuildContext context) {
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF6F00).withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
+            color: const Color(0xFFFF6F00).withOpacity(0.15),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                height: 56,
-                width: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2196F3).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          splashColor: const Color(0xFFFF6F00).withOpacity(0.1),
+          highlightColor: const Color(0xFFFF6F00).withOpacity(0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFF6F00),
+                        Color(0xFFFF8F00),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF6F00).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.location_on_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.location_on_rounded,
-                  color: Color(0xFF2196F3),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 18),
 
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      region.regionName??'',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        region.regionName ?? '',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
+                          letterSpacing: -0.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "${region.district}, ${region.state}",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.place_rounded,
+                            size: 14,
+                            color: Color(0xFF616161),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              "${region.district}, ${region.state}",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF616161),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Pincode: ${region.pincode}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6F00).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFFF6F00).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          "PIN: ${region.pincode}",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFFFF6F00),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: Colors.grey[400],
-              ),
-            ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6F00).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 18,
+                    color: Color(0xFFFF6F00),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

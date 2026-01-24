@@ -1,10 +1,7 @@
-
 // Admin Login Screen
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_signUp.dart';
-
-
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({Key? key}) : super(key: key);
@@ -28,7 +25,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
     _controller.forward();
   }
 
@@ -48,11 +48,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF8B5CF6),
-              Color(0xFFA855F7),
-              Color(0xFFEC4899),
-            ],
+            colors: [Color(0xFF8B5CF6), Color(0xFFA855F7), Color(0xFFEC4899)],
           ),
         ),
         child: SafeArea(
@@ -70,7 +66,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
@@ -118,17 +117,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
                     'Manage your portal with ease',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -210,87 +209,106 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                               ),
                             ),
                             const SizedBox(height: 24),
-                         SizedBox(
-  width: double.infinity,
-  height: 58,
-  child: ElevatedButton(
-    onPressed: () {
-      // Validate admin credentials here (API/login logic)
-      // For demo, directly go to HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const AdminDashboardScreen(),
-        ),
-      );
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF8B5CF6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      elevation: 0,
-    ),
-    child: const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Sign In',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        SizedBox(width: 8),
-        Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-      ],
-    ),
-  ),
-),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 58,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  // Validate admin credentials here (API/login logic)
+                                  // For demo, directly go to HomePage
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdminDashboardScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF8B5CF6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Sign In',
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
 
                             const SizedBox(height: 32),
-                          Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    Text(
-      "Don't have an account? ",
-      style: TextStyle(
-        fontSize: 14,
-        color: Colors.grey[600],
-      ),
-    ),
-    TextButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const AdminSignupScreen(), // Your SignUp page
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              // Fade transition
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-          ),
-        );
-      },
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(0, 0),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        foregroundColor: const Color(0xFF8B5CF6),
-      ),
-      child: const Text(
-        'Sign Up',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-  ],
-),
-
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Don't have an account? ",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      PageRouteBuilder(
+                                        pageBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                            ) =>
+                                                const AdminSignupScreen(), // Your SignUp page
+                                        transitionsBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child,
+                                            ) {
+                                              // Fade transition
+                                              return FadeTransition(
+                                                opacity: animation,
+                                                child: child,
+                                              );
+                                            },
+                                      ),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(0, 0),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    foregroundColor: const Color(0xFF8B5CF6),
+                                  ),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -330,10 +348,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: prefixIcon != null
@@ -342,8 +357,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: Colors.grey[50],
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -354,18 +371,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFF8B5CF6),
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
             ),
           ),
         ),
       ],
     );
   }
-    }
-
+}
 
 class AdminSignUpScreen extends StatelessWidget {
   const AdminSignUpScreen({Key? key}) : super(key: key);
@@ -378,11 +391,7 @@ class AdminSignUpScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF8B5CF6),
-              Color(0xFFA855F7),
-              Color(0xFFEC4899),
-            ],
+            colors: [Color(0xFF8B5CF6), Color(0xFFA855F7), Color(0xFFEC4899)],
           ),
         ),
         child: SafeArea(
@@ -399,11 +408,7 @@ class AdminSignUpScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              const Icon(
-                Icons.person_add_alt_1,
-                size: 80,
-                color: Colors.white,
-              ),
+              const Icon(Icons.person_add_alt_1, size: 80, color: Colors.white),
               const SizedBox(height: 24),
               const Text(
                 'Admin Sign Up',
@@ -427,14 +432,9 @@ class AdminSignUpScreen extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                        'Create your admin account',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
+                      'Create your admin account',
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
-                
-
                   ),
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
@@ -50,6 +51,103 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     super.dispose();
   }
 
+  Future<void> _editEmployee() async {
+    final state = ref.read(employeeloginViewModelProvider);
+    final List<EmployeeLogin>? list = state.employeeDetails?.value;
+    
+    if (list == null || list.isEmpty) return;
+    
+    final employee = list.first;
+    
+    // Navigate to edit form with prefilled data
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEmployeeForm(
+          empId: employee.empId,
+          initialName: employee.empName,
+          initialMobile: employee.empMobile,
+          initialEmail: employee.empEmail,
+          initialAddress: employee.empAddress,
+          initialRegion: employee.empAddress, // or use actual region field if available
+        ),
+      ),
+    );
+
+    // Refresh employee details if updated
+    if (result == true) {
+      ref
+          .read(employeeloginViewModelProvider.notifier)
+          .fetchEmployeeDetails(widget.empId);
+    }
+  }
+
+  Future<void> _deleteEmployee() async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text('Delete Employee'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to delete this employee? This action cannot be undone.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Call delete API
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .deleteEmployee(widget.empId);
+
+    final state = ref.read(employeeloginViewModelProvider);
+
+    if (!mounted) return;
+
+    if (state.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Employee deleted successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context, true); // Return to previous screen
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
@@ -81,10 +179,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       appBar: AppBar(
         title: const Text(
           "Employee Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: const Color(0xFFF57C00),
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: FadeTransition(
@@ -94,87 +192,136 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           child: SingleChildScrollView(
             child: Column(
               children: [
-
-                // 👤 HEADER CARD
+                // 👤 HEADER CARD WITH DELETE ICON
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                      colors: [Color(0xFF0A3D62), Color(0xFF0A3D62)],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
+                        color: const Color(0xFF0A3D62).withOpacity(0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Stack(
                     children: [
-                      CircleAvatar(
-                        radius: 42,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          employee.empName?[0] ?? "",
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2196F3),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      // EDIT AND DELETE ICONS - TOP RIGHT CORNER
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Row(
                           children: [
-                            Text(
-                              employee.empName ?? "N/A",
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on,
-                                  size: 16,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  employee.empAddress ?? "N/A",
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
+                            // EDIT ICON
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: isActive ? Colors.green : Colors.redAccent,
-                                borderRadius: BorderRadius.circular(20),
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                isActive ? "Active" : "Inactive",
-                                style: const TextStyle(
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
                                   color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  size: 24,
                                 ),
+                                onPressed: _editEmployee,
+                                tooltip: 'Edit Employee',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // DELETE ICON
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                onPressed: _deleteEmployee,
+                                tooltip: 'Delete Employee',
                               ),
                             ),
                           ],
                         ),
+                      ),
+
+                      // MAIN CONTENT
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 42,
+                            backgroundColor: Colors.white,
+                            child: Text(
+                              employee.empName?[0] ?? "",
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  employee.empName ?? "N/A",
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on,
+                                      size: 16,
+                                      color: Colors.white70,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        employee.empAddress ?? "N/A",
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isActive ? Colors.green : Colors.redAccent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    isActive ? "Active" : "Inactive",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -206,29 +353,28 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     children: [
                       _AnimatedStatCard(
                         title: "Avg Time / Shop",
-                        // value: employee.avgTimePerShop ?? "0 min",
-                        value: "10 min" ?? "0 min",
+                        value: "10 min",
                         icon: Icons.timer_outlined,
                         color: Colors.orange,
                         delay: 0,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Distance / Day",
-                        value: "100km" ?? "0 km",
+                        value: "100km",
                         icon: Icons.route_outlined,
                         color: Colors.purple,
                         delay: 100,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Shops / Day",
-                        value: "5" ?? "0",
+                        value: "5",
                         icon: Icons.store_outlined,
                         color: Colors.teal,
                         delay: 200,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Orders / Day",
-                        value:"8" ?? "0",
+                        value: "8",
                         icon: Icons.shopping_cart_outlined,
                         color: Colors.blue,
                         delay: 300,
@@ -304,21 +450,16 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
                 const SizedBox(height: 12),
 
-                // Dummy recent orders; replace with API if available
+                // Dummy recent orders
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  //itemCount: employee.recentOrders?.length ?? 5,
-                    itemCount: "5"?.length ?? 5,
+                  itemCount: 5,
                   itemBuilder: (_, index) {
-                   // final order = employee.recentOrders?[index];
-                     final order = "2"?[index];
                     return _AnimatedOrderCard(
-                      // orderNumber: order?.id ?? index + 1,
-                      // amount: order?.amount ?? (index + 1) * 1200,
-                       orderNumber:1,
-                      amount:100,
+                      orderNumber: index + 1,
+                      amount: (index + 1) * 1200,
                       filter: selectedFilter,
                       delay: index * 100,
                     );

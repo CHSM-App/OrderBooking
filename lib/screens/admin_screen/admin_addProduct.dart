@@ -102,7 +102,7 @@ class _AddProductPageState extends State<AddProductPage> {
           "Add New Product",
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
         ),
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFF57C00),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -112,7 +112,7 @@ class _AddProductPageState extends State<AddProductPage> {
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                color: Color(0xFF2196F3),
+                color: Color(0xFFF57C00),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -252,7 +252,12 @@ class _AddProductPageState extends State<AddProductPage> {
                         child: ElevatedButton(
                           onPressed: addItem,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2196F3),
+                            backgroundColor: const Color.fromARGB(255, 221, 198, 198),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFFFFFFF),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -309,10 +314,10 @@ class _AddProductPageState extends State<AddProductPage> {
                         child: ElevatedButton(
                           onPressed: submitForm,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2196F3),
+                            backgroundColor: const Color(0xFFF57C00),
                             foregroundColor: Colors.white,
                             elevation: 2,
-                            shadowColor: const Color(0xFF2196F3).withOpacity(0.4),
+                            shadowColor: const Color(0xFFF57C00).withOpacity(0.4),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -364,7 +369,7 @@ class _AddProductPageState extends State<AddProductPage> {
       InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-        prefixIcon: Icon(icon, color: const Color(0xFF2196F3), size: 22),
+        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 37, 121, 180), size: 22),
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
@@ -377,13 +382,13 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+          borderSide: const BorderSide(color: const Color.fromARGB(255, 37, 121, 180), width: 2),
         ),
       );
 
   InputDecoration _buildDropdownDecoration({required IconData icon}) =>
       InputDecoration(
-        prefixIcon: Icon(icon, color: const Color(0xFF2196F3), size: 22),
+        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 37, 121, 180), size: 22),
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
