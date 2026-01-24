@@ -64,12 +64,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       context,
       MaterialPageRoute(
         builder: (_) => AddEmployeeForm(
-          empId: employee.empId,
-          initialName: employee.empName,
-          initialMobile: employee.empMobile,
-          initialEmail: employee.empEmail,
-          initialAddress: employee.empAddress,
-          initialRegion: employee.empAddress, // or use actual region field if available
+          // empId: employee.empId,
+          // initialName: employee.empName,
+          // initialMobile: employee.empMobile,
+          // initialEmail: employee.empEmail,
+          // initialAddress: employee.empAddress,
+          // initialRegion: employee.empAddress, // or use actual region field if available
         ),
       ),
     );
@@ -182,7 +182,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: const Color(0xFFF57C00),
-        foregroundColor: Colors.white,
+         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: false,
+        titleSpacing: 0,
         elevation: 0,
       ),
       body: FadeTransition(

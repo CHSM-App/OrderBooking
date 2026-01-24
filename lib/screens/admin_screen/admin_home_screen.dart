@@ -31,7 +31,7 @@ class AdminHomePage extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF2196F3).withOpacity(0.05),
+            const Color.fromARGB(255, 255, 255, 255).withOpacity(0.05),
             Colors.white,
           ],
           stops: const [0.0, 0.3],
@@ -58,14 +58,14 @@ class AdminHomePage extends StatelessWidget {
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.4,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.5,
               children: [
                 // 🔸 Pending Orders
                 _modernDashboardCard(
@@ -73,7 +73,9 @@ class AdminHomePage extends StatelessWidget {
                   value: "24",
                   icon: Icons.pending_actions_rounded,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
+                    colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   trend: "",
                   onTap: () => onNavigate(2, ordersTab: 0), // Orders → Pending
@@ -85,7 +87,9 @@ class AdminHomePage extends StatelessWidget {
                   value: "12",
                   icon: Icons.people_rounded,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                    colors: [Color(0xFF00897B), Color(0xFF26A69A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   trend: "",
                   onTap: () => onNavigate(3), // Employees
@@ -97,7 +101,9 @@ class AdminHomePage extends StatelessWidget {
                   value: "156",
                   icon: Icons.inventory_2_rounded,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF9C27B0), Color(0xFF6A1B9A)],
+                    colors: [Color(0xFF5E35B1), Color(0xFF7E57C2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   trend: "",
                   onTap: () => onNavigate(1), // Catalog
@@ -108,7 +114,9 @@ class AdminHomePage extends StatelessWidget {
                   value: "₹45K",
                   icon: Icons.attach_money_rounded,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF2196F3), Color(0xFF1565C0)],
+                    colors: [Color(0xFF1976D2), Color(0xFF2196F3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   trend: "",
                   onTap: () {
@@ -117,7 +125,7 @@ class AdminHomePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             _quickActionsSection(context),
           ],
         ),
@@ -126,110 +134,86 @@ class AdminHomePage extends StatelessWidget {
   }
 
   Widget _modernDashboardCard({
-  required String title,
-  required String value,
-  required IconData icon,
-  required Gradient gradient,
-  required String trend,
-  VoidCallback? onTap,
-}) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(20),
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.first.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Icon(
-                icon,
-                size: 100,
-                color: Colors.white.withOpacity(0.15),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 24),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              trend,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+    required String title,
+    required String value,
+    required IconData icon,
+    required Gradient gradient,
+    required String trend,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -15,
+                top: -15,
+                child: Icon(
+                  icon,
+                  size: 100,
+                  color: Colors.white.withOpacity(0.15),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 16),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          value,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
 
   Widget _quickActionsSection(BuildContext context) {
@@ -251,7 +235,7 @@ class AdminHomePage extends StatelessWidget {
               child: _quickActionCard(
                 title: "Add Product",
                 icon: Icons.add_box_outlined,
-                color: const Color(0xFF2196F3),
+                color: const Color(0xFFF57C00),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -267,7 +251,7 @@ class AdminHomePage extends StatelessWidget {
               child: _quickActionCard(
                 title: "New Employee",
                 icon: Icons.person_add_outlined,
-                color: const Color(0xFF4CAF50),
+                color: const Color(0xFF00897B),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -278,44 +262,43 @@ class AdminHomePage extends StatelessWidget {
                 },
               ),
             ),
-            
-            
           ],
         ),
         const SizedBox(height: 12),
-        Row(children: [
-          Expanded(
-            child: _quickActionCard(
-              title: "View Regions",
-              icon: Icons.location_on_outlined,
-              color: const Color(0xFFFF5722),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const RegionListPage(),
-                  ),
-                );
-              },
+        Row(
+          children: [
+            Expanded(
+              child: _quickActionCard(
+                title: "View Regions",
+                icon: Icons.location_on_outlined,
+                color: const Color(0xFFE64A19),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegionListPage(),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _quickActionCard(
-              title: "View Shops",
-              icon: Icons.store_outlined,
-              color: const Color(0xFF9C27B0),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ShopListPage(),
-                  ),
-                );
-              },
+            const SizedBox(width: 12),
+            Expanded(
+              child: _quickActionCard(
+                title: "View Shops",
+                icon: Icons.store_outlined,
+                color: const Color(0xFF5E35B1),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ShopListPage(),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ],
     );
@@ -356,4 +339,3 @@ class AdminHomePage extends StatelessWidget {
     );
   }
 }
-

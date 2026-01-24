@@ -45,7 +45,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     _animationController.forward();
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(widget.mobileNo);
+      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo("1234567890");
     });
   }
   
