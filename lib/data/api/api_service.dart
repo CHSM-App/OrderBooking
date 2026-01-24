@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
+import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
@@ -60,5 +61,7 @@ abstract class ApiService {
   @Path("mobile_no") String mobileNo,
 );
  
+  @GET("login/checkPhone")
+  Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
 
 }

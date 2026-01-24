@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
-import 'package:order_booking_app/domain/usecase/add_shop_usecase.dart';
+import 'package:order_booking_app/domain/usecase/shop_usecase.dart';
 
 class ShopState {
   final bool isLoading;
@@ -27,7 +27,7 @@ class ShopState {
   }
 }
 class ShopViewModel extends StateNotifier<ShopState> {
-  final AddShopUsecase usecase;
+  final ShopUsecase usecase;
 
   ShopViewModel(this.usecase) : super(const ShopState());
 

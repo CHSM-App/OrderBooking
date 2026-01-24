@@ -1,4 +1,5 @@
 import 'package:order_booking_app/domain/models/admin_login.dart';
+import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/repository/adminlogin_repo.dart';
 
 
@@ -13,4 +14,8 @@ class AdminloginUsecase {
       Future<List<AdminLogin>>fetchAdminDetails(String mobileNo){
     return adminloginRepository.fetchAdminDetails(mobileNo);
   }
+    Future<List<LoginInfo>> checkPhoneNumber(String mobileNo) {
+    return adminloginRepository.checkPhoneNumber(mobileNo);
+  }
+
 }

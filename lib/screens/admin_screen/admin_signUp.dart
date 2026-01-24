@@ -518,6 +518,7 @@ class _AdminSignupScreenState extends ConsumerState<AdminSignupScreen> {
                                             _addressController.text.trim(),
                                         gstinNo:
                                             _gstController.text.trim(),
+                                            role_id: 1,
                                       );
 
                                       await ref

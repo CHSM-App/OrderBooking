@@ -471,7 +471,7 @@ class _LoginSelectionScreenState extends State<LoginSelectionScreen>
                                     PageRouteBuilder(
                                       pageBuilder: (context, animation,
                                               secondaryAnimation) =>
-                                          const EmployeeLoginScreen(),
+                                          const LoginScreen(),
                                       transitionsBuilder: (context, animation,
                                           secondaryAnimation, child) {
                                         return FadeTransition(
@@ -501,7 +501,7 @@ class _LoginSelectionScreenState extends State<LoginSelectionScreen>
                                     PageRouteBuilder(
                                       pageBuilder: (context, animation,
                                               secondaryAnimation) =>
-                                          const AdminLoginScreen(),
+                                          const LoginScreen(),
                                       transitionsBuilder: (context, animation,
                                           secondaryAnimation, child) {
                                         return FadeTransition(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
+import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
 
@@ -25,7 +25,7 @@ class EmployeePortalApp extends StatelessWidget {
       //darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       
-      home: const LoginSelectionScreen(),
+      home: const LoginScreen(),
     );
   }
 }

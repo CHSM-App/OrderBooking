@@ -65,6 +65,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'phone': _phoneController.text.trim(),
         'email': _emailController.text.trim(),
         'address': _addressController.text.trim(),
+        
       });
 
       Navigator.pop(context);

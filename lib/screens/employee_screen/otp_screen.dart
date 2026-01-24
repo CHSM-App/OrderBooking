@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
 import 'main_navigation_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
-  const OTPScreen({Key? key, required this.phoneNumber}) : super(key: key);
+  final LoginInfo loginInfo;
+  const OTPScreen({Key? key, required this.phoneNumber,  required this.loginInfo,}) : super(key: key);
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
@@ -45,22 +48,47 @@ class _OTPScreenState extends State<OTPScreen> {
   }
 
   void _verifyOTP() {
-    String otp = _otpControllers.map((c) => c.text).join();
-    if (otp.length != 6) {
+  String otp = _otpControllers.map((c) => c.text).join();
+  if (otp.length != 6) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please enter complete 6-digit OTP'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  // Simulate verification delay
+  Future.delayed(const Duration(seconds: 1), () {
+    setState(() => _isLoading = false);
+
+    // Redirect based on role
+    if (widget.loginInfo.roleId == 1) {
+      // Admin
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+      );
+    } else if (widget.loginInfo.roleId == 2) {
+      // Employee
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter complete 6-digit OTP'),
+          content: Text('Unknown role!'),
           backgroundColor: Colors.redAccent,
         ),
       );
-      return;
     }
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _isLoading = false);
-      if (mounted) _showPermissionDialog();
-    });
-  }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
+import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;
@@ -340,7 +341,7 @@ void _showLogoutDialog(BuildContext context) {
 
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const LoginSelectionScreen()),
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
               (route) => false, // remove all previous routes
             );
           },
@@ -423,7 +424,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
        mobileNo: mobileController.text.trim(),
         address: addressController.text.trim(),
         gstinNo: gstinController.text.trim(),
-        //imagePath: imagePath,
+      role_id: 1,
       );
 
       // Call your update method here

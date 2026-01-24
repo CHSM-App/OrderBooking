@@ -4,6 +4,7 @@ import 'package:order_booking_app/domain/models/employee_login.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
+import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -725,7 +726,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
               Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginSelectionScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
                 (route) => false,
               );
             },

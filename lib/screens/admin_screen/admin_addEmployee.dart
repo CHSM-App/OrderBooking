@@ -52,7 +52,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     empMobile: mobile,
     empEmail: email,
     empAddress: address,
-    regionId: 1, // you can map region to actual ID if needed
+    regionId: 1,
+    roleId: 2,// you can map region to actual ID if needed
   );
 
   await ref
