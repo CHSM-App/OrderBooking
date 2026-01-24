@@ -21,4 +21,8 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   Future<List<EmployeeLogin>> fetchEmployeeDetails(int empId) {
     return apiService.fetchEmployeeDetails(empId);
   }
+      @override
+  Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) {
+    return apiService.fetchEmployeeInfo(mobileNo);
+  }
 }

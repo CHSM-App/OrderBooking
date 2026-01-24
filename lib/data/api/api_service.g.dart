@@ -384,7 +384,7 @@ class _ApiService implements ApiService {
     )
         .compose(
           _dio.options,
-          'users/fetchEmployeeInfo/{mobile_no}',
+          'users/fetchEmployeeInfo/${mobileNo}',
           queryParameters: queryParameters,
           data: _data,
         )

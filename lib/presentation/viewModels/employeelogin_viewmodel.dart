@@ -101,4 +101,16 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+    Future<void>fetchEmployeeInfo(String mobileNo)async{
+  state=state.copyWith(isLoading: true,error:null);
+  try{
+    final employeedetails=await usecase.fetchEmployeeInfo(mobileNo);
+    state=state.copyWith(isLoading: false,employeeDetails:  AsyncValue.data(employeedetails));
+  }
+  catch(e){
+    state=state.copyWith(isLoading: false,error: e.toString());
+  }
+ }
+ 
 }

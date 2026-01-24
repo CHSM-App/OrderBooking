@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/screens/theme.dart';
 import 'add_shop_screen.dart';
 import 'shop_visit_screen.dart';
+
 
 class ShopsPage extends StatefulWidget {
   const ShopsPage({Key? key}) : super(key: key);
@@ -78,7 +80,6 @@ class _ShopsPageState extends State<ShopsPage> {
   }
 
   void _selectShop(Shop shop) {
-    // Auto punch in when shop selected
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -90,118 +91,123 @@ class _ShopsPageState extends State<ShopsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-   backgroundColor: Colors.white,
-      body: Column(
-        children: [
-        
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
             const SizedBox(height: 10),
-          Container(
- // color: Colors.green,
-  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-  child: TextField(
-    controller: _searchController,
-    onChanged: _filterShops,
-    style: const TextStyle(color: Colors.white),
-    decoration: InputDecoration(
-      hintText: 'Search shops by name or address...',
-      hintStyle: const TextStyle(color: Colors.black),
-      prefixIcon: const Icon(Icons.search, color: Colors.black),
-      suffixIcon: _searchController.text.isNotEmpty
-          ? IconButton(
-              icon: const Icon(Icons.clear, color: Colors.black),
-              onPressed: () {
-                _searchController.clear();
-                _filterShops('');
-              },
-            )
-          : null,
-      filled: false, // remove background fill
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 1), // black border
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 2), // black border when focused
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-    ),
-  ),
-),
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterShops,
+                style: const TextStyle(color: AppTheme.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search shops by name or address...',
+                  hintStyle: const TextStyle(color: AppTheme.textSecondary),
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: AppTheme.textSecondary),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filterShops('');
+                          },
+                        )
+                      : null,
+                  filled: false,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.textLight, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.errorColor, width: 1),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.errorColor, width: 2),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
 
+          // Shops Count + Map Button Row
 Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+  padding: const EdgeInsets.symmetric(horizontal: 16),
   child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(
-        '${_filteredShops.length} Shops',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
+      // Shops Count
+      Expanded(
+        child: Text(
+          '${_filteredShops.length} Shops',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+          overflow: TextOverflow.ellipsis,
         ),
       ),
+
+      // View Map Button
       TextButton.icon(
         onPressed: () {},
         icon: const Icon(Icons.map, size: 18),
-        label: const Text('View Map'),
+        label: const Text(
+          'View Map',
+          style: TextStyle(fontSize: 14),
+        ),
+        style: TextButton.styleFrom(
+          foregroundColor: AppTheme.primaryColor,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
       ),
     ],
   ),
 ),
 
+            const SizedBox(height: 6),
 
-          // Shop List
-          Expanded(
-            child: _filteredShops.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.store_outlined,
-                          size: 80,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No shops found',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
+            // Shop List
+            Expanded(
+              child: _filteredShops.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.store_outlined, size: 80, color: AppTheme.textLight),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No shops found',
+                            style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _filteredShops.length,
+                      itemBuilder: (context, index) {
+                        final shop = _filteredShops[index];
+                        return _ShopCard(shop: shop, onTap: () => _selectShop(shop));
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filteredShops.length,
-                    itemBuilder: (context, index) {
-                      final shop = _filteredShops[index];
-                      return _ShopCard(
-                        shop: shop,
-                        onTap: () => _selectShop(shop),
-                      );
-                    },
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddShopScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddShopScreen()),
           );
           if (result != null && result is Shop) {
             setState(() {
@@ -212,7 +218,7 @@ Padding(
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Shop'),
-        backgroundColor: Colors.green,
+        backgroundColor: AppTheme.primaryColor,
       ),
     );
   }
@@ -228,43 +234,34 @@ class _ShopCard extends StatelessWidget {
   final Shop shop;
   final VoidCallback onTap;
 
-  const _ShopCard({
-    required this.shop,
-    required this.onTap,
-  });
+  const _ShopCard({required this.shop, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      color: Colors.grey.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      color: AppTheme.cardBackground,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Shop Icon
               Container(
-                
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade400, Colors.green.shade600],
-                  ),
+                  gradient: AppTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.store,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: const Icon(Icons.store, color: Colors.white, size: 28),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
+              // Shop Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,24 +271,19 @@ class _ShopCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.grey.shade600,
-                        ),
+                        Icon(Icons.location_on, size: 14, color: AppTheme.textSecondary),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             shop.address,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
+                            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -299,34 +291,38 @@ class _ShopCard extends StatelessWidget {
                       ],
                     ),
                     if (shop.ownerName != null) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            shop.ownerName!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                          Flexible(
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_outline, size: 14, color: AppTheme.textSecondary),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    shop.ownerName!,
+                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Icon(
-                            Icons.phone,
-                            size: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            shop.phoneNumber ?? '',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Row(
+                              children: [
+                                Icon(Icons.phone, size: 14, color: AppTheme.textSecondary),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    shop.phoneNumber ?? '',
+                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -335,11 +331,8 @@ class _ShopCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey,
-              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),
