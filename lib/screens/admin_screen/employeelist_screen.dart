@@ -1,23 +1,17 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
 
-
 class AdminEmployeesPage extends ConsumerStatefulWidget {
   const AdminEmployeesPage({super.key});
 
   @override
-  ConsumerState<AdminEmployeesPage> createState() =>
-      _AdminEmployeesPageState();
+  ConsumerState<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
 }
 
-class _AdminEmployeesPageState
-    extends ConsumerState<AdminEmployeesPage> {
-
+class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   @override
   void initState() {
     super.initState();
@@ -27,126 +21,137 @@ class _AdminEmployeesPageState
     });
   }
 
+  void _refreshEmployeeList() {
+    ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
 
-    /// 🔁 API DATA → UI MAP (DESIGN SAME)
- final employees = state.employeeList?.when(
-  data: (list) => list
-      .map((e) => {
-            "name": e.empName ?? "N/A",
-            "region": e.empAddress ?? "N/A",
-            "status": e.activeStatus == 0 ? "Active" : "Inactive",
-          })
-      .toList(),
-  loading: () => <Map<String, dynamic>>[],
-  error: (_, __) => <Map<String, dynamic>>[],
-);
+    /// 🔍 API DATA → UI MAP (DESIGN SAME)
+    final employees = state.employeeList?.when(
+      data: (list) => list
+          .map(
+            (e) => {
+              "id": e.empId,
+              "name": e.empName ?? "N/A",
+              "mobile": e.empMobile ?? "N/A",
+              "email": e.empEmail ?? "N/A",
+              "address": e.empAddress ?? "N/A",
+              "region": e.empAddress ?? "N/A",
+              "status": e.activeStatus == 0 ? "Active" : "Inactive",
+            },
+          )
+          .toList(),
+      loading: () => <Map<String, dynamic>>[],
+      error: (_, __) => <Map<String, dynamic>>[],
+    );
 
-final activeCount =
-    employees?.where((e) => e["status"] == "Active").length;
+    final activeCount = employees?.where((e) => e["status"] == "Active").length;
 
-final inactiveCount =
-    employees?.where((e) => e["status"] == "Inactive").length;
-
+    final inactiveCount = employees
+        ?.where((e) => e["status"] == "Inactive")
+        .length;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF9FAFB),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const AddEmployeeForm(),
-            ),
+            MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
           );
+          
+          // Refresh list if employee was added
+          if (result == true) {
+            _refreshEmployeeList();
+          }
         },
-        backgroundColor: const Color(0xFF2196F3),
-        child: const Icon(Icons.add),
+        backgroundColor: const Color(0xFFF57C00),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
 
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
-              ? Center(child: Text(state.error!))
-              : Column(
-                  children: [
-                    /// 🔵 OVERVIEW CARD (UNCHANGED)
-                    Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF2196F3),
-                              Color(0xFF1565C0)
-                            ],
+          ? Center(child: Text(state.error!))
+          : Column(
+              children: [
+                /// 🔵 OVERVIEW CARD (UNCHANGED)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0A3D62), Color(0xFF0A3D62)],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 20,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _overviewItem(
+                              title: "Active",
+                              count: activeCount ?? 0,
+                              icon: Icons.check_circle_rounded,
+                              textColor: const Color(
+                                0xFF1A1A1A,
+                              ).withOpacity(0.4),
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _overviewItem(
-                                  title: "Active",
-                                  count: activeCount??0,
-                                  icon: Icons.check_circle_rounded,
-                                ),
-                              ),
-                              Container(
-                                width: 1,
-                                height: 42,
-                                color:
-                                    Colors.white.withOpacity(0.35),
-                              ),
-                              Expanded(
-                                child: _overviewItem(
-                                  title: "Inactive",
-                                  count: inactiveCount??0,
-                                  icon: Icons.cancel_rounded,
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 1,
+                            height: 42,
                           ),
-                        ),
+                          Expanded(
+                            child: _overviewItem(
+                              title: "Inactive",
+                              count: inactiveCount ?? 0,
+                              icon: Icons.cancel_rounded,
+                              textColor: const Color.fromARGB(255, 37, 18, 7),
+                            ),
+                          ),
+                          Container(
+                            color: const Color(0xFF1A1A1A).withOpacity(0.4),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                ),
 
-                    /// 🔹 EMPLOYEE LIST (UNCHANGED UI)
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: employees?.length,
-                        itemBuilder: (context, index) {
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(20),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EmployeeDetailsPage(
-                                    empId: state.employeeList!.value![index].empId!,
-
-
-                                  ),
-                                ),
-                              );
-                            },
-                              child: _employeeCard(context, employees![index], index),
-      );
-    },
-  ),
-),
-                    
-          
-        ],
-      ),
+                /// 🔹 EMPLOYEE LIST (UNCHANGED UI)
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: employees?.length,
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EmployeeDetailsPage(
+                                empId: state.employeeList!.value![index].empId!,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _employeeCard(context, employees![index], index),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -155,6 +160,7 @@ final inactiveCount =
     required String title,
     required int count,
     required IconData icon,
+    required Color textColor,
   }) {
     return Row(
       children: [
@@ -194,15 +200,14 @@ final inactiveCount =
 
   // 🔹 EMPLOYEE CARD (STATUS BOTTOM-RIGHT)
   Widget _employeeCard(
-      BuildContext context, Map<String, dynamic> employee, int index) {
-   final isActive = employee["status"] == "Active";
+    BuildContext context,
+    Map<String, dynamic> employee,
+    int index,
+  ) {
+    final isActive = employee["status"] == "Active";
 
     final avatarColors = [
-      const Color(0xFF2196F3),
-      const Color(0xFF4CAF50),
-      const Color(0xFFFF9800),
-      const Color(0xFF9C27B0),
-      const Color(0xFFE91E63),
+      const Color.fromARGB(255, 233, 184, 80),
     ];
 
     return Container(
@@ -227,15 +232,29 @@ final inactiveCount =
             child: IconButton(
               icon: const Icon(
                 Icons.edit_rounded,
-                color: Color(0xFF2196F3),
+                color: Color(0xFF0A3D62),
                 size: 20,
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Edit ${employee["name"]}"),
+              onPressed: () async {
+                // Navigate to AddEmployeeForm in edit mode with prefilled data
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddEmployeeForm(
+                      empId: employee["id"],
+                      initialName: employee["name"],
+                      initialMobile: employee["mobile"],
+                      initialEmail: employee["email"],
+                      initialAddress: employee["address"],
+                      initialRegion: employee["region"],
+                    ),
                   ),
                 );
+
+                // Refresh list if employee was updated or deleted
+                if (result == true) {
+                  _refreshEmployeeList();
+                }
               },
             ),
           ),
@@ -253,7 +272,9 @@ final inactiveCount =
                     gradient: LinearGradient(
                       colors: [
                         avatarColors[index % avatarColors.length],
-                        avatarColors[index % avatarColors.length].withOpacity(0.7),
+                        avatarColors[index % avatarColors.length].withOpacity(
+                          0.7,
+                        ),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -287,7 +308,7 @@ final inactiveCount =
                         employee["region"]!,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey[600],
+                          color: const Color(0xFF1A1A1A).withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -328,5 +349,3 @@ final inactiveCount =
     );
   }
 }
-
-

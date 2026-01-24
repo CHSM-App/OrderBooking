@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
-
-
+ 
+ 
 void main() {
   runApp(
     ProviderScope(
@@ -11,10 +11,10 @@ void main() {
     ),
   );
 }
-
+ 
 class EmployeePortalApp extends StatelessWidget {
   const EmployeePortalApp({Key? key}) : super(key: key);
-
+ 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,3 +29,4 @@ class EmployeePortalApp extends StatelessWidget {
     );
   }
 }
+ 

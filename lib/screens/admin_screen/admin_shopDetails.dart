@@ -57,7 +57,7 @@ class _ShopListPageState extends State<ShopListPage>
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFF57C00),
         foregroundColor: Colors.white,
       ),
 
@@ -119,12 +119,12 @@ class _ShopListPageState extends State<ShopListPage>
                                 height: 56,
                                 width: 56,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2196F3).withOpacity(0.1),
+                                  color: const Color(0xFFF57C00).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: const Icon(
                                   Icons.store_rounded,
-                                  color: Color(0xFF2196F3),
+                                  color: Color(0xFFF57C00),
                                   size: 28,
                                 ),
                               ),
@@ -140,7 +140,7 @@ class _ShopListPageState extends State<ShopListPage>
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
+                                        color: const Color(0xFF0A3D62),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -227,7 +227,7 @@ class _ShopListPageState extends State<ShopListPage>
         Icon(
           icon,
           size: 18,
-          color: Colors.grey[600],
+          color: const Color(0xFF1A1A1A),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -238,7 +238,7 @@ class _ShopListPageState extends State<ShopListPage>
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[500],
+                  color: const Color(0xFF1A1A1A).withOpacity(0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),

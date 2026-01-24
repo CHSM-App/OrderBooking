@@ -43,7 +43,7 @@ class AdminCatalogPage extends StatelessWidget {
           bottom: 20,
           right: 20,
           child: FloatingActionButton(
-            backgroundColor: const Color(0xFF2196F3),
+            backgroundColor: const Color(0xFFF57C00),
             onPressed: () {
               Navigator.push(
                 context,
