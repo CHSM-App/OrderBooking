@@ -76,31 +76,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  // NEW: Update Employee
-  Future<void> updateEmployee(EmployeeLogin employeeLogin) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await usecase.updateEmployee(employeeLogin);
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after updating
-      getEmployeeList();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
-  // NEW: Delete Employee
-  Future<void> deleteEmployee(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await usecase.deleteEmployee(empId);
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after deleting
-      getEmployeeList();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
+ 
 
     Future<void>fetchEmployeeInfo(String mobileNo)async{
   state=state.copyWith(isLoading: true,error:null);

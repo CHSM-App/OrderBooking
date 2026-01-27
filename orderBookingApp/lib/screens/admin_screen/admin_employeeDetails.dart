@@ -122,9 +122,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     if (confirm != true) return;
 
     // Call delete API
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .deleteEmployee(widget.empId);
+    // await ref
+    //     .read(employeeloginViewModelProvider.notifier)
+    //     .deleteEmployee(widget.empId);
 
     final state = ref.read(employeeloginViewModelProvider);
 
