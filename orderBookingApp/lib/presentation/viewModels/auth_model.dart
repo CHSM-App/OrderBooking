@@ -17,6 +17,8 @@ final authViewModelProvider =
 
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
+
+  
   final AuthImpl authRepository;
 
   AuthViewModel(this.ref, this.authRepository)
