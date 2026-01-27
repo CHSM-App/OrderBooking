@@ -261,9 +261,7 @@
 // }
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:order_booking_app/screens/employee_screen/home_page.dart';
 import 'package:order_booking_app/screens/employee_screen/main_navigation_screen.dart';
-import 'location_permission_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;

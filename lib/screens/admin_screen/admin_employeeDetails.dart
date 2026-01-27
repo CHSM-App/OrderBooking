@@ -310,10 +310,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   //itemCount: employee.recentOrders?.length ?? 5,
-                    itemCount: "5"?.length ?? 5,
+                    itemCount: "5".length ?? 5,
                   itemBuilder: (_, index) {
                    // final order = employee.recentOrders?[index];
-                     final order = "2"?[index];
+                     final order = "2"[index];
                     return _AnimatedOrderCard(
                       // orderNumber: order?.id ?? index + 1,
                       // amount: order?.amount ?? (index + 1) * 1200,

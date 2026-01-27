@@ -123,16 +123,8 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                    child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    backgroundImage: "profile.imagePath" != null
-                        ? FileImage(File(""))
-                        : null,
-                    child: "" == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Color(0xFF2196F3),
-                          )
-                        : null,
+                    backgroundImage: FileImage(File("")),
+                    child: null,
                   ),  
                 ),
                 const SizedBox(height: 16),

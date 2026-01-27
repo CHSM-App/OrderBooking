@@ -4,9 +4,6 @@ import 'package:order_booking_app/screens/admin_screen/admin_home_screen.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_orderdetails.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_profilescreen.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
-import 'admin_addEmployee.dart';
-import 'admin_addProduct.dart';
-import 'admin_employeeDetails.dart';
 import 'admin_notifications.dart';
 
 // ============================================
