@@ -1,4 +1,3 @@
- 
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 import 'package:order_booking_app/domain/repository/auth_repo.dart';
@@ -12,7 +11,6 @@ class AuthImpl implements AuthRepository {
   Future<TokenResponse> createLogin(TokenResponse token) {
     return apiService.createLogin(token);
   }
-
 
   @override
   Future<TokenResponse>refreshAccessToken(TokenResponse refreshToken) {
