@@ -1,54 +1,63 @@
 name: order_booking_app
-description: "Flutter application for order booking."
+description: Flutter application for order booking.
 publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.8.1
+  sdk: ">=3.8.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  #file_picker: ^6.1.1
-  dropdown_button2: ^2.3.9
 
-  intl: any
+  # UI
+  dropdown_button2: 2.3.9
+  dropdown_search: ^6.0.2
+  cupertino_icons: ^1.0.8
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
 
-  flutter_secure_storage: ^9.2.4
+  # State & Storage
+  flutter_riverpod: ^2.6.1
+  flutter_secure_storage: ^10.0.0
+  shared_preferences: ^2.5.4
 
-  flutter_riverpod: ^2.4.9
-  retrofit: ^4.4.1
-  dio: ^5.7.0
-  json_annotation: ^4.9.0
-  freezed_annotation: ^2.4.1
-  shared_preferences: ^2.2.2
-  http: ^1.1.0
-  flutter_gen: ^5.10.0
-  dropdown_search: ^5.0.5
-  image_picker: ^1.0.4
-  firebase_messaging: ^16.0.1
-  firebase_auth: ^6.0.2
-  firebase_core: ^4.1.0
-  permission_handler: ^11.3.1
-  url_launcher: ^6.2.5
-  connectivity_plus: ^7.0.0
-  cupertino_icons: ^1.0.2
-  geolocator: ^10.1.0
+  # Networking
+  dio: ^5.9.0
+  retrofit: 4.9.2
+  http: ^1.6.0
+  connectivity_plus: 7.0.0
+
+  # Serialization
+  json_annotation: 4.9.0
+  freezed_annotation: ^3.1.0
+
+  # Device / Media
+  image_picker: ^1.2.1
+  permission_handler: ^12.0.1
+  geolocator: ^14.0.2
+
+  # Firebase
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  firebase_messaging: ^16.1.1
+
+  flutter_gen: ^5.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1
 
-  # Code generation
-  retrofit_generator: ^9.7.0
-  json_serializable: ^6.8.0
-  freezed: ^2.4.6
-  build_runner: ^2.5.4
+  flutter_launcher_icons: ^0.14.4
+
+  # Code generation (LOCKED — THIS IS CRITICAL)
+  retrofit_generator: ^10.2.1
+  json_serializable: ^6.11.4
+  freezed: ^3.2.4
+  build_runner: ^2.10.5
 
 flutter:
   uses-material-design: true
   generate: true
-  

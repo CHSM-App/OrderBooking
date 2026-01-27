@@ -7,15 +7,15 @@ part of 'admin_login.dart';
 // **************************************************************************
 
 AdminLogin _$AdminLoginFromJson(Map<String, dynamic> json) => AdminLogin(
-      adminId: (json['admin_id'] as num?)?.toInt(),
-      adminName: json['admin_name'] as String?,
-      companyName: json['company_name'] as String?,
-      mobileNo: json['mobile_no'] as String?,
-      email: json['email'] as String?,
-      address: json['address'] as String?,
-      gstinNo: json['gstin_no'] as String?,
-      role_id: (json['role_id'] as num?)?.toInt(),
-    );
+  adminId: (json['admin_id'] as num?)?.toInt(),
+  adminName: json['admin_name'] as String?,
+  companyName: json['company_name'] as String?,
+  mobileNo: json['mobile_no'] as String?,
+  email: json['email'] as String?,
+  address: json['address'] as String?,
+  gstinNo: json['gstin_no'] as String?,
+  role_id: (json['role_id'] as num?)?.toInt(),
+);
 
 Map<String, dynamic> _$AdminLoginToJson(AdminLogin instance) =>
     <String, dynamic>{

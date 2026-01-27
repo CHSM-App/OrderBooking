@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
 import 'main_navigation_screen.dart';
-import 'package:order_booking_app/screens/employee_screen/main_navigation_screen.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
