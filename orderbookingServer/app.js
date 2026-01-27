@@ -1,0 +1,32 @@
+const express = require('express');
+const app = express();
+const cors = require('cors');
+
+app.set('view engine', 'pug');
+
+// ✅ Middleware FIRST
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Routes
+const protect = require('./routes/middleware/protect');
+const usersRouter = require('./routes/users');
+const insertRouter = require('./routes/insert');
+const loginRouter = require('./routes/login');
+var db = require('./routes/db');
+
+app.use('/users',protect, usersRouter);
+app.use('/insert', insertRouter);
+app.use('/login', loginRouter);
+
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, function () {
+  console.log("Listening on :" + PORT);
+});
+
+module.exports = app;
