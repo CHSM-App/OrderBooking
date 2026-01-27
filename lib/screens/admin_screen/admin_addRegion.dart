@@ -74,9 +74,9 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
         elevation: 0,
         title: const Text(
           "Add New Region",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20, color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFFF6F00),
         foregroundColor: Colors.white,
       ),
 
@@ -160,7 +160,7 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
                         onPressed:
                             regionState.isLoading ? null : submitForm,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2196F3),
+                          backgroundColor: const Color(0xFFFF6F00),
                           foregroundColor: Colors.white,
                           elevation: 2,
                           shape: RoundedRectangleBorder(
@@ -215,11 +215,19 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
   }) =>
       InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF2196F3)),
+        prefixIcon: Icon(icon, color:  const Color.fromARGB(255, 37, 121, 180)),
         filled: true,
         fillColor: Colors.grey[50],
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
+        ),
+
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color:  const Color.fromARGB(255, 37, 121, 180),
+            width: 2,
+          ),
         ),
       );
 }

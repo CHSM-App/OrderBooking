@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
+import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;
@@ -81,7 +82,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                colors: [Color(0xFFF57C00), Color(0xFFF57C00)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -174,7 +175,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2196F3),
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -239,7 +240,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
               color: const Color(0xFF2196F3).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 20, color: const Color(0xFF2196F3)),
+            child: Icon(icon, size: 20, color: const Color(0xFF1A1A1A)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -332,7 +333,7 @@ void _showLogoutDialog(BuildContext context) {
 
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const LoginSelectionScreen()),
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
               (route) => false, // remove all previous routes
             );
           },
@@ -348,7 +349,7 @@ void _showLogoutDialog(BuildContext context) {
 
 }
 
-// Edit Profile Page
+//  admin Edit Profile Page
 class EditProfilePage extends ConsumerStatefulWidget {
   final AdminLogin adminLogin;
   final String mobileNo;
@@ -415,7 +416,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
        mobileNo: mobileController.text.trim(),
         address: addressController.text.trim(),
         gstinNo: gstinController.text.trim(),
-        //imagePath: imagePath,
+      role_id: 1,
       );
 
       // Call your update method here

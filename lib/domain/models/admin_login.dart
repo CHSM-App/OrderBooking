@@ -23,6 +23,11 @@ class AdminLogin {
 
   @JsonKey(name: 'gstin_no')
   final String? gstinNo;
+  @JsonKey(name: 'role_id')
+  final int? role_id;
+  
+
+
 
   AdminLogin({
     this.adminId,
@@ -32,6 +37,7 @@ class AdminLogin {
     this.email,
     this.address,
     this.gstinNo,
+    this.role_id
   });
 
   /// 🔹 From JSON

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/domain/models/employee_login.dart';
+import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
@@ -32,15 +33,13 @@ abstract class ApiService {
   @POST("insert/addRegion")
   Future<dynamic> addRegion(@Body() Region region);
 
-  @GET("users/regionList")
-  Future<List<Region>> fetchRegionList();
 
     
   @POST("insert/addShopDetails")
   Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
 
-  @GET("users/shopList")
-  Future<List<Shop>> getShopList();
+
+
 
 //GET METHODS
   @GET("users/employeeList")
@@ -52,13 +51,21 @@ abstract class ApiService {
 );
  @GET("users/fetchEmployeeInfo/{mobile_no}")
   Future<List<EmployeeLogin>> fetchEmployeeInfo(
-  @Path("emp_mobile") String mobileNo
+  @Path("mobile_no") String mobileNo
 );
 
  @GET("users/adminDetails/{mobile_no}")
   Future<List<AdminLogin>> fetchAdminDetails(
   @Path("mobile_no") String mobileNo,
 );
+ @GET("users/shopList")
+  Future<List<Shop>> getShopList();
+  
+  @GET("users/regionList")
+  Future<List<Region>> fetchRegionList();
  
+ //Login Check
+  @GET("login/checkPhone")
+  Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
 
 }

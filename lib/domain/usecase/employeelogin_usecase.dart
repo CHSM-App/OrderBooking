@@ -15,4 +15,13 @@ class EmployeeloginUsecase {
     Future<List<EmployeeLogin>>fetchEmployeeDetails(int empId){
     return employeeloginRepository.fetchEmployeeDetails(empId);
   }
+
+      Future<List<EmployeeLogin>>fetchEmployeeInfo(String mobileNo){
+    return employeeloginRepository.fetchEmployeeInfo(mobileNo);
+  }
+ 
+
+  Future<void> updateEmployee(EmployeeLogin employeeLogin) async {}
+
+  Future<void> deleteEmployee(int empId) async {}
 }

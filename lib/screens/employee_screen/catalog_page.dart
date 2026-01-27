@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 
+import 'package:order_booking_app/screens/theme.dart';
+
 class CatalogPage extends StatefulWidget {
   const CatalogPage({Key? key}) : super(key: key);
 
@@ -72,7 +74,7 @@ class _CatalogPageState extends State<CatalogPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundColor,
      
       
       body: Column(
@@ -88,14 +90,14 @@ class _CatalogPageState extends State<CatalogPage> {
         child: TextField(
           controller: _searchController,
           onChanged: _filterProducts,
-          style: const TextStyle(color: Colors.black),
+          style: const TextStyle(color: AppTheme.textPrimary),
           decoration: InputDecoration(
             hintText: 'Search products by name...',
-            hintStyle: const TextStyle(color: Colors.black54),
-            prefixIcon: const Icon(Icons.search, color: Colors.black),
+            hintStyle: const TextStyle(color: AppTheme.textLight),
+            prefixIcon: const Icon(Icons.search, color: AppTheme.textPrimary),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.black),
+                    icon: const Icon(Icons.clear, color: AppTheme.textPrimary),
                     onPressed: () {
                       _searchController.clear();
                       _filterProducts('');
@@ -104,11 +106,11 @@ class _CatalogPageState extends State<CatalogPage> {
                 : null,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.black),
+              borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.black, width: 2),
+              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
           ),
         ),
@@ -121,11 +123,11 @@ class _CatalogPageState extends State<CatalogPage> {
         height: 50,
         width: 50,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
+          border: Border.all(color: AppTheme.primaryColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: PopupMenuButton<String>(
-          icon: const Icon(Icons.sort, color: Colors.black),
+          icon: const Icon(Icons.sort, color: AppTheme.primaryColor),
           onSelected: (value) {
             setState(() {
               _sortBy = value;
@@ -164,13 +166,14 @@ class _CatalogPageState extends State<CatalogPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 Text(
                   'Sorted by: ${_sortBy == "name" ? "Name" : _sortBy == "price_low" ? "Price ↑" : "Price ↓"}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -190,11 +193,11 @@ class _CatalogPageState extends State<CatalogPage> {
                           color: Colors.grey.shade300,
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'No products found',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey.shade600,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -267,13 +270,14 @@ class _ProductCard extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.green.shade100,
-                                  Colors.green.shade200,
+                                  AppTheme.primaryColor.withOpacity(0.2),
+                                  AppTheme.secondaryColor.withOpacity(0.3),
                                 ],
                               ),
                             ),
                             child: Center(
                               child: CircularProgressIndicator(
+                                color: AppTheme.primaryColor,
                                 value: loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
                                         loadingProgress.expectedTotalBytes!
@@ -284,39 +288,25 @@ class _ProductCard extends StatelessWidget {
                         },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.green.shade100,
-                                  Colors.green.shade200,
-                                ],
-                              ),
+                            decoration: const BoxDecoration(
+                              gradient: AppTheme.primaryGradient,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.local_drink,
                               size: 60,
-                              color: Colors.green.shade700,
+                              color: Colors.white,
                             ),
                           );
                         },
                       )
                     : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.green.shade100,
-                              Colors.green.shade200,
-                            ],
-                          ),
+                        decoration: const BoxDecoration(
+                          gradient: AppTheme.primaryGradient,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.local_drink,
                           size: 60,
-                          color: Colors.green.shade700,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -334,6 +324,7 @@ class _ProductCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -341,9 +332,9 @@ class _ProductCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'per ${product.unit}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -355,13 +346,13 @@ class _ProductCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: AppTheme.primaryColor,
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: const BoxDecoration(
-                          color: Colors.green,
+                          gradient: AppTheme.primaryGradient,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -418,16 +409,14 @@ class _ProductCard extends StatelessWidget {
                         width: 150,
                         height: 150,
                         padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.green.shade100, Colors.green.shade200],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
+                        decoration: const BoxDecoration(
+                          gradient: AppTheme.primaryGradient,
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.local_drink,
                           size: 80,
-                          color: Colors.green.shade700,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -438,6 +427,7 @@ class _ProductCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -455,14 +445,14 @@ class _ProductCard extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                const Icon(Icons.info_outline, size: 16, color: AppTheme.textLight),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Fresh and natural juice with no artificial flavors',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ),
@@ -496,13 +486,13 @@ class _DetailRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.green, size: 20),
+          Icon(icon, color: AppTheme.primaryColor, size: 20),
           const SizedBox(width: 12),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade600,
+              color: AppTheme.textSecondary,
             ),
           ),
           const Spacer(),
@@ -511,6 +501,7 @@ class _DetailRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
             ),
           ),
         ],

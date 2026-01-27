@@ -1,6 +1,9 @@
+
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/screens/theme.dart';
 import 'order_form_screen.dart';
+
 
 class ShopVisitScreen extends StatefulWidget {
   final Shop shop;
@@ -15,26 +18,20 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
   bool _isPunchedIn = false;
   DateTime? _punchInTime;
   DateTime? _punchOutTime;
-  double? _punchInLat;
-  double? _punchInLng;
 
   @override
   void initState() {
     super.initState();
-    // Auto punch in when shop screen opens
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _autoPunchIn();
-    });
+    // Auto punch in after a short delay
+    Future.delayed(const Duration(milliseconds: 500), _autoPunchIn);
   }
 
   void _autoPunchIn() {
     setState(() {
       _isPunchedIn = true;
       _punchInTime = DateTime.now();
-      _punchInLat = widget.shop.latitude;
-      _punchInLng = widget.shop.longitude;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -46,7 +43,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
             ),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: AppTheme.successColor,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -63,7 +60,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               setState(() {
@@ -74,10 +71,13 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Punched Out from ${widget.shop.shopName}'),
-                  backgroundColor: Colors.orange,
+                  backgroundColor: AppTheme.warningColor,
                 ),
               );
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.warningColor,
+            ),
             child: const Text('Punch Out'),
           ),
         ],
@@ -101,6 +101,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(widget.shop.shopName),
         actions: [
@@ -116,16 +117,12 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Shop Image/Header
+            // Shop Header with Gradient
             Container(
               width: double.infinity,
               height: 200,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.green.shade400, Colors.green.shade600],
-                ),
+                gradient: AppTheme.primaryGradient,
               ),
               child: Stack(
                 children: [
@@ -189,13 +186,13 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: _isPunchedIn
-                          ? Colors.green.shade50
-                          : Colors.orange.shade50,
+                          ? AppTheme.successColor.withOpacity(0.1)
+                          : AppTheme.warningColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _isPunchedIn
-                            ? Colors.green.shade200
-                            : Colors.orange.shade200,
+                            ? AppTheme.successColor.withOpacity(0.5)
+                            : AppTheme.warningColor.withOpacity(0.5),
                         width: 2,
                       ),
                     ),
@@ -207,8 +204,8 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: _isPunchedIn
-                                    ? Colors.green
-                                    : Colors.orange,
+                                    ? AppTheme.successColor
+                                    : AppTheme.warningColor,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -232,8 +229,8 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: _isPunchedIn
-                                          ? Colors.green.shade900
-                                          : Colors.orange.shade900,
+                                          ? AppTheme.successColor
+                                          : AppTheme.warningColor,
                                     ),
                                   ),
                                   if (_isPunchedIn) ...[
@@ -242,7 +239,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                                       'Duration: ${_getDuration()}',
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.grey.shade600,
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -253,7 +250,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                         ),
                         if (_isPunchedIn) ...[
                           const SizedBox(height: 16),
-                          const Divider(),
+                          Divider(color: AppTheme.textLight),
                           const SizedBox(height: 12),
                           Row(
                             children: [
@@ -265,7 +262,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                                       'Punch In Time',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -282,7 +279,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                               Container(
                                 width: 1,
                                 height: 40,
-                                color: Colors.grey.shade300,
+                                color: AppTheme.textLight,
                               ),
                               Expanded(
                                 child: Column(
@@ -292,18 +289,19 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                                       'Location',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade600,
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
-                                      children: const [
+                                      children: [
                                         Icon(Icons.location_on,
-                                            size: 16, color: Colors.green),
-                                        SizedBox(width: 4),
-                                        Text(
+                                            size: 16,
+                                            color: AppTheme.successColor),
+                                        const SizedBox(width: 4),
+                                        const Text(
                                           'Captured',
                                           style: TextStyle(
                                             fontSize: 14,
@@ -324,12 +322,12 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                   const SizedBox(height: 24),
 
                   // Shop Details
-                  const Text(
+                  Text(
                     'Shop Details',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary),
                   ),
                   const SizedBox(height: 16),
                   if (widget.shop.ownerName != null)
@@ -364,16 +362,9 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                           );
                         },
                         icon: const Icon(Icons.add_shopping_cart),
-                        label: const Text(
-                          'Add Order',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        label: const Text('Add Order'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -387,20 +378,15 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                       child: OutlinedButton.icon(
                         onPressed: _handlePunchOut,
                         icon: const Icon(Icons.logout),
-                        label: const Text(
-                          'Punch Out',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        label: const Text('Punch Out'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.orange,
+                          foregroundColor: AppTheme.warningColor,
+                          side: BorderSide(
+                              color: AppTheme.warningColor, width: 2),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          side: const BorderSide(color: Colors.orange, width: 2),
                         ),
                       ),
                     ),
@@ -433,12 +419,12 @@ class _DetailRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.cardBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.green, size: 20),
+          Icon(icon, color: AppTheme.primaryColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -448,15 +434,16 @@ class _DetailRow extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -464,7 +451,7 @@ class _DetailRow extends StatelessWidget {
           ),
           if (isPhone)
             IconButton(
-              icon: const Icon(Icons.phone, color: Colors.green),
+              icon: Icon(Icons.phone, color: AppTheme.primaryColor),
               onPressed: () {
                 // Make phone call
               },

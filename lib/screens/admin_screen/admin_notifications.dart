@@ -76,9 +76,15 @@ class _AdminNotificationPageState extends State<AdminNotificationPage>
       appBar: AppBar(
         title: const Text(
           "Notifications",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600,
+          fontSize: 20,
+          color: Colors.white,
+          ),
         ),
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFFFF6F00),
+         iconTheme: const IconThemeData(color: Colors.white),
+         centerTitle: false,
+        titleSpacing: 0,
         elevation: 0,
         actions: [
           if (notifications.isNotEmpty)
