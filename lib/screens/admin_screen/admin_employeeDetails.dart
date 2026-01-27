@@ -182,7 +182,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: const Color(0xFFF57C00),
-        foregroundColor: Colors.white,
+         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: false,
+        titleSpacing: 0,
         elevation: 0,
       ),
       body: FadeTransition(

@@ -82,7 +82,9 @@ class _AdminNotificationPageState extends State<AdminNotificationPage>
           ),
         ),
         backgroundColor: const Color(0xFFFF6F00),
-        foregroundColor: Colors.white,
+         iconTheme: const IconThemeData(color: Colors.white),
+         centerTitle: false,
+        titleSpacing: 0,
         elevation: 0,
         actions: [
           if (notifications.isNotEmpty)

@@ -56,7 +56,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 1:
         return const AdminCatalogPage();
       case 2:
-        return AdminOrdersPage(initialTabIndex: _ordersInitialTab);
+        return AdminOrdersPage();
       case 3:
         return const AdminEmployeesPage();
       case 4:
