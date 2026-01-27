@@ -241,12 +241,12 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => AddEmployeeForm(
-                      empId: employee["id"],
-                      initialName: employee["name"],
-                      initialMobile: employee["mobile"],
-                      initialEmail: employee["email"],
-                      initialAddress: employee["address"],
-                      initialRegion: employee["region"],
+                      // empId: employee["id"],
+                      // initialName: employee["name"],
+                      // initialMobile: employee["mobile"],
+                      // initialEmail: employee["email"],
+                      // initialAddress: employee["address"],
+                      // initialRegion: employee["region"],
                     ),
                   ),
                 );

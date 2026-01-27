@@ -64,12 +64,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       context,
       MaterialPageRoute(
         builder: (_) => AddEmployeeForm(
-          empId: employee.empId,
-          initialName: employee.empName,
-          initialMobile: employee.empMobile,
-          initialEmail: employee.empEmail,
-          initialAddress: employee.empAddress,
-          initialRegion: employee.empAddress, // or use actual region field if available
+          // empId: employee.empId,
+          // initialName: employee.empName,
+          // initialMobile: employee.empMobile,
+          // initialEmail: employee.empEmail,
+          // initialAddress: employee.empAddress,
+          // initialRegion: employee.empAddress, // or use actual region field if available
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/usecase/adminlogin_usecase.dart';
 import 'package:order_booking_app/domain/usecase/auth_usecase.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
+
 import 'package:order_booking_app/domain/usecase/shop_usecase.dart';
 import 'package:order_booking_app/presentation/providers/repository_provider.dart';
 import 'package:order_booking_app/domain/usecase/add_region_usecase.dart';
@@ -29,3 +30,4 @@ final regionUsecaseProvider=Provider<AddRegionUsecase>((ref){
 final addShopUsecaseProvider=Provider<ShopUsecase>((ref){
   final shopRepo=ref.watch(shopRepositoryProvider);
   return ShopUsecase(shopRepo);});
+
