@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/admin_login.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/admin_screen/landing_Screen.dart';
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 
 class AdminProfilePage extends ConsumerStatefulWidget {
@@ -124,16 +123,8 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                    child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    backgroundImage: "profile.imagePath" != null
-                        ? FileImage(File(""))
-                        : null,
-                    child: "" == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Color(0xFF2196F3),
-                          )
-                        : null,
+                    backgroundImage: FileImage(File("")),
+                    child: null,
                   ),  
                 ),
                 const SizedBox(height: 16),

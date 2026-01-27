@@ -5,8 +5,6 @@ import 'package:order_booking_app/presentation/viewModels/adminlogin_viewmodel.d
 import 'package:order_booking_app/presentation/viewModels/employeelogin_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/network_model.dart';
 import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
-import 'package:order_booking_app/domain/repository/region_repo.dart';
-import 'package:order_booking_app/domain/usecase/add_region_usecase.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 
 final firebaseMessagingProvider = Provider<FirebaseMessaging>((ref) {

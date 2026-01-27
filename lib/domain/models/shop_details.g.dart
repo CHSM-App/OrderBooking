@@ -7,15 +7,15 @@ part of 'shop_details.dart';
 // **************************************************************************
 
 ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
-      shopId: (json['shop_id'] as num?)?.toInt(),
-      shopName: json['shop_name'] as String?,
-      ownerName: json['owner_name'] as String?,
-      address: json['address'] as String?,
-      mobileNo: json['mobile_no'] as String?,
-      email: json['email'] as String?,
-      regionId: (json['region_id'] as num?)?.toInt(),
-      createdBy: (json['created_by'] as num?)?.toInt(),
-    );
+  shopId: (json['shop_id'] as num?)?.toInt(),
+  shopName: json['shop_name'] as String?,
+  ownerName: json['owner_name'] as String?,
+  address: json['address'] as String?,
+  mobileNo: json['mobile_no'] as String?,
+  email: json['email'] as String?,
+  regionId: (json['region_id'] as num?)?.toInt(),
+  createdBy: (json['created_by'] as num?)?.toInt(),
+);
 
 Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
     <String, dynamic>{
