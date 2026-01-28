@@ -31,6 +31,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void initState() {
+  
     super.initState();
     _nameController = TextEditingController(text: widget.name);
     _phoneController = TextEditingController(text: widget.phone);

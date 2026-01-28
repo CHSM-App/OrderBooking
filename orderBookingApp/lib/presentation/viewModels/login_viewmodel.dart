@@ -9,12 +9,14 @@ class AdminloginState {
   final String? error;
      final AsyncValue<List<AdminLogin>>? adminDetails;
    final AsyncValue<List<LoginInfo>> phoneCheckResult;
+   final int userId;
   const AdminloginState({
    
     this.isLoading = false,
     this.error,
        this.adminDetails = const AsyncValue.loading(),
          this.phoneCheckResult = const AsyncValue.data([]),
+          this.userId = 0,
    
   });
 
@@ -23,6 +25,7 @@ class AdminloginState {
     String? error,
         AsyncValue<List<AdminLogin>>? adminDetails,
      AsyncValue<List<LoginInfo>>? phoneCheckResult,
+    int? userId,
   }) {
     return AdminloginState(
      
@@ -30,6 +33,7 @@ class AdminloginState {
       error: error ?? this.error,
        adminDetails: adminDetails??this.adminDetails,
         phoneCheckResult: phoneCheckResult ?? this.phoneCheckResult,
+        userId: userId ?? this.userId,
     );
   }
 }
@@ -46,6 +50,8 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final token = await TokenStorage.getValue('token');
     final isCheckedIn = await TokenStorage.getValue('isCheckedIn');
 
+    state = state.copyWith(userId: int.tryParse(await TokenStorage.getValue('user_id') ?? '0') ?? 0);
+    
     state = state.copyWith(
       phoneCheckResult: AsyncValue.data([
         LoginInfo(

@@ -7,6 +7,8 @@ part of 'login_info.dart';
 // **************************************************************************
 
 LoginInfo _$LoginInfoFromJson(Map<String, dynamic> json) => LoginInfo(
+  isCheckedIn: json['isCheckedIn'] as String?,
+  Token: json['token'] as String?,
   userId: (json['user_id'] as num?)?.toInt(),
   name: json['name'] as String?,
   mobileNo: json['mobile_no'] as String?,
@@ -25,6 +27,7 @@ LoginInfo _$LoginInfoFromJson(Map<String, dynamic> json) => LoginInfo(
 Map<String, dynamic> _$LoginInfoToJson(LoginInfo instance) => <String, dynamic>{
   'user_id': instance.userId,
   'name': instance.name,
+  'token': instance.Token,
   'mobile_no': instance.mobileNo,
   'email': instance.email,
   'address': instance.address,
@@ -36,4 +39,5 @@ Map<String, dynamic> _$LoginInfoToJson(LoginInfo instance) => <String, dynamic>{
   'region_id': instance.regionId,
   'joining_date': instance.joiningDate,
   'active_status': instance.activeStatus,
+  'isCheckedIn': instance.isCheckedIn,
 };

@@ -5,7 +5,6 @@ import 'package:order_booking_app/domain/models/token_response.dart';
  
 import '../../data/repositories/auth_impl.dart';
 import 'token_provider.dart';
-import '../../data/repositories/auth_impl.dart';
  
 class TokenInterceptor extends Interceptor {
   final Dio dio;

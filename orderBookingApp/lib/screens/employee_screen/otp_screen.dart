@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/auth_model.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
 import 'main_navigation_screen.dart';
@@ -21,6 +22,7 @@ class OTPScreen extends ConsumerStatefulWidget {
 }
 
 class _OTPScreenState extends ConsumerState<OTPScreen> {
+  
   final List<TextEditingController> _otpControllers = List.generate(
     6,
     (_) => TextEditingController(),
@@ -111,7 +113,18 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
         ),
       );
     }
+     ref.read(adminloginViewModelProvider).phoneCheckResult.whenData((loginInfos) {
+      if (loginInfos.isNotEmpty) {
+        final loginInfo = loginInfos.first;
+        if (loginInfo.roleId == 2) {
+          _showPermissionDialog();
+        }
+      }
+  });
+  
   }
+
+
 
   @override
   Widget build(BuildContext context) {

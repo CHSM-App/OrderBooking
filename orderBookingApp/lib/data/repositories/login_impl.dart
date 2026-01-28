@@ -1,5 +1,4 @@
  
-import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
