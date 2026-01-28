@@ -26,10 +26,14 @@ class LocationPermissionScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
-                _handlePermission(context, true);
+                // Navigator.pop(context);
+                // _handlePermission(context, true);
+                Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                );
               },
               child: const Text('Allow'),
+              
             ),
           ],
         ),

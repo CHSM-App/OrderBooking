@@ -117,7 +117,11 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       if (loginInfos.isNotEmpty) {
         final loginInfo = loginInfos.first;
         if (loginInfo.roleId == 2) {
-          _showPermissionDialog();
+          Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+          );
+          // _showPermissionDialog();
         }
       }
   });
