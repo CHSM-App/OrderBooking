@@ -1,30 +1,36 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'add_shop_screen.dart';
 import 'shop_visit_screen.dart';
 
-class ShopsPage extends StatefulWidget {
+class ShopsPage extends ConsumerStatefulWidget {
   const ShopsPage({Key? key}) : super(key: key);
 
   @override
-  State<ShopsPage> createState() => _ShopsPageState();
+  ConsumerState<ShopsPage> createState() => _ShopsPageState();
 }
 
-class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
+class _ShopsPageState extends ConsumerState<ShopsPage>
+    with WidgetsBindingObserver {
   List<Shop> _shops = [];
   List<Shop> _filteredShops = [];
   final TextEditingController _searchController = TextEditingController();
   late final StreamSubscription _connectivitySub;
   bool _isLocationServiceEnabled = false;
   LocationPermission _locationPermission = LocationPermission.denied;
+  bool _isCheckingPermissions = false; // Add this flag
+  bool _hasShownBanner = false; // Add this flag
 
   @override
   void initState() {
@@ -42,32 +48,287 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Re-check permissions when app returns from background
-      _checkLocationPermissions();
+      // Only recheck if we previously had permission issues
+      if (_locationPermission != LocationPermission.always &&
+          _locationPermission != LocationPermission.whileInUse) {
+        _checkLocationPermissions();
+      }
     }
   }
 
-  /// Check location service and permission status
   Future<void> _checkLocationPermissions() async {
+    // Prevent concurrent checks
+    if (_isCheckingPermissions) return;
+    _isCheckingPermissions = true;
+
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      final permission = await Geolocator.checkPermission();
 
-      if (mounted) {
+      if (!mounted) return;
+
+      if (!serviceEnabled) {
+        // Location service is OFF - show banner immediately
         setState(() {
-          _isLocationServiceEnabled = serviceEnabled;
-          _locationPermission = permission;
+          _isLocationServiceEnabled = false;
         });
 
-        // Show banner if location is not properly set up
-        if (!serviceEnabled || 
-            permission == LocationPermission.denied || 
-            permission == LocationPermission.deniedForever) {
+        if (!_hasShownBanner) {
           _showLocationSetupBanner();
+          _hasShownBanner = true;
+        }
+        return; // Don't check permission if service is disabled
+      }
+
+      // Service is enabled, now check permission
+      setState(() {
+        _isLocationServiceEnabled = true;
+      });
+
+      final permission = await Geolocator.checkPermission();
+
+      if (!mounted) return;
+
+      setState(() {
+        _locationPermission = permission;
+      });
+
+      final hasPermission =
+          permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse;
+
+      if (hasPermission) {
+        // Everything is good - hide banner and reset flag
+        _hasShownBanner = false;
+        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+      } else if (permission == LocationPermission.deniedForever) {
+        // Permission permanently denied - show banner
+        if (!_hasShownBanner) {
+          _showLocationSetupBanner();
+          _hasShownBanner = true;
+        }
+      } else if (permission == LocationPermission.denied) {
+        // Permission not yet requested or denied - DON'T auto-request
+        // Just show the banner and let user click to grant
+        if (!_hasShownBanner) {
+          _showLocationSetupBanner();
+          _hasShownBanner = true;
         }
       }
     } catch (e) {
       debugPrint('Error checking location permissions: $e');
+    } finally {
+      _isCheckingPermissions = false;
+    }
+  }
+
+  Future<void> _handleLocationSetup() async {
+    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+    _hasShownBanner = false; // Reset so banner can show again if needed
+
+    if (!_isLocationServiceEnabled) {
+      await Geolocator.openLocationSettings();
+      // Wait for user to return
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkLocationPermissions();
+      return;
+    }
+
+    if (_locationPermission == LocationPermission.denied) {
+      // Explicitly request permission when user clicks FIX
+      await _requestLocationPermission();
+      return;
+    }
+
+    if (_locationPermission == LocationPermission.deniedForever) {
+      await Geolocator.openAppSettings();
+      // Wait for user to return
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkLocationPermissions();
+    }
+  }
+
+  /// Request location permission
+  Future<void> _requestLocationPermission() async {
+    try {
+      debugPrint('Requesting location permission...');
+      final permission = await Geolocator.requestPermission();
+      debugPrint('Permission result: $permission');
+
+      if (mounted) {
+        setState(() {
+          _locationPermission = permission;
+        });
+
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          // Permission granted!
+          _hasShownBanner = false;
+          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          _showSuccess('Location permission granted!');
+        } else if (permission == LocationPermission.deniedForever) {
+          // User selected "Don't ask again"
+          _showLocationSetupBanner();
+          _hasShownBanner = true;
+        } else {
+          // User denied this time
+          _showLocationSetupBanner();
+          _hasShownBanner = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error requesting location permission: ${e.toString()}');
+      if (mounted) {
+        _showError('Failed to request permission: ${e.toString()}');
+      }
+    }
+  }
+
+  /// Select shop and initiate visit with validation
+  Future<void> _selectShop(Shop shop) async {
+    // Check location service first
+    if (!_isLocationServiceEnabled) {
+      _showError('Location services are disabled. Please enable GPS first.');
+      _hasShownBanner = false;
+      await _showLocationServiceDialog();
+      return;
+    }
+
+    // Check permission status
+    if (_locationPermission == LocationPermission.denied) {
+      // Request permission when user tries to visit a shop
+      _showError('Location permission required to visit shops.');
+      await _requestLocationPermission();
+
+      final permission = await Geolocator.checkPermission();
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) {
+        return;
+      }
+
+      _locationPermission = permission;
+    }
+
+    if (_locationPermission == LocationPermission.deniedForever) {
+      _showError(
+        'Location permission permanently denied. Please enable in settings.',
+      );
+      _hasShownBanner = false;
+      await _showOpenSettingsDialog();
+      return;
+    }
+
+    // Check one more time to be sure
+    final hasPermission =
+        _locationPermission == LocationPermission.always ||
+        _locationPermission == LocationPermission.whileInUse;
+
+    if (!hasPermission) {
+      _showError('Location permission is required to visit shops.');
+      return;
+    }
+
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Getting your location...',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'This may take a few seconds',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Get user location
+      final position = await _getUserLocation();
+      debugPrint(
+        'User location: Lat=${position.latitude}, Lng=${position.longitude}, Accuracy=${position.accuracy}m',
+      );
+      int? userId;
+
+      ref
+          .read(adminloginViewModelProvider)
+          .phoneCheckResult
+          ?.when(
+            data: (admins) {
+              if (admins.isNotEmpty) {
+                userId = admins.first.userId;
+              }
+            },
+            loading: () {},
+            error: (_, __) {},
+          );
+      // Create visit payload
+      final visit = VisitPayload(
+        shopId: shop.id,
+        lat: position.latitude,
+        lng: position.longitude,
+        accuracy: position.accuracy,
+        capturedAt: DateTime.now(),
+        visitedAt: DateTime.now(),
+        employeeId: userId,
+      );
+
+      // Dismiss loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Check connectivity
+      final connectivity = await Connectivity().checkConnectivity();
+
+      try {
+        await sendVisitToServer(visit);
+
+        _showSuccess('Visit recorded successfully!');
+      } catch (e) {
+        await saveVisitOffline(visit);
+        _showWarning('Visit saved offline. Will sync later.');
+      }
+
+      // Navigate to visit screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ShopVisitScreen(shop: shop)),
+        );
+      }
+    } catch (e) {
+      // Dismiss loading dialog if still showing
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      // Show error message
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      _showError(errorMessage);
+
+      // Offer to fix if it's a permission/service issue
+      if (errorMessage.contains('disabled') ||
+          errorMessage.contains('denied')) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          _hasShownBanner = false;
+          await _handleLocationSetup();
+        }
+      }
     }
   }
 
@@ -81,10 +342,10 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
         backgroundColor: Colors.orange.shade100,
         content: Text(
           !_isLocationServiceEnabled
-              ? 'Location services are disabled. Please enable GPS to visit shops.'
+              ? 'GPS is turned off. Enable device location to visit shops.'
               : _locationPermission == LocationPermission.deniedForever
-                  ? 'Location permission permanently denied. Enable in app settings.'
-                  : 'Location permission required to visit shops.',
+              ? 'Location permission permanently denied. Enable in app settings.'
+              : 'Location permission required to visit shops.',
           style: const TextStyle(
             color: Colors.black87,
             fontSize: 13,
@@ -95,33 +356,21 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
         actions: [
           TextButton(
             onPressed: () {
+              _hasShownBanner = false; // Reset flag when dismissed
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
             },
             child: const Text('DISMISS'),
           ),
           TextButton(
-            onPressed: _handleLocationSetup,
+            onPressed: () {
+              _hasShownBanner = false; // Reset flag when user takes action
+              _handleLocationSetup();
+            },
             child: const Text('FIX'),
           ),
         ],
       ),
     );
-  }
-
-  /// Handle location setup based on current status
-  Future<void> _handleLocationSetup() async {
-    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-
-    if (!_isLocationServiceEnabled) {
-      // Ask user to enable location services
-      await _showLocationServiceDialog();
-    } else if (_locationPermission == LocationPermission.deniedForever) {
-      // Direct user to app settings
-      await _showOpenSettingsDialog();
-    } else if (_locationPermission == LocationPermission.denied) {
-      // Request permission
-      await _requestLocationPermission();
-    }
   }
 
   /// Show dialog asking user to enable location services
@@ -141,10 +390,8 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              // Open location settings
               await Geolocator.openLocationSettings();
-              // Recheck after a delay
-              await Future.delayed(const Duration(seconds: 1));
+              await Future.delayed(const Duration(seconds: 2));
               await _checkLocationPermissions();
             },
             style: ElevatedButton.styleFrom(
@@ -175,8 +422,7 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
             onPressed: () async {
               Navigator.pop(context);
               await Geolocator.openAppSettings();
-              // Recheck after a delay
-              await Future.delayed(const Duration(seconds: 1));
+              await Future.delayed(const Duration(seconds: 2));
               await _checkLocationPermissions();
             },
             style: ElevatedButton.styleFrom(
@@ -189,45 +435,25 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
     );
   }
 
-  /// Request location permission
-  Future<void> _requestLocationPermission() async {
-    try {
-      final permission = await Geolocator.requestPermission();
-      
-      if (mounted) {
-        setState(() {
-          _locationPermission = permission;
-        });
-
-        if (permission == LocationPermission.denied) {
-          _showError('Location permission denied. Cannot visit shops without permission.');
-        } else if (permission == LocationPermission.deniedForever) {
-          _showError('Location permission permanently denied. Please enable in settings.');
-          await _showOpenSettingsDialog();
-        } else {
-          _showSuccess('Location permission granted!');
-          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-        }
-      }
-    } catch (e) {
-      _showError('Failed to request location permission: ${e.toString()}');
-    }
-  }
-
   Future<void> saveVisitOffline(VisitPayload visit) async {
     final prefs = await SharedPreferences.getInstance();
     final queue = prefs.getStringList('offline_visits') ?? [];
 
     queue.add(jsonEncode(visit.toJson()));
     await prefs.setStringList('offline_visits', queue);
+    debugPrint(
+      'Visit saved offline: ShopID=${visit.shopId}, Lat=${visit.lat}, Lng=${visit.lng}, Accuracy=${visit.accuracy}m',
+    );
   }
 
   Future<void> sendVisitToServer(VisitPayload visit) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    final result = ref.read(shopViewModelProvider.notifier).addVisit(visit);
+    debugPrint(
+      'Sending visit to server: ShopID=${visit.shopId}, Lat=${visit.lat}, Lng=${visit.lng}, Accuracy=${visit.accuracy}m',
+    );
 
-    // Simulate failure if accuracy is bad
-    if (visit.accuracy > 30) {
-      throw Exception('GPS accuracy too low. Server rejected the visit.');
+    if (!(await result)) {
+      throw Exception('Sync failed');
     }
   }
 
@@ -238,29 +464,39 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
     return queue.map((e) => VisitPayload.fromJson(jsonDecode(e))).toList();
   }
 
+  bool _isSyncing = false;
+
   Future<void> syncOfflineVisits() async {
-    final prefs = await SharedPreferences.getInstance();
-    final queue = prefs.getStringList('offline_visits') ?? [];
+    if (_isSyncing) return;
+    _isSyncing = true;
 
-    if (queue.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final queue = prefs.getStringList('offline_visits') ?? [];
 
-    final remaining = <String>[];
-    int synced = 0;
+      if (queue.isEmpty) return;
 
-    for (final item in queue) {
-      try {
-        final visit = VisitPayload.fromJson(jsonDecode(item));
-        await sendVisitToServer(visit);
-        synced++;
-      } catch (_) {
-        remaining.add(item); // keep failed ones
+      final remaining = <String>[];
+      int synced = 0;
+
+      for (final item in queue) {
+        try {
+          final visit = VisitPayload.fromJson(jsonDecode(item));
+          await sendVisitToServer(visit); // must throw on failure
+          synced++;
+        } catch (e) {
+          // keep only failed items
+          remaining.add(item);
+        }
       }
-    }
 
-    await prefs.setStringList('offline_visits', remaining);
+      await prefs.setStringList('offline_visits', remaining);
 
-    if (synced > 0 && mounted) {
-      _showSuccess('$synced offline visit(s) synced successfully!');
+      if (synced > 0 && mounted) {
+        _showSuccess('$synced visit(s) synced');
+      }
+    } finally {
+      _isSyncing = false;
     }
   }
 
@@ -316,7 +552,10 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
               (shop) =>
                   shop.shopName.toLowerCase().contains(query.toLowerCase()) ||
                   shop.address.toLowerCase().contains(query.toLowerCase()) ||
-                  (shop.ownerName?.toLowerCase().contains(query.toLowerCase()) ?? false),
+                  (shop.ownerName?.toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ??
+                      false),
             )
             .toList();
       }
@@ -328,7 +567,9 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
     // Check if location service is enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw Exception('Location services are disabled. Please enable GPS in device settings.');
+      throw Exception(
+        'Location services are disabled. Please enable GPS in device settings.',
+      );
     }
 
     // Check permission status
@@ -336,40 +577,38 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permission denied. Please grant permission to continue.');
+        throw Exception(
+          'Location permission denied. Please grant permission to continue.',
+        );
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permission permanently denied. Please enable it in app settings.');
+      throw Exception(
+        'Location permission permanently denied. Please enable it in app settings.',
+      );
     }
 
     // Get current position with timeout and accuracy settings
     Position position;
     try {
-      position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
-      ).timeout(
-        const Duration(seconds: 20),
-        onTimeout: () {
-          throw Exception('Location request timed out. Please try again.');
-        },
-      );
+      position =
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 15),
+            ),
+          ).timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              throw Exception('Location request timed out. Please try again.');
+            },
+          );
     } catch (e) {
       if (e.toString().contains('timeout')) {
         rethrow;
       }
       throw Exception('Failed to get location: ${e.toString()}');
-    }
-
-    // Validate GPS accuracy
-    if (position.accuracy > 30) {
-      throw Exception(
-        'GPS accuracy too low (${position.accuracy.toStringAsFixed(1)}m). Please move to an open area with clear sky view.',
-      );
     }
 
     // Validate coordinates are reasonable
@@ -378,122 +617,6 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
     }
 
     return position;
-  }
-
-  /// Select shop and initiate visit with validation
-  Future<void> _selectShop(Shop shop) async {
-    // Pre-check location permissions before starting
-    if (!_isLocationServiceEnabled) {
-      _showError('Location services are disabled. Please enable GPS first.');
-      await _showLocationServiceDialog();
-      return;
-    }
-
-    if (_locationPermission == LocationPermission.denied) {
-      _showError('Location permission required to visit shops.');
-      await _requestLocationPermission();
-      return;
-    }
-
-    if (_locationPermission == LocationPermission.deniedForever) {
-      _showError('Location permission permanently denied. Please enable in settings.');
-      await _showOpenSettingsDialog();
-      return;
-    }
-
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => WillPopScope(
-          onWillPop: () async => false,
-          child: Dialog(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Getting your location...',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'This may take a few seconds',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // Get user location
-      final position = await _getUserLocation();
-
-      // Create visit payload
-      final visit = VisitPayload(
-        shopId: shop.id,
-        lat: position.latitude,
-        lng: position.longitude,
-        accuracy: position.accuracy,
-        capturedAt: DateTime.now(),
-      );
-
-      // Dismiss loading dialog
-      if (mounted) Navigator.pop(context);
-
-      // Check connectivity
-      final connectivity = await Connectivity().checkConnectivity();
-
-      if (connectivity == ConnectivityResult.none) {
-        // Save offline
-        await saveVisitOffline(visit);
-        _showSuccess('Visit saved offline. Will sync when connection is available.');
-      } else {
-        // Try to send to server
-        try {
-          await sendVisitToServer(visit);
-          _showSuccess('Visit recorded successfully!');
-        } catch (e) {
-          // If server rejects, save offline
-          await saveVisitOffline(visit);
-          _showWarning('Visit saved offline due to: ${e.toString()}');
-        }
-      }
-
-      // Navigate to visit screen
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ShopVisitScreen(shop: shop),
-          ),
-        );
-      }
-    } catch (e) {
-      // Dismiss loading dialog if still showing
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-      
-      // Show error message
-      String errorMessage = e.toString().replaceAll('Exception: ', '');
-      _showError(errorMessage);
-
-      // Offer to fix if it's a permission/service issue
-      if (errorMessage.contains('disabled') || errorMessage.contains('denied')) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) await _handleLocationSetup();
-      }
-    }
   }
 
   void _showError(String message) {
@@ -587,7 +710,10 @@ class _ShopsPageState extends State<ShopsPage> with WidgetsBindingObserver {
                   filled: false,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.textLight, width: 1),
+                    borderSide: const BorderSide(
+                      color: AppTheme.textLight,
+                      width: 1,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

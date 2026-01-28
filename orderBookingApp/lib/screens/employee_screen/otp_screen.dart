@@ -29,35 +29,29 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
-
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('Location Permission'),
-        content: const Text(
-          'We need your location to show nearby shops and provide better service.',
+Future<bool> _showPermissionDialog() async {
+  return await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Location Permission'),
+          content: const Text(
+            'We need your location to show nearby shops and provide better service.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Skip'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Allow'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Skip'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-              );
-            },
-            child: const Text('Allow'),
-          ),
-        ],
-      ),
-    );
-  }
+      ) ??
+      false;
+}
 
   void _verifyOTP() async {
     String otp = _otpControllers.map((c) => c.text).join();
@@ -101,6 +95,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       );
     } else if (widget.loginInfo.roleId == 2) {
       // Employee
+     //  final allowLocation = await _showPermissionDialog();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),

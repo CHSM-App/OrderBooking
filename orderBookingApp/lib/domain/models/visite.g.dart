@@ -12,6 +12,7 @@ VisitPayload _$VisitPayloadFromJson(Map<String, dynamic> json) => VisitPayload(
   lng: (json['lng'] as num).toDouble(),
   accuracy: (json['accuracy'] as num).toDouble(),
   capturedAt: DateTime.parse(json['capturedAt'] as String),
+  visitedAt: DateTime.parse(json['visitedAt'] as String),
 );
 
 Map<String, dynamic> _$VisitPayloadToJson(VisitPayload instance) =>
@@ -21,4 +22,5 @@ Map<String, dynamic> _$VisitPayloadToJson(VisitPayload instance) =>
       'lng': instance.lng,
       'accuracy': instance.accuracy,
       'capturedAt': instance.capturedAt.toIso8601String(),
+      'visitedAt': instance.visitedAt.toIso8601String(),
     };
