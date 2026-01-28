@@ -1,18 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/usecase/shop_usecase.dart';
 
 class ShopState {
   final bool isLoading;
   final String? error;
   final AsyncValue<List<Shop>>? shopList;
-
-  const ShopState({
-    this.isLoading = false,
-    this.error,
-    this.shopList,
-  });
+  const ShopState({this.isLoading = false, this.error, this.shopList});
 
   ShopState copyWith({
     bool? isLoading,
@@ -26,6 +22,7 @@ class ShopState {
     );
   }
 }
+
 class ShopViewModel extends StateNotifier<ShopState> {
   final ShopUsecase usecase;
 
@@ -37,27 +34,31 @@ class ShopViewModel extends StateNotifier<ShopState> {
       await usecase.execute(shopDetails);
       state = state.copyWith(isLoading: false);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-   //GET REGION LIST
+  //GET REGION LIST
   Future<void> getShopnList() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final shop = await usecase.getShopList();
-      state = state.copyWith(
-        isLoading: false,
-        shopList: AsyncValue.data(shop),
-      );
+      state = state.copyWith(isLoading: false, shopList: AsyncValue.data(shop));
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  //Add Visit
+  Future<bool> addVisit(VisitPayload visitPayload) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final result = await usecase.addVisit(visitPayload);
+      state = state.copyWith(isLoading: false);
+      return result['success'];
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
     }
   }
 }

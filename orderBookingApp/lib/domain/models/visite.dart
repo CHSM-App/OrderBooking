@@ -9,13 +9,17 @@ class VisitPayload {
   final double lng;
   final double accuracy;
   final DateTime capturedAt;
+  final DateTime visitedAt;
+  final int ? employeeId;
 
   VisitPayload({
     required this.shopId,
+    this.employeeId,
     required this.lat,
     required this.lng,
     required this.accuracy,
     required this.capturedAt,
+    required this.visitedAt,
   });
 
   Map<String, dynamic> toJson() => {
@@ -24,6 +28,8 @@ class VisitPayload {
         'lng': lng,
         'accuracy': accuracy,
         'capturedAt': capturedAt.toIso8601String(),
+        'visitedAt': visitedAt.toIso8601String(),
+        'employeeId': employeeId,
       };
 
   static VisitPayload fromJson(Map<String, dynamic> json) {
@@ -33,6 +39,8 @@ class VisitPayload {
       lng: json['lng'],
       accuracy: json['accuracy'],
       capturedAt: DateTime.parse(json['capturedAt']),
+      visitedAt: DateTime.parse(json['visitedAt']),
+      employeeId: json['employeeId'],
     );
   }
 }

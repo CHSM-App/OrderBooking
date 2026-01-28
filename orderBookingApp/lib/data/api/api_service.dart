@@ -9,6 +9,7 @@ import 'package:order_booking_app/domain/models/product_details.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:retrofit/retrofit.dart';
 part 'api_service.g.dart';
 
@@ -36,6 +37,9 @@ abstract class ApiService {
 
   @POST("insert/addShopDetails")
   Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
+
+  @POST("insert/addLocation")
+  Future<dynamic> addLocation(@Body() VisitPayload shopDetails);
 
 
 
