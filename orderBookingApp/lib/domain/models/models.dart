@@ -38,14 +38,14 @@ class Shop {
       );
 }
 
-class Product {
+class Product1 {
   final String id;
   final String name;
   final String unit;
   final double price;
   final String? imageUrl;
 
-  Product({
+  Product1({
     required this.id,
     required this.name,
     required this.unit,
@@ -61,7 +61,7 @@ class Product {
         'imageUrl': imageUrl,
       };
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
+  factory Product1.fromJson(Map<String, dynamic> json) => Product1(
         id: json['id'],
         name: json['name'],
         unit: json['unit'],
@@ -71,7 +71,7 @@ class Product {
 }
 
 class OrderItem {
-  final Product product;
+  final Product1 product;
   int quantity;
 
   OrderItem({
@@ -87,7 +87,7 @@ class OrderItem {
       };
 
   factory OrderItem.fromJson(Map<String, dynamic> json) => OrderItem(
-        product: Product.fromJson(json['product']),
+        product: Product1.fromJson(json['product']),
         quantity: json['quantity'],
       );
 }

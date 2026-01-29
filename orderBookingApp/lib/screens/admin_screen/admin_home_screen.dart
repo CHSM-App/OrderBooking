@@ -233,7 +233,7 @@ class AdminHomePage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const AddProductPage(),
+                      builder: (_) => const AddProductPage(adminId: 1,),
                     ),
                   );
                 },
