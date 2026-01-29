@@ -30,7 +30,7 @@ void _saveShop() async {
     regionId: int.tryParse(_regionController.text),
     ownerName: _ownerNameController.text,
     mobileNo: _phoneController.text,
-    shopId: null,
+    shopId: 0,
   );
 
   await ref.read(shopViewModelProvider.notifier).addShop(shop);
@@ -54,7 +54,6 @@ void _saveShop() async {
 
   await ref.read(shopViewModelProvider.notifier).getShopList();
 }
-
 
   @override
   Widget build(BuildContext context) {

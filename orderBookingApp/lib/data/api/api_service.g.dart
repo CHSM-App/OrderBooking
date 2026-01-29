@@ -520,11 +520,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-<<<<<<< HEAD
-            'users/getProductList/{admin_id}',
-=======
             'users/productList/${adminId}',
->>>>>>> 502176b0a8e4a365fff0e3aca0248b6465a25c93
             queryParameters: queryParameters,
             data: _data,
           )

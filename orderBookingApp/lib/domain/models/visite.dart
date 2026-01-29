@@ -7,7 +7,7 @@ class VisitPayload {
   /// Local-only unique ID for offline sync
   final String localId;
 
-  final String shopId;
+  final int shopId;
   final double lat;
   final double lng;
   final double accuracy;

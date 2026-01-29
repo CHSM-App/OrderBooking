@@ -241,6 +241,7 @@ void initState() {
       showDialog(
         context: context,
         barrierDismissible: false,
+        // ignore: deprecated_member_use
         builder: (_) => WillPopScope(
           onWillPop: () async => false,
           child: Dialog(

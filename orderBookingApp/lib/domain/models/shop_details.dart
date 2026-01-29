@@ -6,7 +6,7 @@ part 'shop_details.g.dart';
 class ShopDetails {
 
   @JsonKey(name: 'shop_id')
-  final int? shopId;
+  final int shopId;
 
   @JsonKey(name: 'shop_name')
   final String? shopName;
@@ -36,7 +36,7 @@ class ShopDetails {
   final double? longitude;
 
   ShopDetails({
-     this.shopId,
+    required this.shopId,
     this.shopName,
     this.ownerName,
     this.address,
