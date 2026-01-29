@@ -48,6 +48,11 @@ class LoginInfo {
   @JsonKey(name: 'isCheckedIn')
   final String? isCheckedIn;
 
+    @JsonKey(name: 'admin_id')
+  final int? adminId;
+    @JsonKey(name: 'emp_id')
+  final int? empId;
+
   LoginInfo({
     this.isCheckedIn,
     this.Token,
@@ -64,6 +69,8 @@ class LoginInfo {
     this.regionId,
     this.joiningDate,
     this.activeStatus,
+    this.adminId,
+    this.empId
   });
 
   /// From JSON

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_signUp.dart';
 import 'package:order_booking_app/screens/employee_screen/otp_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
@@ -353,6 +354,40 @@ class _LoginScreenState
                         ),
                       ),
                       const SizedBox(height: 16),
+                      const SizedBox(height: 24),
+
+// Terms & Sign Up Row
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    const Text(
+      'Don\'t have an account? ',
+      style: TextStyle(fontSize: 12, color: Colors.grey),
+    ),
+    GestureDetector(
+      onTap: () {
+        // Navigate to SignUp screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdminSignup(), // Create this screen separately
+          ),
+        );
+      },
+      child: const Text(
+        'Sign Up',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    ),
+  ],
+),
+const SizedBox(height: 16),
+
                     ],
                   ),
                 ),
