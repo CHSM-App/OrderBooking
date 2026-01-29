@@ -98,7 +98,24 @@ class ProductViewModel extends StateNotifier<ProductState> {
       );
     }
   }
+  /// ✅ NEW: Delete Subtype
+  Future<void> deleteProductSubType(int subItemId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await usecase.deleteProductSubType(subItemId);
 
+      state = state.copyWith(
+        isLoading: false,
+        addUpdateResponse: AsyncValue.data(response),
+      );
+    } catch (e, st) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        addUpdateResponse: AsyncValue.error(e, st),
+      );
+    }
+  }
   /// Optional reset
   void clearProductDetails() {
     state = state.copyWith(

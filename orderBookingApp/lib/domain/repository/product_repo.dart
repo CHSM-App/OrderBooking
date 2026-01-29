@@ -13,4 +13,7 @@ abstract class ProductRepository {
     int productId,
     int adminId,
   );
+
+ 
+  Future<ProductResponse> deleteProductSubType(int subItemId);
 }

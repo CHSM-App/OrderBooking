@@ -438,49 +438,93 @@ Widget build(BuildContext context) {
       ),
     );
   }
+Widget _buildAddedItemsList() {
+  if (addedItems.isEmpty) return const SizedBox.shrink();
 
-  Widget _buildAddedItemsList() {
-    if (addedItems.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Added Items", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: addedItems.length,
-          itemBuilder: (context, index) {
-            final item = addedItems[index];
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 400 + (index * 100)),
-              curve: Curves.easeOut,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Opacity(opacity: value, child: child),
-                );
-              },
-              child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  title: Text("${item['productName']} (${item['productType']})"),
-                  subtitle: Text("Unit: ${item['availableUnit']} ${item['measuringUnit']} • Price: ₹${item['price']}"),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => setState(() => addedItems.removeAt(index)),
-                  ),
+  final productVM = ref.read(productViewModelProvider.notifier);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text("Added Items", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: addedItems.length,
+        itemBuilder: (context, index) {
+          final item = addedItems[index];
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 400 + (index * 100)),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Opacity(opacity: value, child: child),
+              );
+            },
+            child: Card(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                title: Text("${item['productName']} (${item['productType']})"),
+                subtitle: Text("Unit: ${item['availableUnit']} ${item['measuringUnit']} • Price: ₹${item['price']}"),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () async {
+                    final subItemId = item['subItemId'];
+
+                    if (subItemId != null) {
+                      // Confirm deletion
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Delete Subitem"),
+                          content: const Text("Are you sure you want to delete this subitem?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
+                          ],
+                        ),
+                      );
+
+                      if (confirm != true) return;
+
+                      // Call API to delete
+                      try {
+                        await productVM.deleteProductSubType(subItemId);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Subitem deleted successfully"), backgroundColor: Colors.green),
+                        );
+
+                        setState(() {
+                          addedItems.removeAt(index);
+                        });
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Failed to delete subitem: $e"), backgroundColor: Colors.red),
+                        );
+                      }
+                    } else {
+                      // Local item not saved yet, just remove from list
+                      setState(() {
+                        addedItems.removeAt(index);
+                      });
+                    }
+                  },
                 ),
               ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+            ),
+          );
+        },
+      ),
+    ],
+  );
+}
+
 
   Widget _buildSubmitButton() {
     return _buildAnimatedField(

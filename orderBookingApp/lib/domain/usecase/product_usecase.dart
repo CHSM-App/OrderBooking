@@ -21,4 +21,8 @@ class ProductUsecase {
   Future<ProductDetailsResponse> fetchProductDetails( int productId, int adminId,) {
     return productRepository.fetchProductDetails(productId, adminId);
   }
+    /// DELETE subtype
+  Future<ProductResponse> deleteProductSubType(int subItemId) {
+    return productRepository.deleteProductSubType(subItemId);
+  }
 }

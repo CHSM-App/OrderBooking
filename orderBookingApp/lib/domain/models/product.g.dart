@@ -28,6 +28,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
 
 ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>
     ProductSubType(
+      subItemId: (json['sub_item_id'] as num?)?.toInt(),
       measuringUnit: json['measuring_unit'] as String?,
       availableUnit: (json['available_unit'] as num?)?.toDouble(),
       price: (json['price'] as num?)?.toDouble(),
@@ -35,6 +36,7 @@ ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ProductSubTypeToJson(ProductSubType instance) =>
     <String, dynamic>{
+      'sub_item_id': instance.subItemId,
       'measuring_unit': instance.measuringUnit,
       'available_unit': instance.availableUnit,
       'price': instance.price,

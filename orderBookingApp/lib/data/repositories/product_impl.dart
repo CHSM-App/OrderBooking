@@ -25,4 +25,9 @@ class ProductImpl implements ProductRepository {
   Future<ProductDetailsResponse> fetchProductDetails( int productId, int adminId,) {
     return apiService.fetchProductDetails(productId, adminId);
   }
+
+   @override
+  Future<ProductResponse> deleteProductSubType(int subItemId) {
+    return apiService.deleteProductSubType(subItemId);
+  }
 }
