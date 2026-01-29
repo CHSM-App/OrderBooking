@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/domain/models/shop_details.dart';
 
 class OrderFormScreen extends StatefulWidget {
-  final Shop shop;
+  final ShopDetails shop;
 
   const OrderFormScreen({Key? key, required this.shop}) : super(key: key);
 
@@ -165,14 +166,15 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.shop.shopName,
+                        widget.shop.shopName ?? '',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        widget.shop.address,
+                        widget.shop.address ?? 
+                        '',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -589,7 +591,7 @@ class _OrderItemCard extends StatelessWidget {
 }
 
 class _CheckoutSheet extends StatelessWidget {
-  final Shop shop;
+  final ShopDetails shop;
   final List<OrderItem> items;
 
   const _CheckoutSheet({
@@ -648,7 +650,7 @@ class _CheckoutSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            shop.shopName,
+                            shop.shopName ?? '',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -656,7 +658,7 @@ class _CheckoutSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            shop.address,
+                            shop.address ?? '',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade600,

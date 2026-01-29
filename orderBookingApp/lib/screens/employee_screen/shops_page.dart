@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/theme.dart';
@@ -23,27 +24,34 @@ class ShopsPage extends ConsumerStatefulWidget {
 
 class _ShopsPageState extends ConsumerState<ShopsPage>
     with WidgetsBindingObserver {
-  List<Shop> _shops = [];
-  List<Shop> _filteredShops = [];
   final TextEditingController _searchController = TextEditingController();
   late final StreamSubscription _connectivitySub;
   bool _isLocationServiceEnabled = false;
   LocationPermission _locationPermission = LocationPermission.denied;
-  bool _isCheckingPermissions = false; // Add this flag
-  bool _hasShownBanner = false; // Add this flag
+  bool _isCheckingPermissions = false;
+  bool _hasShownBanner = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((status) {
-      if (status != ConnectivityResult.none) {
-        syncOfflineVisits();
-      }
-    });
-    _loadShops();
-    _checkLocationPermissions();
-  }
+@override
+void initState() {
+  super.initState();
+
+  // Load shops immediately
+  Future.microtask(() {
+    ref.read(shopViewModelProvider.notifier).getShopList();
+  });
+
+  WidgetsBinding.instance.addObserver(this);
+
+  _connectivitySub = Connectivity().onConnectivityChanged.listen((status) {
+    if (status != ConnectivityResult.none) {
+      syncOfflineVisits();
+    }
+    _loadShops(); // This will now actually work!
+  });
+    _loadShops(); // This will now actually work!
+
+  _checkLocationPermissions();
+}
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -184,7 +192,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
   }
 
   /// Select shop and initiate visit with validation
-  Future<void> _selectShop(Shop shop) async {
+  Future<void> _selectShop(ShopDetails shop) async {
     // Check location service first
     if (!_isLocationServiceEnabled) {
       _showError('Location services are disabled. Please enable GPS first.');
@@ -279,7 +287,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
           );
       // Create visit payload
       final visit = VisitPayload(
-        shopId: shop.id,
+        shopId: shop.shopId.toString(),
         lat: position.latitude,
         lng: position.longitude,
         accuracy: position.accuracy,
@@ -499,69 +507,15 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
       _isSyncing = false;
     }
   }
-
-  void _loadShops() {
-    _shops = [
-      Shop(
-        id: '1',
-        shopName: 'Green Juice Corner',
-        address: 'Shop 12, Market Street, Andheri West, Mumbai',
-        latitude: 19.0760,
-        longitude: 72.8777,
-        ownerName: 'Ramesh Kumar',
-        phoneNumber: '9876543210',
-      ),
-      Shop(
-        id: '2',
-        shopName: 'Fresh Fruits Hub',
-        address: 'Plot 45, Station Road, Dadar, Mumbai',
-        latitude: 19.0896,
-        longitude: 72.8656,
-        ownerName: 'Suresh Patel',
-        phoneNumber: '9876543211',
-      ),
-      Shop(
-        id: '3',
-        shopName: 'Health Juice Bar',
-        address: 'Building 7, Gandhi Nagar, Bandra, Mumbai',
-        latitude: 19.0544,
-        longitude: 72.8320,
-        ownerName: 'Vijay Shah',
-        phoneNumber: '9876543212',
-      ),
-      Shop(
-        id: '4',
-        shopName: 'Natural Drinks Shop',
-        address: 'Shop 23, Main Market, Borivali, Mumbai',
-        latitude: 19.2305,
-        longitude: 72.8567,
-        ownerName: 'Prakash Desai',
-        phoneNumber: '9876543213',
-      ),
-    ];
-    _filteredShops = _shops;
+Future<void> _loadShops() async {
+  try {
+    // Trigger API call to refresh shop list
+    await ref.read(shopViewModelProvider.notifier).getShopList();
+  } catch (e) {
+    _showError('Failed to load shops');
+    debugPrint('Load shops error: $e');
   }
-
-  void _filterShops(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredShops = _shops;
-      } else {
-        _filteredShops = _shops
-            .where(
-              (shop) =>
-                  shop.shopName.toLowerCase().contains(query.toLowerCase()) ||
-                  shop.address.toLowerCase().contains(query.toLowerCase()) ||
-                  (shop.ownerName?.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ) ??
-                      false),
-            )
-            .toList();
-      }
-    });
-  }
-
+}
   /// Get user location with comprehensive error handling and validation
   Future<Position> _getUserLocation() async {
     // Check if location service is enabled
@@ -673,186 +627,226 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _filterShops,
-                style: const TextStyle(color: AppTheme.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Search shops by name or address...',
-                  hintStyle: const TextStyle(color: AppTheme.textSecondary),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppTheme.textSecondary,
+ @override
+Widget build(BuildContext context) {
+  // Watch shop state
+  final shopState = ref.watch(shopViewModelProvider);
+  final shopAsync = shopState.shopList;
+
+  return Scaffold(
+    backgroundColor: AppTheme.backgroundColor,
+    body: SafeArea(
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+
+          /// 🔍 Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search shops by name or address...',
+                hintStyle:
+                    const TextStyle(color: AppTheme.textSecondary),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppTheme.textSecondary,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear,
+                          color: AppTheme.textSecondary,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppTheme.textLight,
+                    width: 1,
                   ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(
-                            Icons.clear,
-                            color: AppTheme.textSecondary,
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            _filterShops('');
-                          },
-                        )
-                      : null,
-                  filled: false,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppTheme.textLight,
-                      width: 1,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppTheme.primaryColor,
-                      width: 2,
-                    ),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppTheme.errorColor,
-                      width: 1,
-                    ),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppTheme.errorColor,
-                      width: 2,
-                    ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primaryColor,
+                    width: 2,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+          ),
 
-            // Shops Count + Map Button Row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  // Shops Count
-                  Expanded(
-                    child: Text(
-                      '${_filteredShops.length} Shop${_filteredShops.length != 1 ? 's' : ''}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+          const SizedBox(height: 10),
 
-                  // View Map Button
-                  TextButton.icon(
-                    onPressed: () {
-                      _showInfo('Map view coming soon!');
-                    },
-                    icon: const Icon(Icons.map, size: 18),
-                    label: const Text(
-                      'View Map',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                    ),
+          /// 📊 Shops Count + Map Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: shopAsync?.maybeWhen(
+                        data: (shops) =>
+                            Text(
+                              '${shops.length} Shop${shops.length != 1 ? 's' : ''}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                        orElse: () => const Text(
+                          '0 Shops',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ) ??
+                      const SizedBox(),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    _showInfo('Map view coming soon!');
+                  },
+                  icon: const Icon(Icons.map, size: 18),
+                  label: const Text('View Map'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primaryColor,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 6),
+          const SizedBox(height: 6),
 
-            // Shop List
-            Expanded(
-              child: _filteredShops.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.store_outlined,
-                            size: 80,
-                            color: AppTheme.textLight,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _searchController.text.isNotEmpty
-                                ? 'No shops match your search'
-                                : 'No shops available',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          if (_searchController.text.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            TextButton(
-                              onPressed: () {
-                                _searchController.clear();
-                                _filterShops('');
-                              },
-                              child: const Text('Clear search'),
-                            ),
-                          ],
-                        ],
+          /// 🏬 Shop List
+          Expanded(
+            child: shopAsync == null
+                ? const Center(child: Text('No data'))
+                : shopAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (err, _) => Center(
+                      child: Text(
+                        err.toString(),
+                        style:
+                            const TextStyle(color: Colors.red),
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _filteredShops.length,
-                      itemBuilder: (context, index) {
-                        final shop = _filteredShops[index];
-                        return _ShopCard(
-                          shop: shop,
-                          onTap: () => _selectShop(shop),
+                    ),
+                    data: (shops) {
+                      final filteredShops =
+                          _searchController.text.isEmpty
+                              ? shops
+                              : shops.where((shop) {
+                                  final query =
+                                      _searchController.text
+                                          .toLowerCase();
+                                  return (shop.shopName ?? '')
+                                          .toLowerCase()
+                                          .contains(query) ||
+                                      (shop.address ?? '')
+                                          .toLowerCase()
+                                          .contains(query) ||
+                                      (shop.ownerName ?? '')
+                                          .toLowerCase()
+                                          .contains(query);
+                                }).toList();
+
+                      if (filteredShops.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.store_outlined,
+                                size: 80,
+                                color: AppTheme.textLight,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchController
+                                        .text.isNotEmpty
+                                    ? 'No shops match your search'
+                                    : 'No shops available',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color:
+                                      AppTheme.textSecondary,
+                                ),
+                              ),
+                              if (_searchController
+                                  .text.isNotEmpty)
+                                TextButton(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {});
+                                  },
+                                  child:
+                                      const Text('Clear search'),
+                                ),
+                            ],
+                          ),
                         );
-                      },
-                    ),
-            ),
-          ],
-        ),
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16),
+                        itemCount: filteredShops.length,
+                        itemBuilder: (context, index) {
+                          final shop = filteredShops[index];
+                          return _ShopCard(
+                            shop: shop,
+                            onTap: () => _selectShop(shop),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddShopScreen()),
-          );
-          if (result != null && result is Shop) {
-            setState(() {
-              _shops.add(result);
-              _filteredShops = _shops;
-            });
-            _showSuccess('Shop "${result.shopName}" added successfully!');
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Shop'),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
-  }
+    ),
+
+    /// ➕ Add Shop Button
+    floatingActionButton: FloatingActionButton.extended(
+      backgroundColor: AppTheme.primaryColor,
+      icon: const Icon(Icons.add),
+      label: const Text('Add Shop'),
+      onPressed: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddShopScreen(),
+          ),
+        );
+
+        if (result != null && result is ShopDetails) {
+          await ref
+              .read(shopViewModelProvider.notifier)
+              .getShopList();
+
+          _showSuccess(
+              'Shop "${result.shopName}" added successfully!');
+        }
+      },
+    ),
+  );
+}
+
 
   void _showInfo(String message) {
     if (!mounted) return;
@@ -876,7 +870,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
 }
 
 class _ShopCard extends StatelessWidget {
-  final Shop shop;
+  final ShopDetails shop;
   final VoidCallback onTap;
 
   const _ShopCard({required this.shop, required this.onTap});
@@ -912,7 +906,7 @@ class _ShopCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      shop.shopName,
+                      shop.shopName ??'',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -931,7 +925,7 @@ class _ShopCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            shop.address,
+                            shop.address ?? '',
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppTheme.textSecondary,
@@ -980,7 +974,7 @@ class _ShopCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    shop.phoneNumber ?? '',
+                                    shop.mobileNo ?? '',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: AppTheme.textSecondary,

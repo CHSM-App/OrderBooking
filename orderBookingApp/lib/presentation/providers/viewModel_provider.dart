@@ -49,6 +49,6 @@ final checkInViewModelProvider =
 final productViewModelProvider =
     StateNotifierProvider<ProductViewModel, ProductState>((ref) {
   final usecase = ref.read(getProductListUseCaseProvider);
-  const adminId =1 ;
+  final adminId = 1 ;
   return ProductViewModel(usecase, adminId );
 });

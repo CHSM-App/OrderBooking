@@ -13,8 +13,8 @@ class ShopUsecase {
     return shoprepository.addShop(shopDetails);
   }
 
-     Future<List<Shop>> getShopList() {
-    return shoprepository.getShopList();
+     Future<List<ShopDetails>> getShopList( ) {
+    return shoprepository.getShopList( );
   }
 
     Future<dynamic> addVisit(VisitPayload visitPayload) {

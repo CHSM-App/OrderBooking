@@ -82,8 +82,9 @@ Future<List<CheckInStatusRequest>> fetchTodayAttendance(
   Future<List<AdminLogin>> fetchAdminDetails(
   @Path("mobile_no") String mobileNo,
 );
+
  @GET("users/shopList")
-  Future<List<Shop>> getShopList();
+  Future<List<ShopDetails>> getShopList( );
   
   @GET("users/regionList")
   Future<List<Region>> fetchRegionList();
@@ -93,8 +94,9 @@ Future<List<CheckInStatusRequest>> fetchTodayAttendance(
   Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
 
 
-  //get product list
-@GET("getProductList/{admin_id}")
+  //get product list for employee
+@GET("users/getProductList/{admin_id}")
 Future<List<ProductDetails>> getProductList(int adminId);
+
 
 }

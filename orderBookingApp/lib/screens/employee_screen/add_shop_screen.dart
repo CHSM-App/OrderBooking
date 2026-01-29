@@ -18,42 +18,43 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   final _regionController = TextEditingController();
   final _ownerNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  
 
-  void _saveShop() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    final shop = ShopDetails(
-      shopName: _shopNameController.text,
-      address: _addressController.text,
-      regionId: int.tryParse(_regionController.text),
-      ownerName: _ownerNameController.text,
-      mobileNo: _phoneController.text,
+void _saveShop() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  final shop = ShopDetails(
+    shopName: _shopNameController.text,
+    address: _addressController.text,
+    regionId: int.tryParse(_regionController.text),
+    ownerName: _ownerNameController.text,
+    mobileNo: _phoneController.text,
+    shopId: null,
+  );
+
+  await ref.read(shopViewModelProvider.notifier).addShop(shop);
+
+  final state = ref.read(shopViewModelProvider);
+
+  if (!mounted) return;
+
+  if (state.error == null) {
+    // ✅ SUCCESS → go back to previous screen
+    Navigator.pop(context, shop);
+  } else {
+    // ❌ ERROR → show message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(state.error!),
+        backgroundColor: Colors.red,
+      ),
     );
-
-    await ref.read(shopViewModelProvider.notifier).addShop(shop);
-
-    final state = ref.read(shopViewModelProvider);
-
-    if (state.error == null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 12),
-              Text("Shop added successfully"),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      Navigator.pop(context);
-    }
   }
+
+  await ref.read(shopViewModelProvider.notifier).getShopList();
+}
+
 
   @override
   Widget build(BuildContext context) {

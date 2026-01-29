@@ -13,7 +13,6 @@ part of 'api_service.dart';
 class _ApiService implements ApiService {
   _ApiService(this._dio, {this.baseUrl, this.errorLogger}) {
     baseUrl ??= 'https://orderbooking.vengurlatech.com/';
-    baseUrl ??= 'https://orderbooking.vengurlatech.com/';
   }
 
   final Dio _dio;
@@ -397,12 +396,12 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<Shop>> getShopList() async {
+  Future<List<ShopDetails>> getShopList() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<Shop>>(
+    final _options = _setStreamType<List<ShopDetails>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -413,10 +412,10 @@ class _ApiService implements ApiService {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<Shop> _value;
+    late List<ShopDetails> _value;
     try {
       _value = _result.data!
-          .map((dynamic i) => Shop.fromJson(i as Map<String, dynamic>))
+          .map((dynamic i) => ShopDetails.fromJson(i as Map<String, dynamic>))
           .toList();
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
@@ -493,7 +492,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'getProductList/{admin_id}',
+            'users/getProductList/{admin_id}',
             queryParameters: queryParameters,
             data: _data,
           )
