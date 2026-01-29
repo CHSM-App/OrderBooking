@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
-import 'package:order_booking_app/domain/models/login_details.dart';
+import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/domain/models/product_details.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -30,17 +32,35 @@ abstract class ApiService {
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
-  
   @POST("insert/addRegion")
   Future<dynamic> addRegion(@Body() Region region);
 
-
-    
   @POST("insert/addShopDetails")
   Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
 
   @POST("insert/addLocation")
   Future<dynamic> addLocation(@Body() VisitPayload shopDetails);
+
+
+
+
+  @POST("users/checkIn/{emp_id}")
+Future<void> checkIn(
+  @Path("emp_id") int empId,
+);
+
+
+@POST("users/checkOut/{emp_id}")
+Future<void> checkOut(
+  @Path("emp_id") int empId,
+);
+
+@GET("users/current/{emp_id}")
+Future<List<CheckInStatusRequest>> fetchTodayAttendance(
+  @Path("emp_id") int empId,
+);
+
+
 
 
 
@@ -71,5 +91,10 @@ abstract class ApiService {
  //Login Check
   @GET("login/checkPhone")
   Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
+
+
+  //get product list
+@GET("getProductList/{admin_id}")
+Future<List<ProductDetails>> getProductList(int adminId);
 
 }

@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
+import 'package:order_booking_app/data/repositories/product_details_impl.dart';
 
 import 'package:order_booking_app/data/repositories/shop_impl.dart';
 import 'package:order_booking_app/data/repositories/login_impl.dart';
 import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/data/repositories/employee_impl.dart';
+import 'package:order_booking_app/domain/repository/checkin_repo.dart';
+import 'package:order_booking_app/domain/repository/product_details_repo.dart';
 
 import 'package:order_booking_app/domain/repository/shop_repo.dart';
 import 'package:order_booking_app/domain/repository/login_repo.dart';
@@ -48,8 +52,16 @@ final shopRepositoryProvider = Provider<ShopRepository>((ref) {
   return ShopImpl(api);
 });
 
+final checkInRepositoryProvider = Provider<CheckinRepository>((ref) {
+  final dio = ref.watch(dioProvider).value!;
+  final api = ApiService(dio);
+  return CheckinStatusRequestImpl(api);
+});
 
-
-
+final productRepositoryProvider = Provider<ProductRepository>((ref) {
+  final dio = ref.watch(dioProvider).value!;
+  final api = ApiService(dio);
+  return ProductRepositoryImpl(api);
+});
 
 

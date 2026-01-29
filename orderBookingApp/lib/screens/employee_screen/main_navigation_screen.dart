@@ -1,508 +1,331 @@
-// import 'package:flutter/material.dart';
-// import 'home_page.dart';
-// import 'shops_page.dart';
-// import 'orders_page.dart';
-// import 'catalog_page.dart';
-// import 'profile_page.dart';
-
-// class MainNavigationScreen extends StatefulWidget {
-//   const MainNavigationScreen({Key? key}) : super(key: key);
-
-//   @override
-//   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-// }
-
-// class _MainNavigationScreenState extends State<MainNavigationScreen> with SingleTickerProviderStateMixin {
-//   int _currentIndex = 0;
-//   late AnimationController _animationController;
-  
-//   final List<Widget> _pages = [
-//     const HomePage(),
-//     const ShopsPage(),
-//     const OrdersPage(),
-//     const CatalogPage(),
-//     const ProfilePage(mobileNo: '8416113132',),
-//   ];
-
-//   String _employeeName = "Ramesh Kumar";
-//   int _notificationCount = 3;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _animationController = AnimationController(
-//       duration: const Duration(milliseconds: 300),
-//       vsync: this,
-//     );
-//     _animationController.forward();
-//   }
-
-//   @override
-//   void dispose() {
-//     _animationController.dispose();
-//     super.dispose();
-//   }
-
-//   void _onTabTapped(int index) {
-//     setState(() {
-//       _currentIndex = index;
-//       _animationController.reset();
-//       _animationController.forward();
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.grey.shade50,
-//       appBar: PreferredSize(
-//         preferredSize: const Size.fromHeight(70),
-//         child: Container(
-//           decoration: BoxDecoration(
-//             gradient: const LinearGradient(
-//               begin: Alignment.topLeft,
-//               end: Alignment.bottomRight,
-//               colors: [
-//          Color.fromARGB(255, 79, 114, 230),
-//           Color.fromARGB(255, 6, 25, 91),
-//         ],
-              
-//             ),
-//             // boxShadow: [
-//             //   BoxShadow(
-//             //     color: const Color(0xFFFFC107).withOpacity(0.3),
-//             //     blurRadius: 12,
-//             //     offset: const Offset(0, 4),
-//             //   ),
-//             // ],
-//           ),
-//           child: AppBar(
-//             backgroundColor: Colors.transparent,
-//             elevation: 0,
-//             centerTitle: false,
-//             leading: Padding(
-//               padding: const EdgeInsets.all(5.0),
-//               child: Container(
-//                 decoration: BoxDecoration(
-//                   color: Colors.white,
-//                   shape: BoxShape.circle,
-//                   boxShadow: [
-//                     BoxShadow(
-//                       color: Colors.black.withOpacity(0.1),
-//                       blurRadius: 8,
-//                       offset: const Offset(0, 2),
-//                     ),
-//                   ],
-//                 ),
-//                 child: const Icon(
-//                   Icons.person,
-//                   color: Color(0xFFFFC107),
-//                   size: 35,
-//                 ),
-//               ),
-//             ),
-//             title: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               mainAxisAlignment: MainAxisAlignment.center,
-//               children: [
-//                 const Text(
-//                   'Hello,',
-//                   style: TextStyle(
-//                     color: Colors.white,
-//                     fontSize: 12,
-//                     fontWeight: FontWeight.w400,
-//                   ),
-//                 ),
-//                 Text(
-//                   _employeeName,
-//                   style: const TextStyle(
-//                     color: Colors.white,
-//                     fontWeight: FontWeight.bold,
-//                     fontSize: 18,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             actions: [
-//               Stack(
-//                 children: [
-//                   IconButton(
-//                     icon: const Icon(Icons.notifications_outlined),
-//                     color: Colors.white,
-//                     iconSize: 35,
-//                     onPressed: () {
-//                       // Open notifications
-//                     },
-//                   ),
-//                   if (_notificationCount > 0)
-//                     Positioned(
-//                       right: 8,
-//                       top: 8,
-//                       child: Container(
-//                         padding: const EdgeInsets.all(4),
-//                         decoration: const BoxDecoration(
-//                           color: Colors.red,
-//                           shape: BoxShape.circle,
-//                         ),
-//                         constraints: const BoxConstraints(
-//                           minWidth: 18,
-//                           minHeight: 18,
-//                         ),
-//                         child: Text(
-//                           _notificationCount > 9 ? '9+' : '$_notificationCount',
-//                           style: const TextStyle(
-//                             color: Colors.white,
-//                             fontSize: 10,
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                           textAlign: TextAlign.center,
-//                         ),
-//                       ),
-//                     ),
-//                 ],
-//               ),
-//               const SizedBox(width: 8),
-//             ],
-//           ),
-//         ),
-//       ),
-//       body: IndexedStack(
-//         index: _currentIndex,
-//         children: _pages,
-//       ),
-//       bottomNavigationBar: Container(
-//         decoration: BoxDecoration(
-//           color: Colors.white,
-//           borderRadius: const BorderRadius.only(
-//             topLeft: Radius.circular(30),
-//             topRight: Radius.circular(30),
-//           ),
-//           boxShadow: [
-//             BoxShadow(
-//               color: Colors.black.withOpacity(0.15),
-//               blurRadius: 25,
-//               offset: const Offset(0, -5),
-//             ),
-//           ],
-//         ),
-//         child: ClipRRect(
-//           borderRadius: const BorderRadius.only(
-//             topLeft: Radius.circular(30),
-//             topRight: Radius.circular(30),
-//           ),
-//           child: BottomNavigationBar(
-//             currentIndex: _currentIndex,
-//             onTap: _onTabTapped,
-//             type: BottomNavigationBarType.fixed,
-//             backgroundColor: Colors.white,
-//             selectedItemColor: const Color(0xFFFFC107),
-//             unselectedItemColor: Colors.grey.shade400,
-//             selectedLabelStyle: const TextStyle(
-//               fontWeight: FontWeight.w700,
-//               fontSize: 12,
-//             ),
-//             unselectedLabelStyle: const TextStyle(
-//               fontWeight: FontWeight.w500,
-//               fontSize: 11,
-//             ),
-//             elevation: 0,
-//             items: [
-//               _buildAnimatedNavItem(Icons.home_rounded, 'Home', 0),
-//               _buildAnimatedNavItem(Icons.store_rounded, 'Shops', 1),
-//               _buildAnimatedNavItem(Icons.shopping_bag_rounded, 'Orders', 2),
-//               _buildAnimatedNavItem(Icons.grid_view_rounded, 'Catalog', 3),
-//               _buildAnimatedNavItem(Icons.person_rounded, 'Profile', 4),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   BottomNavigationBarItem _buildAnimatedNavItem(IconData icon, String label, int index) {
-//     final isSelected = _currentIndex == index;
-//     return BottomNavigationBarItem(
-//       icon: AnimatedContainer(
-//         duration: const Duration(milliseconds: 300),
-//         curve: Curves.easeInOut,
-//         padding: EdgeInsets.symmetric(
-//           horizontal: isSelected ? 20 : 16,
-//           vertical: isSelected ? 10 : 8,
-//         ),
-//         decoration: BoxDecoration(
-//           gradient: isSelected
-//               ? const LinearGradient(
-//                   colors: [
-//                     Color(0xFFFFC107),
-//                     Color(0xFFFFD54F),
-//                   ],
-//                 )
-//               : null,
-//           color: isSelected ? null : Colors.transparent,
-//           borderRadius: BorderRadius.circular(15),
-//           boxShadow: isSelected
-//               ? [
-//                   BoxShadow(
-//                     color: const Color(0xFFFFC107).withOpacity(0.4),
-//                     blurRadius: 10,
-//                     offset: const Offset(0, 4),
-//                   ),
-//                 ]
-//               : [],
-//         ),
-//         child: Icon(
-//           icon,
-//           size: isSelected ? 28 : 26,
-//           color: isSelected ? Colors.white : Colors.grey.shade400,
-//         ),
-//       ),
-//       label: label,
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'home_page.dart';
 import 'shops_page.dart';
 import 'orders_page.dart';
 import 'catalog_page.dart';
 import 'profile_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
-class MainNavigationScreen extends StatefulWidget {
+class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() =>
+      _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with SingleTickerProviderStateMixin {
+class _MainNavigationScreenState
+    extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
-  late AnimationController _animationController;
+  bool _isCheckedIn = false;
+  bool _isLoading = true;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ShopsPage(),
-    const OrdersPage(),
-    const CatalogPage(),
-    const ProfilePage(mobileNo: '8416113132'),
+  static const String _checkInKey = "is_checked_in";
+
+  final List<Widget> _pages = const [
+    HomePage(),
+    ShopsPage(),
+    OrdersPage(),
+    CatalogPage(),
+    ProfilePage(mobileNo: '8416113132'),
   ];
 
-  String _employeeName = "Ramesh Kumar";
-  int _notificationCount = 3;
+  final String _employeeName = "Ramesh Kumar";
+  final int _notificationCount = 3;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _animationController.forward();
+    _restoreCheckInState();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  /// RESTORE CHECK-IN STATE
+  Future<void> _restoreCheckInState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isCheckedIn = prefs.getBool(_checkInKey) ?? false;
+      _isLoading = false;
+    });
   }
+
+  /// SAVE CHECK-IN STATE
+  Future<void> _persistCheckInState(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_checkInKey, value);
+  }
+
+
+
+
+
+
+
+void _toggleCheckIn() async {
+  final empId = ref.read(adminloginViewModelProvider).userId;
+  final vm = ref.read(checkInViewModelProvider.notifier);
+
+  // 🚫 prevent double tap while loading
+  if (ref.read(checkInViewModelProvider).isLoading) return;
+
+  final wasCheckedIn = _isCheckedIn;
+
+  // ✅ IMMEDIATELY UPDATE UI
+  setState(() {
+    _isCheckedIn = !wasCheckedIn;
+    _currentIndex = 0;
+  });
+
+  await _persistCheckInState(!wasCheckedIn);
+
+  try {
+    if (wasCheckedIn) {
+      await vm.checkOut(empId);
+    } else {
+      await vm.checkIn(empId);
+    }
+  } catch (e) {
+    // 🔁 rollback UI if API fails
+    setState(() {
+      _isCheckedIn = wasCheckedIn;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+  /// TOGGLE CHECK-IN / CHECK-OUT
+ 
+  // void _toggleCheckIn() async {
+  //   final newValue = !_isCheckedIn;
+  //   setState(() {
+  //     _isCheckedIn = newValue;
+  //     _currentIndex = 0;
+  //   });
+  //   ref.read(checkInViewModelProvider.notifier).checkIn(  ref.read(adminloginViewModelProvider).userId,);
+  //   // ref.read(checkInViewModelProvider.notifier).checkOut(  ref.read(adminloginViewModelProvider).userId,);
+  //   await _persistCheckInState(newValue);
+
+  //   // 🔥 Later:
+  //   // ref.read(attendanceViewModelProvider.notifier).checkIn();
+  //   // ref.read(attendanceViewModelProvider.notifier).checkOut();
+  // }
 
   void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-      _animationController.reset();
-      _animationController.forward();
-    });
+    if (!_isCheckedIn) return;
+    setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+
+      /// ================= APP BAR =================
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-          ),
+          decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            centerTitle: false,
-            leading: Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+            automaticallyImplyLeading: false,
+            titleSpacing: 12,
+
+            /// PROFILE + NAME
+            title: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.white,
+                  child: Icon(
+                    Icons.person,
+                    color: AppTheme.accentColor,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Hello,",
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                    Text(
+                      _employeeName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.person,
-                  color: AppTheme.accentColor,
-                  size: 35,
-                ),
-              ),
-            ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Hello,',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                Text(
-                  _employeeName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
               ],
             ),
+
+            /// ACTIONS
             actions: [
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    color: Colors.white,
-                    iconSize: 35,
-                    onPressed: () {
-                      // Open notifications
-                    },
-                  ),
-                  if (_notificationCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor,
-                          shape: BoxShape.circle,
+              /// CHECK IN / OUT BUTTON
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  onTap: _toggleCheckIn,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color:
+                          _isCheckedIn ? Colors.redAccent : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isCheckedIn
+                              ? Icons.logout
+                              : Icons.login,
+                          size: 14,
+                          color: _isCheckedIn
+                              ? Colors.white
+                              : AppTheme.primaryColor,
                         ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          _notificationCount > 9
-                              ? '9+'
-                              : '$_notificationCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 4),
+                        Text(
+                          _isCheckedIn ? "Check Out" : "Check In",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _isCheckedIn
+                                ? Colors.white
+                                : AppTheme.primaryColor,
                           ),
-                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              /// NOTIFICATION ICON
+              if (_isCheckedIn)
+                Stack(
+                  children: [
+                    IconButton(
+                      icon:
+                          const Icon(Icons.notifications_outlined),
+                      color: Colors.white,
+                      iconSize: 26,
+                      onPressed: () {},
+                    ),
+                    if (_notificationCount > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            _notificationCount > 9
+                                ? '9+'
+                                : '$_notificationCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 8),
+                  ],
+                ),
+              const SizedBox(width: 6),
             ],
           ),
         ),
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.cardBackground,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 25,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: _onTabTapped,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: AppTheme.cardBackground,
-            selectedItemColor: AppTheme.primaryColor,
-            unselectedItemColor: Colors.grey.shade400,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
-            ),
-            elevation: 0,
-            items: [
-              _buildAnimatedNavItem(Icons.home_rounded, 'Home', 0),
-              _buildAnimatedNavItem(Icons.store_rounded, 'Shops', 1),
-              _buildAnimatedNavItem(Icons.shopping_bag_rounded, 'Orders', 2),
-              _buildAnimatedNavItem(Icons.grid_view_rounded, 'Catalog', 3),
-              _buildAnimatedNavItem(Icons.person_rounded, 'Profile', 4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  BottomNavigationBarItem _buildAnimatedNavItem(
-      IconData icon, String label, int index) {
-    final isSelected = _currentIndex == index;
-    return BottomNavigationBarItem(
-      icon: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20 : 16,
-          vertical: isSelected ? 10 : 8,
-        ),
-        decoration: BoxDecoration(
-          gradient: isSelected ? AppTheme.primaryGradient : null,
-          color: isSelected ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Icon(
-          icon,
-          size: isSelected ? 28 : 26,
-          color: isSelected ? Colors.white : Colors.grey.shade400,
-        ),
+      /// ================= BODY =================
+      body: Stack(
+        children: [
+          IgnorePointer(
+            ignoring: !_isCheckedIn,
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+          ),
+          if (!_isCheckedIn)
+            Container(
+              color: Colors.black.withOpacity(0.45),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: 50,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Please Check In to Continue",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
-      label: label,
+
+      /// ================= BOTTOM NAV =================
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _isCheckedIn ? _onTabTapped : null,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: Colors.grey.shade400,
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.store_rounded), label: 'Shops'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_bag_rounded),
+              label: 'Orders'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view_rounded),
+              label: 'Catalog'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile'),
+        ],
+      ),
     );
   }
 }
