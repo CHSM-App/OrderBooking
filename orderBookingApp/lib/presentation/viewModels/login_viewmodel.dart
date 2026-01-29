@@ -7,36 +7,63 @@ import 'package:order_booking_app/domain/usecase/login_usecase.dart';
 class AdminloginState {
   final bool isLoading;
   final String? error;
-     final AsyncValue<List<AdminLogin>>? adminDetails;
-   final AsyncValue<List<LoginInfo>> phoneCheckResult;
-   final int userId;
+  final String? name;
+  final String? mobileNo;
+  final String? email;
+  final String? roleId;
+  final String? companyName;
+  final String? token;
+  final String? isCheckedIn;
+
+  final AsyncValue<List<AdminLogin>>? adminDetails;
+  final AsyncValue<List<LoginInfo>> phoneCheckResult;
+  final int userId;
   const AdminloginState({
-   
     this.isLoading = false,
     this.error,
-       this.adminDetails = const AsyncValue.loading(),
-         this.phoneCheckResult = const AsyncValue.data([]),
-          this.userId = 0,
-   
+    this.adminDetails = const AsyncValue.loading(),
+    this.phoneCheckResult = const AsyncValue.data([]),
+    this.userId = 0,
+    this.name,
+    this.mobileNo,
+    this.email,
+    this.roleId,
+    this.companyName,
+    this.token,
+    this.isCheckedIn,
   });
 
   AdminloginState copyWith({
     bool? isLoading,
     String? error,
-        AsyncValue<List<AdminLogin>>? adminDetails,
-     AsyncValue<List<LoginInfo>>? phoneCheckResult,
+    AsyncValue<List<AdminLogin>>? adminDetails,
+    AsyncValue<List<LoginInfo>>? phoneCheckResult,
     int? userId,
+    String? name,
+    String? mobileNo,
+    String? email,
+    String? roleId,
+    String? companyName,
+    String? token,
+    String? isCheckedIn,
   }) {
     return AdminloginState(
-     
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
-       adminDetails: adminDetails??this.adminDetails,
-        phoneCheckResult: phoneCheckResult ?? this.phoneCheckResult,
-        userId: userId ?? this.userId,
+      adminDetails: adminDetails ?? this.adminDetails,
+      phoneCheckResult: phoneCheckResult ?? this.phoneCheckResult,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      mobileNo: mobileNo ?? this.mobileNo,
+      email: email ?? this.email,
+      roleId: roleId ?? this.roleId,
+      companyName: companyName ?? this.companyName,
+      token: token ?? this.token,
+      isCheckedIn: isCheckedIn ?? this.isCheckedIn,
     );
   }
 }
+
 class AdminloginViewModel extends StateNotifier<AdminloginState> {
   final AdminloginUsecase usecase;
   AdminloginViewModel(this.usecase) : super(const AdminloginState());
@@ -50,9 +77,14 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final token = await TokenStorage.getValue('token');
     final isCheckedIn = await TokenStorage.getValue('isCheckedIn');
 
-    state = state.copyWith(userId: int.tryParse(await TokenStorage.getValue('user_id') ?? '0') ?? 0);
-    
     state = state.copyWith(
+      name: name,
+      mobileNo: mobileNo,
+      email: email,
+      roleId: roleId,
+      companyName: companyName,
+      token: token,
+      isCheckedIn: isCheckedIn,
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
@@ -76,18 +108,20 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
-  
- Future<void>fetchAdminDetails(String mobileNo)async{
-  state=state.copyWith(isLoading: true,error:null);
-  try{
-    final admindetails=await usecase.fetchAdminDetails(mobileNo);
-    state=state.copyWith(isLoading: false,adminDetails:  AsyncValue.data(admindetails));
+
+  Future<void> fetchAdminDetails(String mobileNo) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final admindetails = await usecase.fetchAdminDetails(mobileNo);
+      state = state.copyWith(
+        isLoading: false,
+        adminDetails: AsyncValue.data(admindetails),
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
-  catch(e){
-    state=state.copyWith(isLoading: false,error: e.toString());
-  }
- }
- 
+
   // ✅ Check phone number is valid
   Future<void> checkPhoneNumber(String mobileNo) async {
     state = state.copyWith(phoneCheckResult: const AsyncValue.loading());
@@ -98,7 +132,4 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       state = state.copyWith(phoneCheckResult: AsyncValue.error(e, st));
     }
   }
-  
-} 
-
-
+}
