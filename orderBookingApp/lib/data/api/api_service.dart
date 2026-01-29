@@ -5,7 +5,9 @@ import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/models.dart';
-import 'package:order_booking_app/domain/models/product_details.dart';
+import 'package:order_booking_app/domain/models/product.dart';
+import 'package:order_booking_app/domain/models/product_details_response.dart';
+import 'package:order_booking_app/domain/models/product_response.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -41,6 +43,10 @@ abstract class ApiService {
   @POST("insert/addLocation")
   Future<dynamic> addLocation(@Body() VisitPayload shopDetails);
 
+  @POST("insert/addProduct")
+  Future<ProductResponse> addOrUpdateProduct(
+    @Body() Product product,
+  );
 
 
 
@@ -93,8 +99,15 @@ Future<List<CheckInStatusRequest>> fetchTodayAttendance(
   Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
 
 
-  //get product list
-@GET("getProductList/{admin_id}")
-Future<List<ProductDetails>> getProductList(int adminId);
 
+
+ @GET("users/productList/{admin_id}")
+  Future<List<Product>> fetchProductList(
+  @Path("admin_id") int adminId
+);
+@GET("users/productDetails/{product_id}/{admin_id}")
+Future<ProductDetailsResponse> fetchProductDetails(
+  @Path("product_id") int productId,
+  @Path("admin_id") int adminId,
+);
 }

@@ -6,7 +6,8 @@ import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/employee_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/network_model.dart';
 import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
-import 'package:order_booking_app/presentation/viewModels/product_details.viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/product_viewmodel.dart';
+
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 
 
@@ -48,7 +49,6 @@ final checkInViewModelProvider =
 
 final productViewModelProvider =
     StateNotifierProvider<ProductViewModel, ProductState>((ref) {
-  final usecase = ref.read(getProductListUseCaseProvider);
-  const adminId =1 ;
-  return ProductViewModel(usecase, adminId );
+  final usecase = ref.watch(productUsecaseProvider);
+  return ProductViewModel(usecase);
 });

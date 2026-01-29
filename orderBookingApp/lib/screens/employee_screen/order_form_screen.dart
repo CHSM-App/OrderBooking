@@ -12,11 +12,11 @@ class OrderFormScreen extends StatefulWidget {
 }
 
 class _OrderFormScreenState extends State<OrderFormScreen> {
-  List<Product> _products = [];
+  List<Product1> _products = [];
   List<OrderItem> _selectedItems = [];
   
   // For order form
-  Product? _selectedProduct;
+  Product1? _selectedProduct;
   final TextEditingController _quantityController = TextEditingController();
   String _selectedUnit = 'Liter';
   final List<String> _units = ['Liter', 'Box', 'Piece', 'Dozen'];
@@ -29,18 +29,18 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
   void _loadProducts() {
     _products = [
-      Product(id: '1', name: 'Orange Juice', unit: 'Liter', price: 120, imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop'),
-      Product(id: '2', name: 'Apple Juice', unit: 'Liter', price: 150, imageUrl: 'https://images.unsplash.com/photo-1576673442511-7e39b6545c87?w=400&h=400&fit=crop'),
-      Product(id: '3', name: 'Mango Juice', unit: 'Liter', price: 140, imageUrl: 'https://images.unsplash.com/photo-1587373604449-0b7de7b2e1c4?w=400&h=400&fit=crop'),
-      Product(id: '4', name: 'Pineapple Juice', unit: 'Liter', price: 130, imageUrl: 'https://images.unsplash.com/photo-1589589254225-f0a35e83e83f?w=400&h=400&fit=crop'),
-      Product(id: '5', name: 'Mixed Fruit Juice', unit: 'Liter', price: 160, imageUrl: 'https://images.unsplash.com/photo-1546548970-71785318a17b?w=400&h=400&fit=crop'),
-      Product(id: '6', name: 'Watermelon Juice', unit: 'Liter', price: 110, imageUrl: 'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=400&h=400&fit=crop'),
-      Product(id: '7', name: 'Pomegranate Juice', unit: 'Liter', price: 180, imageUrl: 'https://images.unsplash.com/photo-1610885434515-23ff3fafad8a?w=400&h=400&fit=crop'),
-      Product(id: '8', name: 'Grape Juice', unit: 'Liter', price: 135, imageUrl: 'https://images.unsplash.com/photo-1596215143922-eeab8d77b19c?w=400&h=400&fit=crop'),
-      Product(id: '9', name: 'Carrot Juice', unit: 'Liter', price: 125, imageUrl: 'https://images.unsplash.com/photo-1585238341710-886a75e3dbc9?w=400&h=400&fit=crop'),
-      Product(id: '10', name: 'Beetroot Juice', unit: 'Liter', price: 140, imageUrl: 'https://images.unsplash.com/photo-1598513068456-ccc79d1e2edf?w=400&h=400&fit=crop'),
-      Product(id: '11', name: 'Lemon Juice', unit: 'Liter', price: 100, imageUrl: 'https://images.unsplash.com/photo-1523677011781-c91d1bbe1c80?w=400&h=400&fit=crop'),
-      Product(id: '12', name: 'Coconut Water', unit: 'Liter', price: 90, imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop'),
+      Product1(id: '1', name: 'Orange Juice', unit: 'Liter', price: 120, imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop'),
+      Product1(id: '2', name: 'Apple Juice', unit: 'Liter', price: 150, imageUrl: 'https://images.unsplash.com/photo-1576673442511-7e39b6545c87?w=400&h=400&fit=crop'),
+      Product1(id: '3', name: 'Mango Juice', unit: 'Liter', price: 140, imageUrl: 'https://images.unsplash.com/photo-1587373604449-0b7de7b2e1c4?w=400&h=400&fit=crop'),
+      Product1(id: '4', name: 'Pineapple Juice', unit: 'Liter', price: 130, imageUrl: 'https://images.unsplash.com/photo-1589589254225-f0a35e83e83f?w=400&h=400&fit=crop'),
+      Product1(id: '5', name: 'Mixed Fruit Juice', unit: 'Liter', price: 160, imageUrl: 'https://images.unsplash.com/photo-1546548970-71785318a17b?w=400&h=400&fit=crop'),
+      Product1(id: '6', name: 'Watermelon Juice', unit: 'Liter', price: 110, imageUrl: 'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=400&h=400&fit=crop'),
+      Product1(id: '7', name: 'Pomegranate Juice', unit: 'Liter', price: 180, imageUrl: 'https://images.unsplash.com/photo-1610885434515-23ff3fafad8a?w=400&h=400&fit=crop'),
+      Product1(id: '8', name: 'Grape Juice', unit: 'Liter', price: 135, imageUrl: 'https://images.unsplash.com/photo-1596215143922-eeab8d77b19c?w=400&h=400&fit=crop'),
+      Product1(id: '9', name: 'Carrot Juice', unit: 'Liter', price: 125, imageUrl: 'https://images.unsplash.com/photo-1585238341710-886a75e3dbc9?w=400&h=400&fit=crop'),
+      Product1(id: '10', name: 'Beetroot Juice', unit: 'Liter', price: 140, imageUrl: 'https://images.unsplash.com/photo-1598513068456-ccc79d1e2edf?w=400&h=400&fit=crop'),
+      Product1(id: '11', name: 'Lemon Juice', unit: 'Liter', price: 100, imageUrl: 'https://images.unsplash.com/photo-1523677011781-c91d1bbe1c80?w=400&h=400&fit=crop'),
+      Product1(id: '12', name: 'Coconut Water', unit: 'Liter', price: 90, imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop'),
     ];
  
   }
@@ -79,7 +79,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
     setState(() {
       // Update product unit
-      final productWithUnit = Product(
+      final productWithUnit = Product1(
         id: _selectedProduct!.id,
         name: _selectedProduct!.name,
         unit: _selectedUnit,
@@ -229,7 +229,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: DropdownButtonHideUnderline(
-                              child: DropdownButton<Product>(
+                              child: DropdownButton<Product1>(
                                 isExpanded: true,
                                 hint: const Text('Select juice product'),
                                 value: _selectedProduct,
