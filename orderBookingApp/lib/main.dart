@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/presentation/controllers/sync_controller.dart';
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
  
  
 void main() {
-  runApp(
+   runApp(
     ProviderScope(
-      child: const EmployeePortalApp(),
+      child: Consumer(
+        builder: (context, ref, _) {
+          ref.read(syncControllerProvider); // 👈 activate
+          return const EmployeePortalApp();
+        },
+      ),
     ),
   );
 }

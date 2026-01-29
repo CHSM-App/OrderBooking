@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/local/offline_visit_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
 import 'package:order_booking_app/data/repositories/product_details_impl.dart';
 
@@ -8,6 +9,7 @@ import 'package:order_booking_app/data/repositories/shop_impl.dart';
 import 'package:order_booking_app/data/repositories/login_impl.dart';
 import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/data/repositories/employee_impl.dart';
+import 'package:order_booking_app/data/repositories/shot_visit.dart';
 import 'package:order_booking_app/domain/repository/checkin_repo.dart';
 import 'package:order_booking_app/domain/repository/product_details_repo.dart';
 
@@ -17,6 +19,7 @@ import 'package:order_booking_app/domain/repository/auth_repo.dart';
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 import 'package:order_booking_app/domain/repository/region_repo.dart';
 import 'package:order_booking_app/data/repositories/region_impl.dart';
+import 'package:order_booking_app/domain/repository/shop_visit.dart';
 
 //Auth Repository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -62,6 +65,16 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
   return ProductRepositoryImpl(api);
+});
+
+final visitRepositoryProvider = Provider<VisitRepository>((ref) {
+  final dio = ref.watch(dioProvider).value!;
+  final api = ApiService(dio);  
+  final  local = OfflineVisitDao();
+  return VisitImpl(
+    local: local,
+    apiService: api,
+  );
 });
 
 

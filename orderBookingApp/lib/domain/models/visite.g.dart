@@ -7,7 +7,9 @@ part of 'visite.dart';
 // **************************************************************************
 
 VisitPayload _$VisitPayloadFromJson(Map<String, dynamic> json) => VisitPayload(
+  localId: json['localId'] as String,
   shopId: json['shopId'] as String,
+  employeeId: (json['employeeId'] as num?)?.toInt(),
   lat: (json['lat'] as num).toDouble(),
   lng: (json['lng'] as num).toDouble(),
   accuracy: (json['accuracy'] as num).toDouble(),
@@ -17,10 +19,12 @@ VisitPayload _$VisitPayloadFromJson(Map<String, dynamic> json) => VisitPayload(
 
 Map<String, dynamic> _$VisitPayloadToJson(VisitPayload instance) =>
     <String, dynamic>{
+      'localId': instance.localId,
       'shopId': instance.shopId,
       'lat': instance.lat,
       'lng': instance.lng,
       'accuracy': instance.accuracy,
       'capturedAt': instance.capturedAt.toIso8601String(),
       'visitedAt': instance.visitedAt.toIso8601String(),
+      'employeeId': instance.employeeId,
     };

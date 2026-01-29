@@ -8,6 +8,7 @@ import 'package:order_booking_app/presentation/viewModels/network_model.dart';
 import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/product_details.viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
 
 
 
@@ -51,4 +52,11 @@ final productViewModelProvider =
   final usecase = ref.read(getProductListUseCaseProvider);
   const adminId =1 ;
   return ProductViewModel(usecase, adminId );
+});
+
+
+final visitViewModelProvider =
+    StateNotifierProvider<VisitViewModel, AsyncValue<void>>((ref) {
+  final usecase = ref.watch(visitUseCaseProvider);
+  return VisitViewModel(usecase);
 });

@@ -11,6 +11,7 @@ import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'add_shop_screen.dart';
 import 'shop_visit_screen.dart';
 
@@ -263,45 +264,26 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
       debugPrint(
         'User location: Lat=${position.latitude}, Lng=${position.longitude}, Accuracy=${position.accuracy}m',
       );
-      int? userId;
 
-      ref
-          .read(adminloginViewModelProvider)
-          .phoneCheckResult
-          ?.when(
-            data: (admins) {
-              if (admins.isNotEmpty) {
-                userId = admins.first.userId;
-              }
-            },
-            loading: () {},
-            error: (_, __) {},
-          );
+
+     
       // Create visit payload
       final visit = VisitPayload(
+        localId: const Uuid().v4(),
         shopId: shop.id,
         lat: position.latitude,
         lng: position.longitude,
         accuracy: position.accuracy,
         capturedAt: DateTime.now(),
         visitedAt: DateTime.now(),
-        employeeId: userId,
+        employeeId: ref.read(adminloginViewModelProvider).userId
       );
 
       // Dismiss loading dialog
       if (mounted) Navigator.pop(context);
 
       // Check connectivity
-      final connectivity = await Connectivity().checkConnectivity();
-
-      try {
-        await sendVisitToServer(visit);
-
-        _showSuccess('Visit recorded successfully!');
-      } catch (e) {
-        await saveVisitOffline(visit);
-        _showWarning('Visit saved offline. Will sync later.');
-      }
+     ref.read(visitViewModelProvider.notifier).addVisit(visit);
 
       // Navigate to visit screen
       if (mounted) {
@@ -435,16 +417,8 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
     );
   }
 
-  Future<void> saveVisitOffline(VisitPayload visit) async {
-    final prefs = await SharedPreferences.getInstance();
-    final queue = prefs.getStringList('offline_visits') ?? [];
+ 
 
-    queue.add(jsonEncode(visit.toJson()));
-    await prefs.setStringList('offline_visits', queue);
-    debugPrint(
-      'Visit saved offline: ShopID=${visit.shopId}, Lat=${visit.lat}, Lng=${visit.lng}, Accuracy=${visit.accuracy}m',
-    );
-  }
 
   Future<void> sendVisitToServer(VisitPayload visit) async {
     final result = ref.read(shopViewModelProvider.notifier).addVisit(visit);
@@ -457,12 +431,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage>
     }
   }
 
-  Future<List<VisitPayload>> getOfflineVisits() async {
-    final prefs = await SharedPreferences.getInstance();
-    final queue = prefs.getStringList('offline_visits') ?? [];
-
-    return queue.map((e) => VisitPayload.fromJson(jsonDecode(e))).toList();
-  }
+ 
 
   bool _isSyncing = false;
 
