@@ -34,9 +34,9 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
     );
 
     final sampleProducts = [
-      Product(id: '1', name: 'Orange Juice', unit: 'Liter', price: 120),
-      Product(id: '2', name: 'Apple Juice', unit: 'Liter', price: 150),
-      Product(id: '3', name: 'Mango Juice', unit: 'Liter', price: 140),
+      Product1(id: '1', name: 'Orange Juice', unit: 'Liter', price: 120),
+      Product1(id: '2', name: 'Apple Juice', unit: 'Liter', price: 150),
+      Product1(id: '3', name: 'Mango Juice', unit: 'Liter', price: 140),
     ];
 
     _allOrders = [

@@ -29,15 +29,23 @@ class ShopDetails {
   @JsonKey(name: 'created_by')
   final int? createdBy;
 
+  @JsonKey(name: 'latitude')
+  final double? latitude;
+
+  @JsonKey(name: 'longitude')
+  final double? longitude;
+
   ShopDetails({
-    this.shopId,
+     this.shopId,
     this.shopName,
     this.ownerName,
     this.address,
     this.mobileNo,
     this.email,
     this.regionId,
-    this.createdBy
+    this.createdBy,
+    this.latitude,
+    this.longitude
   });
 
   

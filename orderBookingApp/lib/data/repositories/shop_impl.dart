@@ -16,8 +16,8 @@ class ShopImpl implements ShopRepository {
   }
 
   @override
-  Future<List<Shop>> getShopList() {
-    return apiService.getShopList();
+  Future<List<ShopDetails>> getShopList( ) {
+    return apiService.getShopList( );
   }
 
   @override

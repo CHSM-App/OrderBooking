@@ -1,12 +1,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'order_form_screen.dart';
 
 
 class ShopVisitScreen extends StatefulWidget {
-  final Shop shop;
+  final ShopDetails shop;
 
   const ShopVisitScreen({Key? key, required this.shop}) : super(key: key);
 
@@ -103,7 +104,8 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(widget.shop.shopName),
+        title: Text(widget.shop.shopName??
+        ''),
         actions: [
           IconButton(
             icon: const Icon(Icons.call),
@@ -141,7 +143,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.shop.shopName,
+                          widget.shop.shopName ?? '',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -159,7 +161,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                widget.shop.address,
+                                widget.shop.address ?? '',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Colors.white,
@@ -336,12 +338,12 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                       label: 'Owner',
                       value: widget.shop.ownerName!,
                     ),
-                  if (widget.shop.phoneNumber != null) ...[
+                  if (widget.shop.mobileNo != null) ...[
                     const SizedBox(height: 12),
                     _DetailRow(
                       icon: Icons.phone,
                       label: 'Phone',
-                      value: widget.shop.phoneNumber!,
+                      value: widget.shop.mobileNo!,
                       isPhone: true,
                     ),
                   ],

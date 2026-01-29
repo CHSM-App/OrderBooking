@@ -15,6 +15,8 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
   email: json['email'] as String?,
   regionId: (json['region_id'] as num?)?.toInt(),
   createdBy: (json['created_by'] as num?)?.toInt(),
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
@@ -27,4 +29,6 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'email': instance.email,
       'region_id': instance.regionId,
       'created_by': instance.createdBy,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
     };
