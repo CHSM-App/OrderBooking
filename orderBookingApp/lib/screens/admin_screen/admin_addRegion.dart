@@ -28,40 +28,76 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
     super.dispose();
   }
 
-  Future<void> submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+  // Future<void> submitForm() async {
+  //   if (!_formKey.currentState!.validate()) return;
 
-    final region = Region(
-      regionName: regionController.text.trim(),
-      pincode: pincodeController.text.trim(),
-      district: districtController.text.trim(),
-      state: stateController.text.trim(),
-      createdBy: 1, // TODO: replace with logged-in admin ID
-    );
+  //   final region = Region(
+  //     regionName: regionController.text.trim(),
+  //     pincode: pincodeController.text.trim(),
+  //     district: districtController.text.trim(),
+  //     state: stateController.text.trim(),
+  //     createdBy: 1, // TODO: replace with logged-in admin ID
+  //   );
 
-    await ref.read(regionViewModelProvider.notifier).addRegion(region);
+  //   await ref.read(regionViewModelProvider.notifier).addRegion(region);
 
-    final state = ref.read(regionViewModelProvider);
+  //   final state = ref.read(regionViewModelProvider);
 
-    if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.error!),
-          backgroundColor: Colors.red,
+  //   if (state.error != null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(state.error!),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //     return;
+  //   }
+
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //       content: Text("Region added successfully"),
+  //       backgroundColor: Colors.green,
+  //     ),
+  //   );
+
+  //   Navigator.pop(context);
+  // }
+Future<void> submitForm() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  final region = Region(
+    regionName: regionController.text.trim(),
+    pincode: pincodeController.text.trim(),
+    district: districtController.text.trim(),
+    state: stateController.text.trim(),
+    createdBy: 1, // Replace with actual admin ID
+  );
+
+  final notifier = ref.read(regionofflineViewModelProvider.notifier);
+  await notifier.addRegion(region);
+
+  final state = ref.read(regionViewModelProvider);
+
+  if (state is AsyncError) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "Saved locally, but sync failed: ${state.error}",
         ),
-      );
-      return;
-    }
-
+        backgroundColor: Colors.orange,
+      ),
+    );
+  } else {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Region added successfully"),
+        content: Text("Region saved successfully"),
         backgroundColor: Colors.green,
       ),
     );
-
-    Navigator.pop(context);
   }
+
+  Navigator.pop(context);
+}
 
   @override
   Widget build(BuildContext context) {

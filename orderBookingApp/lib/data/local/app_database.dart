@@ -17,8 +17,21 @@ class AppDatabase {
       path,
       version: 1,
       onCreate: (db, _) async {
+        // Offline visits table
         await db.execute('''
           CREATE TABLE offline_visits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            local_id TEXT UNIQUE,
+            payload TEXT NOT NULL,
+            status TEXT NOT NULL,
+            retry_count INTEGER DEFAULT 0,
+            captured_at TEXT NOT NULL
+          )
+        ''');
+
+        // Offline region table
+        await db.execute('''
+          CREATE TABLE offline_regions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             local_id TEXT UNIQUE,
             payload TEXT NOT NULL,

@@ -21,6 +21,9 @@ class Product {
   @JsonKey(name: 'subtypes')
   final List<ProductSubType>? subtypes;
 
+    @JsonKey(name: 'company_id')
+  final String? companyId;
+
   Product({
     this.productId,
     this.productName,
@@ -28,6 +31,7 @@ class Product {
     this.createdBy,
     this.adminId,
     this.subtypes,
+    this.companyId
   });
 
   factory Product.fromJson(Map<String, dynamic> json) =>

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/local/offline_region_dao.dart';
 import 'package:order_booking_app/data/local/offline_visit_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
 import 'package:order_booking_app/data/repositories/product_impl.dart';
+import 'package:order_booking_app/data/repositories/region.dart';
 
 
 import 'package:order_booking_app/data/repositories/shop_impl.dart';
@@ -13,6 +15,7 @@ import 'package:order_booking_app/data/repositories/employee_impl.dart';
 import 'package:order_booking_app/data/repositories/shot_visit.dart';
 import 'package:order_booking_app/domain/repository/checkin_repo.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';
+import 'package:order_booking_app/domain/repository/region.dart';
 
 
 import 'package:order_booking_app/domain/repository/shop_repo.dart';
@@ -83,5 +86,15 @@ final visitRepositoryProvider = Provider<VisitRepository>((ref) {
   );
 });
 
+
+final regionRepositorofflineProvider = Provider<RegionRepooffline>((ref) {
+  final dio = ref.watch(dioProvider).value!;
+  final api = ApiService(dio);  
+  final  local = OfflineRegionDao();
+  return RegionImplOffline(
+    local: local,
+    apiService: api,
+  );
+});
 
 

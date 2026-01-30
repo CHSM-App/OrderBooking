@@ -17,9 +17,10 @@ final syncControllerProvider = Provider<void>((ref) {
           !next.value!.contains(ConnectivityResult.none);
 
       if (wasOffline && isOnline) {
-        ref
-            .read(visitViewModelProvider.notifier)
-            .sync();
+        ref .read(visitViewModelProvider.notifier).sync();
+
+               
+        ref.read(regionofflineViewModelProvider.notifier).sync();
       }
     },
   );
