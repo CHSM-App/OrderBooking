@@ -64,8 +64,11 @@ void initState() {
     }
   }
 
-  Future<void> _checkLocationPermissions() async {
+  Future<void>  _checkLocationPermissions() async {
     // Prevent concurrent checks
+
+    if (_hasShownBanner) return;
+
     if (_isCheckingPermissions) return;
     _isCheckingPermissions = true;
 
@@ -129,31 +132,58 @@ void initState() {
     }
   }
 
+  // Future<void> _handleLocationSetup() async {
+  //   ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  //   _hasShownBanner = false; // Reset so banner can show again if needed
+
+  //   if (!_isLocationServiceEnabled) {
+  //     await Geolocator.openLocationSettings();
+  //     // Wait for user to return
+  //     await Future.delayed(const Duration(seconds: 2));
+  //     await _checkLocationPermissions();
+  //     return;
+  //   }
+
+  //   if (_locationPermission == LocationPermission.denied) {
+  //     // Explicitly request permission when user clicks FIX
+  //     await _requestLocationPermission();
+  //     return;
+  //   }
+
+  //   if (_locationPermission == LocationPermission.deniedForever) {
+  //     await Geolocator.openAppSettings();
+  //     // Wait for user to return
+  //     await Future.delayed(const Duration(seconds: 2));
+  //     await _checkLocationPermissions();
+  //   }
+  // }
+
   Future<void> _handleLocationSetup() async {
-    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-    _hasShownBanner = false; // Reset so banner can show again if needed
+  if (!mounted) return;
 
-    if (!_isLocationServiceEnabled) {
-      await Geolocator.openLocationSettings();
-      // Wait for user to return
-      await Future.delayed(const Duration(seconds: 2));
-      await _checkLocationPermissions();
-      return;
-    }
+  // Hide banner immediately
+  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  _hasShownBanner = false;
 
-    if (_locationPermission == LocationPermission.denied) {
-      // Explicitly request permission when user clicks FIX
-      await _requestLocationPermission();
-      return;
-    }
-
-    if (_locationPermission == LocationPermission.deniedForever) {
-      await Geolocator.openAppSettings();
-      // Wait for user to return
-      await Future.delayed(const Duration(seconds: 2));
-      await _checkLocationPermissions();
-    }
+  if (!_isLocationServiceEnabled) {
+    await Geolocator.openLocationSettings();
+    await Future.delayed(const Duration(seconds: 2));
+    await _checkLocationPermissions();
+    return;
   }
+
+  if (_locationPermission == LocationPermission.denied) {
+    await _requestLocationPermission();
+    return;
+  }
+
+  if (_locationPermission == LocationPermission.deniedForever) {
+    await Geolocator.openAppSettings();
+    await Future.delayed(const Duration(seconds: 2));
+    await _checkLocationPermissions();
+  }
+}
+
 
   /// Request location permission
   Future<void> _requestLocationPermission() async {
@@ -210,6 +240,7 @@ void initState() {
       final permission = await Geolocator.checkPermission();
       if (permission != LocationPermission.always &&
           permission != LocationPermission.whileInUse) {
+
         return;
       }
 
@@ -341,45 +372,102 @@ void initState() {
   }
 
   /// Show a persistent banner prompting user to enable location
-  void _showLocationSetupBanner() {
-    if (!mounted) return;
+  // void _showLocationSetupBanner() {
+  //   if (!mounted) return;
 
-    ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        backgroundColor: Colors.orange.shade100,
-        content: Text(
-          !_isLocationServiceEnabled
-              ? 'GPS is turned off. Enable device location to visit shops.'
-              : _locationPermission == LocationPermission.deniedForever
-              ? 'Location permission permanently denied. Enable in app settings.'
-              : 'Location permission required to visit shops.',
-          style: const TextStyle(
-            color: Colors.black87,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+  //   ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
+  //   ScaffoldMessenger.of(context).showMaterialBanner(
+  //     MaterialBanner(
+  //       backgroundColor: Colors.orange.shade100,
+  //       content: Text(
+  //         !_isLocationServiceEnabled
+  //             ? 'GPS is turned off. Enable device location to visit shops.'
+  //             : _locationPermission == LocationPermission.deniedForever
+  //             ? 'Location permission permanently denied. Enable in app settings.'
+  //             : 'Location permission required to visit shops.',
+  //         style: const TextStyle(
+  //           color: Colors.black87,
+  //           fontSize: 13,
+  //           fontWeight: FontWeight.w500,
+  //         ),
+  //       ),
+  //       leading: const Icon(Icons.location_off, color: Colors.orange),
+  //       // actions: [
+  //       //   TextButton(
+  //       //     onPressed: () {
+  //       //       _hasShownBanner = false; // Reset flag when dismissed
+  //       //       ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  //       //     },
+  //       //     child: const Text('DISMISS'),
+  //       //   ),
+  //       //   TextButton(
+  //       //     onPressed: () {
+  //       //       _hasShownBanner = false; // Reset flag when user takes action
+  //       //       _handleLocationSetup();
+  //       //     },
+  //       //     child: const Text('FIX'),
+  //       //   ),
+  //       // ],
+  //     ),
+  //   );
+  // }
+
+
+void _showLocationSetupBanner() {
+  if (!mounted) return;
+
+  final messenger = ScaffoldMessenger.of(context);
+
+  // Always remove any existing banner first
+  messenger.removeCurrentMaterialBanner();
+
+  messenger.showMaterialBanner(
+    MaterialBanner(
+      backgroundColor: Colors.orange.shade100,
+      content: Text(
+        !_isLocationServiceEnabled
+            ? 'GPS is turned off. Enable device location to visit shops.'
+            : 'Location permission required to visit shops.',
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
         ),
-        leading: const Icon(Icons.location_off, color: Colors.orange),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _hasShownBanner = false; // Reset flag when dismissed
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-            },
-            child: const Text('DISMISS'),
-          ),
-          TextButton(
-            onPressed: () {
-              _hasShownBanner = false; // Reset flag when user takes action
-              _handleLocationSetup();
-            },
-            child: const Text('FIX'),
-          ),
-        ],
       ),
-    );
-  }
+      leading: const Icon(Icons.location_off, color: Colors.orange),
+      actions: [
+        /// 🔹 DISMISS
+        TextButton(
+          onPressed: () {
+            messenger.removeCurrentMaterialBanner();
+            _hasShownBanner = false;
+          },
+          child: const Text('DISMISS'),
+        ),
+
+        /// 🔹 FIX
+        TextButton(
+          onPressed: () async {
+            // 1. Remove banner immediately
+            messenger.removeCurrentMaterialBanner();
+            _hasShownBanner = false;
+
+            // 2. Wait for UI to settle (THIS IS CRITICAL)
+            await Future.delayed(Duration.zero);
+
+            // 3. Open location settings
+            await Geolocator.openLocationSettings();
+          },
+          child: const Text('FIX'),
+        ),
+      ],
+    ),
+  );
+
+  _hasShownBanner = true;
+}
+
+
 
   /// Show dialog asking user to enable location services
   Future<void> _showLocationServiceDialog() async {

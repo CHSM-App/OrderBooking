@@ -36,15 +36,17 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     "Beverage",
     "Grocery",
     "Ice Cream",
-    "Bakery",
-    "Snacks",
+    "Bakery & Snacks",
+    "Dairy",
+    "Personal & Home Care",
+    "Others",
   ];
 
   final List<String> units = [
     "Kilogram",
     "Liter",
     "Piece",
-    "Pack",
+    "Packet",
   ];
 
   List<Map<String, dynamic>> addedItems = [];

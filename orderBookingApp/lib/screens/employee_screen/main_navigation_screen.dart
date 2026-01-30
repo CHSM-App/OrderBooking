@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/employee_screen/notification_page.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'home_page.dart';
 import 'shops_page.dart';
@@ -229,7 +230,9 @@ void _toggleCheckIn() async {
                           const Icon(Icons.notifications_outlined),
                       color: Colors.white,
                       iconSize: 26,
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationPage()));
+                      },
                     ),
                     if (_notificationCount > 0)
                       Positioned(

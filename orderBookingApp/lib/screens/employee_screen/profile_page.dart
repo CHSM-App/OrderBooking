@@ -7,8 +7,7 @@ import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  final String mobileNo;
-  
+  final String mobileNo; 
   const ProfilePage({Key? key, required this.mobileNo}) : super(key: key);
 
   @override
@@ -46,6 +45,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo("1234567890");
     });
+    
   }
   
   @override
@@ -454,7 +454,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
           const Divider(height: 20),
           _buildCompactInfoRow(
             Icons.location_city,
-            'Region ID',
+            'Region',
             employeeDetails.regionId?.toString() ?? 'N/A',
             AppTheme.secondaryColor,
           ),

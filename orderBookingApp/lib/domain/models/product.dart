@@ -16,8 +16,9 @@ class Product {
   @JsonKey(name: 'created_by')
   final int? createdBy;
 
- @JsonKey(name: 'admin_id')
+  @JsonKey(name: 'admin_id')
   final int? adminId;
+  
   @JsonKey(name: 'subtypes')
   final List<ProductSubType>? subtypes;
 
@@ -38,8 +39,9 @@ class Product {
 
 @JsonSerializable()
 class ProductSubType {
-    @JsonKey(name: 'sub_item_id')
+  @JsonKey(name: 'sub_item_id')
   final int? subItemId;
+
   @JsonKey(name: 'measuring_unit')
   final String? measuringUnit;
 

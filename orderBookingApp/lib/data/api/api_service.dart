@@ -87,6 +87,7 @@ abstract class ApiService {
   //Products
   @GET("users/productList/{admin_id}")
   Future<List<Product>> fetchProductList(@Path("admin_id") int adminId);
+  
   @GET("users/productDetails/{product_id}/{admin_id}")
   Future<ProductDetailsResponse> fetchProductDetails(
     @Path("product_id") int productId,

@@ -88,5 +88,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     state=state.copyWith(isLoading: false,error: e.toString());
   }
  }
+
  
 }
