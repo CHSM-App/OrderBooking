@@ -20,11 +20,15 @@ class AppDatabase {
         // Runs only on fresh install
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
+        await _createRegionTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // Runs for existing users
         if (oldVersion < 2) {
           await _createShopsTable(db);
+        }
+        if (oldVersion < 3) {
+          await _createRegionTable(db);
         }
       },
     );
@@ -62,5 +66,18 @@ class AppDatabase {
         updated_at TEXT
       )
     ''');
+  }
+
+  static Future<void> _createRegionTable(Database db) async {
+    await db.execute('''
+          CREATE TABLE offline_regions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            local_id TEXT UNIQUE,
+            payload TEXT NOT NULL,
+            status TEXT NOT NULL,
+            retry_count INTEGER DEFAULT 0,
+            captured_at TEXT NOT NULL
+          )
+        ''');
   }
 }
