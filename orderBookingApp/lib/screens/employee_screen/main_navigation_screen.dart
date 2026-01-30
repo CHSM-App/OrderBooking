@@ -27,7 +27,7 @@ class _MainNavigationScreenState
 
   final List<Widget> _pages = const [
     HomePage(),
-    ShopsPage(),
+    ShopListPage(),
     OrdersPage(),
     CatalogPage(),
     ProfilePage(mobileNo: '8416113132'),

@@ -1,5 +1,3 @@
-
-
 import 'package:order_booking_app/domain/models/visite.dart';
 
 abstract class VisitRepository {
@@ -7,3 +5,4 @@ abstract class VisitRepository {
   Future<void> syncOfflineVisits();
   // Future<void> syncVisits();
 }
+

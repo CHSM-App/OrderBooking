@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class AddShopScreen extends ConsumerStatefulWidget {
   const AddShopScreen({Key? key}) : super(key: key);
@@ -25,12 +26,14 @@ void _saveShop() async {
   if (!_formKey.currentState!.validate()) return;
 
   final shop = ShopDetails(
+    localId : const Uuid().v4(),
     shopName: _shopNameController.text,
     address: _addressController.text,
     regionId: int.tryParse(_regionController.text),
     ownerName: _ownerNameController.text,
     mobileNo: _phoneController.text,
     shopId: 0,
+    updatedAt: DateTime.now(),
   );
 
   await ref.read(shopViewModelProvider.notifier).addShop(shop);

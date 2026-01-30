@@ -20,6 +20,8 @@ final syncControllerProvider = Provider<void>((ref) {
         ref
             .read(visitViewModelProvider.notifier)
             .sync();
+        ref.read(shopViewModelProvider.notifier).sync();
+            
       }
     },
   );

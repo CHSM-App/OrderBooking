@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/offline_visit_dao.dart';
+import 'package:order_booking_app/data/local/shop_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
 import 'package:order_booking_app/data/repositories/product_impl.dart';
 
@@ -55,7 +58,8 @@ final regionRepositoryProvider = Provider<RegionRepository>((ref) {
 final shopRepositoryProvider = Provider<ShopRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return ShopImpl(api);
+  final local = ShopDao();
+  return ShopImpl(api, local);
 });
 
 final checkInRepositoryProvider = Provider<CheckinRepository>((ref) {

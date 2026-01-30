@@ -19,7 +19,6 @@ class _LoginScreenState
     with SingleTickerProviderStateMixin {
   final TextEditingController _mobileController = TextEditingController();
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
   bool _isFocused = false;
   bool _shouldReact = false; // To avoid multiple snackbars/navigation
 
@@ -30,8 +29,6 @@ class _LoginScreenState
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation =
-        CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _controller.forward();
   }
 

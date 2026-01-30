@@ -2,11 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/models/visite.dart';
-import 'app_database.dart';
+import '../DB/app_database.dart';
 
 class OfflineVisitDao {
   Future<void> insert(VisitPayload visit) async {
-    debugPrint('Inserting offline visit: ${visit.toJson()}');
     debugPrintOfflineVisits();
     final db = await AppDatabase.database;
 
@@ -19,7 +18,6 @@ class OfflineVisitDao {
   }
 
   Future<List<Map<String, dynamic>>> fetchPending({int limit = 20}) async {
-    debugPrint('Fetching pending offline visits');
     final db = await AppDatabase.database;
 
     return db.query(
@@ -32,7 +30,6 @@ class OfflineVisitDao {
   }
 
   Future<void> markSyncing(int id) async {
-    debugPrint('marking as syncking offline');
     final db = await AppDatabase.database;
     await db.update(
       'offline_visits',
@@ -43,7 +40,6 @@ class OfflineVisitDao {
   }
 
   Future<void> incrementRetry(int id) async {
-    debugPrint('incrementing retry count');
     final db = await AppDatabase.database;
     await db.rawUpdate(
       '''
@@ -57,7 +53,6 @@ class OfflineVisitDao {
   }
 
   Future<void> delete(int id) async {
-    debugPrint('Deleting offline visit with id $id');
     final db = await AppDatabase.database;
     await db.delete('offline_visits', where: 'id = ?', whereArgs: [id]);
   }

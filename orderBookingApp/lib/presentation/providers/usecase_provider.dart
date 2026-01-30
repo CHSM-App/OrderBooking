@@ -43,7 +43,6 @@ final productUsecaseProvider=Provider<ProductUsecase>((ref){
   final productRepo=ref.watch(productRepositoryProvider);
   return ProductUsecase(productRepo);});
 
-
 final visitUseCaseProvider = Provider<VisitUseCase>((ref) {
   final visitRepo = ref.watch(visitRepositoryProvider);
   return VisitUseCase(visitRepo);

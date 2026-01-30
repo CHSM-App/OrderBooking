@@ -6,14 +6,6 @@ class VisitUseCase {
 
   VisitUseCase(this.repository);
 
-  // Future<void> recordVisit(VisitPayload visit) async {
-  //   await repository.saveVisitOffline(visit);
-  // }
-
-  // Future<void> syncVisits() async {
-  //   await repository.syncOfflineVisits();
-  // }
-
   Future<void> saveVisitOffline(VisitPayload visit) {
     return repository.saveVisitOffline(visit);
   }
@@ -21,3 +13,4 @@ class VisitUseCase {
     return repository.syncOfflineVisits();
   }
 }
+
