@@ -40,7 +40,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
     });
 
     Future.microtask(() {
-      ref.read(regionViewModelProvider.notifier).getRegionList();
+      ref.read(regionofflineViewModelProvider.notifier).fetchRegions();
       _controller.forward();
     });
   }
@@ -55,7 +55,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(regionViewModelProvider);
+    final state = ref.watch(regionofflineViewModelProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -91,7 +91,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
                 context,
                 MaterialPageRoute(builder: (_) => const AddRegionPage()),
               );
-              ref.read(regionViewModelProvider.notifier).getRegionList();
+              ref.read(regionofflineViewModelProvider.notifier).fetchRegions();
             },
           ),
         ),
@@ -139,64 +139,48 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
         ],
       ),
     );
-  }
-
-  Widget _buildBody(RegionState state) {
-    if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
-        ),
-      );
-    }
-
-    if (state.error != null) {
-      return Center(child: Text(state.error!));
-    }
-
-    return state.regionList!.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
-        ),
+  }Widget _buildBody(AsyncValue<List<Region>> state) {
+  return state.when(
+    loading: () => const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
       ),
-      error: (e, _) => Center(child: Text(e.toString())),
-      data: (regions) {
-        final filteredRegions = regions.where((region) {
-          return (region.regionName ?? "").toLowerCase().contains(_searchQuery) ||
-              (region.district ?? "").toLowerCase().contains(_searchQuery) ||
-              (region.state ?? "").toLowerCase().contains(_searchQuery) ||
-              (region.pincode ?? "").toString().contains(_searchQuery);
-        }).toList();
+    ),
+    error: (e, st) => Center(child: Text(e.toString())),
+    data: (regions) {
+      final filteredRegions = regions.where((region) {
+        return (region.regionName ?? "").toLowerCase().contains(_searchQuery) ||
+               (region.district ?? "").toLowerCase().contains(_searchQuery) ||
+               (region.state ?? "").toLowerCase().contains(_searchQuery) ||
+               (region.pincode ?? "").toString().contains(_searchQuery);
+      }).toList();
 
-        if (filteredRegions.isEmpty) {
-          return const Center(
-            child: Text(
-              "No matching regions found",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-          itemCount: filteredRegions.length,
-          itemBuilder: (context, index) {
-            final region = filteredRegions[index];
-
-            return _AnimatedRegionCard(
-              region: region,
-              index: index,
-              controller: _controller,
-            );
-          },
+      if (filteredRegions.isEmpty) {
+        return const Center(
+          child: Text(
+            "No matching regions found",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
         );
-      },
-    );
-  }
-}
+      }
 
+      return ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+        itemCount: filteredRegions.length,
+        itemBuilder: (context, index) {
+          final region = filteredRegions[index];
+          return _AnimatedRegionCard(
+            region: region,
+            index: index,
+            controller: _controller,
+          );
+        },
+      );
+    },
+  );
+}
+    }
 class _AnimatedRegionCard extends StatefulWidget {
   final Region region;
   final int index;

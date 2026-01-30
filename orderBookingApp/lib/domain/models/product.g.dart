@@ -15,6 +15,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   subtypes: (json['subtypes'] as List<dynamic>?)
       ?.map((e) => ProductSubType.fromJson(e as Map<String, dynamic>))
       .toList(),
+  companyId: json['company_id'] as String?,
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
@@ -24,6 +25,7 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'created_by': instance.createdBy,
   'admin_id': instance.adminId,
   'subtypes': instance.subtypes?.map((e) => e.toJson()).toList(),
+  'company_id': instance.companyId,
 };
 
 ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>

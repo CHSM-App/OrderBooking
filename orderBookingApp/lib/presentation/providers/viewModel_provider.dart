@@ -1,5 +1,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/presentation/providers/usecase_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/checkin_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
@@ -7,6 +8,7 @@ import 'package:order_booking_app/presentation/viewModels/employee_viewmodel.dar
 import 'package:order_booking_app/presentation/viewModels/network_model.dart';
 import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/product_viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/region.dart';
 
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
@@ -58,4 +60,9 @@ final visitViewModelProvider =
     StateNotifierProvider<VisitViewModel, AsyncValue<void>>((ref) {
   final usecase = ref.watch(visitUseCaseProvider);
   return VisitViewModel(usecase);
+});
+final regionofflineViewModelProvider =
+    StateNotifierProvider<RegionofflineViewModel, AsyncValue<List<Region>>>((ref) {
+  final usecase = ref.watch(regionUseCaseofflineProvider);
+  return RegionofflineViewModel(usecase);
 });
