@@ -4,7 +4,6 @@ import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
-import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';

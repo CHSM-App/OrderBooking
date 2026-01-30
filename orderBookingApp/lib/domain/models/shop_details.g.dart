@@ -7,6 +7,7 @@ part of 'shop_details.dart';
 // **************************************************************************
 
 ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
+  localId: json['localId'] as String?,
   shopId: (json['shop_id'] as num?)?.toInt(),
   shopName: json['shop_name'] as String?,
   ownerName: json['owner_name'] as String?,
@@ -17,10 +18,15 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
   createdBy: (json['created_by'] as num?)?.toInt(),
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
+  isSynced: json['isSynced'] as bool? ?? false,
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
 );
 
 Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
     <String, dynamic>{
+      'localId': instance.localId,
       'shop_id': instance.shopId,
       'shop_name': instance.shopName,
       'owner_name': instance.ownerName,
@@ -31,4 +37,6 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'created_by': instance.createdBy,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
+      'isSynced': instance.isSynced,
+      'updatedAt': instance.updatedAt?.toIso8601String(),
     };

@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'order_form_screen.dart';

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:order_booking_app/domain/models/product.dart';
@@ -125,6 +124,7 @@ void didUpdateWidget(covariant AddProductPage oldWidget) {
         "measuringUnit": measuringUnit ?? '',
         "availableUnit": unitController.text,
         "price": priceController.text,
+        "companyId":"C0001"
       });
       unitController.clear();
       priceController.clear();
@@ -161,6 +161,7 @@ void didUpdateWidget(covariant AddProductPage oldWidget) {
       productType: productType!,
       createdBy: 1,
       subtypes: subItems,
+      companyId: "C0001"
     );
 
     try {
@@ -208,6 +209,7 @@ Widget build(BuildContext context) {
                 "productName": details.product.productName ?? '',
                 "productType": details.product.productType ?? '',
                 "createdBy": details.product.createdBy.toString(),
+                "companyId":details.product.companyId??'',
                 "measuringUnit": s.measuringUnit,
                 "availableUnit": s.availableUnit.toString(),
                 "price": s.price.toString(),

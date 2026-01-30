@@ -4,15 +4,19 @@ part 'visite.g.dart';
 
 @JsonSerializable()
 class VisitPayload {
-  final String shopId;
+  /// Local-only unique ID for offline sync
+  final String localId;
+
+  final int shopId;
   final double lat;
   final double lng;
   final double accuracy;
   final DateTime capturedAt;
   final DateTime visitedAt;
-  final int ? employeeId;
+  final int? employeeId;
 
   VisitPayload({
+    required this.localId,
     required this.shopId,
     this.employeeId,
     required this.lat,
@@ -22,6 +26,7 @@ class VisitPayload {
     required this.visitedAt,
   });
 
+  /// Payload sent to backend
   Map<String, dynamic> toJson() => {
         'shopId': shopId,
         'lat': lat,
@@ -32,12 +37,19 @@ class VisitPayload {
         'employeeId': employeeId,
       };
 
-  static VisitPayload fromJson(Map<String, dynamic> json) {
+  /// Full JSON including localId (for SQLite)
+  Map<String, dynamic> toLocalJson() => {
+        'localId': localId,
+        ...toJson(),
+      };
+
+  factory VisitPayload.fromJson(Map<String, dynamic> json) {
     return VisitPayload(
+      localId: json['localId'],
       shopId: json['shopId'],
-      lat: json['lat'],
-      lng: json['lng'],
-      accuracy: json['accuracy'],
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+      accuracy: (json['accuracy'] as num).toDouble(),
       capturedAt: DateTime.parse(json['capturedAt']),
       visitedAt: DateTime.parse(json['visitedAt']),
       employeeId: json['employeeId'],

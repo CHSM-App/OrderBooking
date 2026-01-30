@@ -1,4 +1,3 @@
-import 'package:order_booking_app/domain/models/models.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 
@@ -17,9 +16,7 @@ class ShopUsecase {
     return shoprepository.getShopList( );
   }
 
-    Future<dynamic> addVisit(VisitPayload visitPayload) {
-    return shoprepository.addVisit(visitPayload);
-
+  Future<void> sync() {
+    return shoprepository.sync();
   }
-
 }

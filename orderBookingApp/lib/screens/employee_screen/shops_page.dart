@@ -1,352 +1,363 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:order_booking_app/domain/models/models.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
+import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
+import 'package:order_booking_app/screens/employee_screen/shop_visit_screen.dart';
+import 'package:order_booking_app/screens/theme.dart';
+import 'package:uuid/uuid.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
-import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'add_shop_screen.dart';
-import 'shop_visit_screen.dart';
 
-class ShopsPage extends ConsumerStatefulWidget {
-  const ShopsPage({Key? key}) : super(key: key);
+
+class ShopListPage extends ConsumerStatefulWidget {
+  const ShopListPage({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<ShopsPage> createState() => _ShopsPageState();
+  ConsumerState<ShopListPage> createState() => _ShopListPageState();
 }
 
-class _ShopsPageState extends ConsumerState<ShopsPage>
-    with WidgetsBindingObserver {
+class _ShopListPageState extends ConsumerState<ShopListPage> {
   final TextEditingController _searchController = TextEditingController();
-  late final StreamSubscription _connectivitySub;
-  bool _isLocationServiceEnabled = false;
-  LocationPermission _locationPermission = LocationPermission.denied;
-  bool _isCheckingPermissions = false;
-  bool _hasShownBanner = false;
-
-@override
-void initState() {
-  super.initState();
-
-  // Load shops immediately
-  Future.microtask(() {
-    ref.read(shopViewModelProvider.notifier).getShopList();
-  });
-
-  WidgetsBinding.instance.addObserver(this);
-
-  _connectivitySub = Connectivity().onConnectivityChanged.listen((status) {
-    if (status != ConnectivityResult.none) {
-      syncOfflineVisits();
-    }
-    _loadShops(); // This will now actually work!
-  });
-    _loadShops(); // This will now actually work!
-
-  _checkLocationPermissions();
-}
+  String _searchQuery = '';
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Only recheck if we previously had permission issues
-      if (_locationPermission != LocationPermission.always &&
-          _locationPermission != LocationPermission.whileInUse) {
-        _checkLocationPermissions();
-      }
-    }
-  }
-
-  Future<void>  _checkLocationPermissions() async {
-    // Prevent concurrent checks
-
-    if (_hasShownBanner) return;
-
-    if (_isCheckingPermissions) return;
-    _isCheckingPermissions = true;
-
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
-      if (!mounted) return;
-
-      if (!serviceEnabled) {
-        // Location service is OFF - show banner immediately
-        setState(() {
-          _isLocationServiceEnabled = false;
-        });
-
-        if (!_hasShownBanner) {
-          _showLocationSetupBanner();
-          _hasShownBanner = true;
-        }
-        return; // Don't check permission if service is disabled
-      }
-
-      // Service is enabled, now check permission
-      setState(() {
-        _isLocationServiceEnabled = true;
-      });
-
-      final permission = await Geolocator.checkPermission();
-
-      if (!mounted) return;
-
-      setState(() {
-        _locationPermission = permission;
-      });
-
-      final hasPermission =
-          permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse;
-
-      if (hasPermission) {
-        // Everything is good - hide banner and reset flag
-        _hasShownBanner = false;
-        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-      } else if (permission == LocationPermission.deniedForever) {
-        // Permission permanently denied - show banner
-        if (!_hasShownBanner) {
-          _showLocationSetupBanner();
-          _hasShownBanner = true;
-        }
-      } else if (permission == LocationPermission.denied) {
-        // Permission not yet requested or denied - DON'T auto-request
-        // Just show the banner and let user click to grant
-        if (!_hasShownBanner) {
-          _showLocationSetupBanner();
-          _hasShownBanner = true;
-        }
-      }
-    } catch (e) {
-      debugPrint('Error checking location permissions: $e');
-    } finally {
-      _isCheckingPermissions = false;
-    }
-  }
-
-  // Future<void> _handleLocationSetup() async {
-  //   ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-  //   _hasShownBanner = false; // Reset so banner can show again if needed
-
-  //   if (!_isLocationServiceEnabled) {
-  //     await Geolocator.openLocationSettings();
-  //     // Wait for user to return
-  //     await Future.delayed(const Duration(seconds: 2));
-  //     await _checkLocationPermissions();
-  //     return;
-  //   }
-
-  //   if (_locationPermission == LocationPermission.denied) {
-  //     // Explicitly request permission when user clicks FIX
-  //     await _requestLocationPermission();
-  //     return;
-  //   }
-
-  //   if (_locationPermission == LocationPermission.deniedForever) {
-  //     await Geolocator.openAppSettings();
-  //     // Wait for user to return
-  //     await Future.delayed(const Duration(seconds: 2));
-  //     await _checkLocationPermissions();
-  //   }
-  // }
-
-  Future<void> _handleLocationSetup() async {
-  if (!mounted) return;
-
-  // Hide banner immediately
-  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-  _hasShownBanner = false;
-
-  if (!_isLocationServiceEnabled) {
-    await Geolocator.openLocationSettings();
-    await Future.delayed(const Duration(seconds: 2));
-    await _checkLocationPermissions();
-    return;
-  }
-
-  if (_locationPermission == LocationPermission.denied) {
-    await _requestLocationPermission();
-    return;
-  }
-
-  if (_locationPermission == LocationPermission.deniedForever) {
-    await Geolocator.openAppSettings();
-    await Future.delayed(const Duration(seconds: 2));
-    await _checkLocationPermissions();
-  }
-}
-
-
-  /// Request location permission
-  Future<void> _requestLocationPermission() async {
-    try {
-      debugPrint('Requesting location permission...');
-      final permission = await Geolocator.requestPermission();
-      debugPrint('Permission result: $permission');
-
+  void initState() {
+    super.initState();
+    // Fetch shop list when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(shopViewModelProvider.notifier).getShopList();
+    });
+    
+    // Listen to search changes
+    _searchController.addListener(() {
       if (mounted) {
         setState(() {
-          _locationPermission = permission;
+          _searchQuery = _searchController.text.toLowerCase().trim();
         });
+        print('Search query updated: $_searchQuery'); // Debug
+      }
+    });
+  }
 
-        if (permission == LocationPermission.whileInUse ||
-            permission == LocationPermission.always) {
-          // Permission granted!
-          _hasShownBanner = false;
-          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-          _showSuccess('Location permission granted!');
-        } else if (permission == LocationPermission.deniedForever) {
-          // User selected "Don't ask again"
-          _showLocationSetupBanner();
-          _hasShownBanner = true;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Filter shops based on search query
+  List<ShopDetails> _filterShops(List<ShopDetails> shops) {
+    if (_searchQuery.isEmpty) {
+      print('Search query is empty, returning all ${shops.length} shops'); // Debug
+      return shops;
+    }
+
+    final filtered = shops.where((shop) {
+      final shopName = shop.shopName?.toLowerCase() ?? '';
+      final ownerName = shop.ownerName?.toLowerCase() ?? '';
+      final address = shop.address?.toLowerCase() ?? '';
+      final phone = shop.mobileNo?.toLowerCase() ?? '';
+      final email = shop.email?.toLowerCase() ?? '';
+
+      final matches = shopName.contains(_searchQuery) ||
+          ownerName.contains(_searchQuery) ||
+          address.contains(_searchQuery) ||
+          phone.contains(_searchQuery) ||
+          email.contains(_searchQuery);
+      
+      return matches;
+    }).toList();
+    
+    print('Filtering with query: "$_searchQuery", found ${filtered.length} of ${shops.length} shops'); // Debug
+    return filtered;
+  }
+
+  // Handle location permission and get current position
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Show dialog to enable location services
+      if (mounted) {
+        final shouldOpenSettings = await _showLocationServiceDialog();
+        if (shouldOpenSettings) {
+          await Geolocator.openLocationSettings();
+          // Wait a bit and check again
+          await Future.delayed(const Duration(seconds: 1));
+          serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) {
+            return null;
+          }
         } else {
-          // User denied this time
-          _showLocationSetupBanner();
-          _hasShownBanner = true;
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+
+    // Check location permission
+    permission = await Geolocator.checkPermission();
+    
+    if (permission == LocationPermission.denied) {
+      // Request permission
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permission denied
+        if (mounted) {
+          _showPermissionDeniedDialog();
+        }
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever
+      if (mounted) {
+        final shouldOpenSettings = await _showPermissionPermanentlyDeniedDialog();
+        if (shouldOpenSettings) {
+          await Geolocator.openAppSettings();
         }
       }
+      return null;
+    }
+
+    // Permission granted, get current position
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          throw Exception('Location request timed out. Please try again.');
+        },
+      );
+      return position;
     } catch (e) {
-      debugPrint('Error requesting location permission: ${e.toString()}');
       if (mounted) {
-        _showError('Failed to request permission: ${e.toString()}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().contains('timeout')
+                  ? 'Location request timed out. Please try again.'
+                  : 'Failed to get location: ${e.toString()}',
+            ),
+            backgroundColor: AppTheme.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
+      return null;
     }
   }
 
-  /// Select shop and initiate visit with validation
-  Future<void> _selectShop(ShopDetails shop) async {
-    // Check location service first
-    if (!_isLocationServiceEnabled) {
-      _showError('Location services are disabled. Please enable GPS first.');
-      _hasShownBanner = false;
-      await _showLocationServiceDialog();
-      return;
-    }
-
-    // Check permission status
-    if (_locationPermission == LocationPermission.denied) {
-      // Request permission when user tries to visit a shop
-      _showError('Location permission required to visit shops.');
-      await _requestLocationPermission();
-
-      final permission = await Geolocator.checkPermission();
-      if (permission != LocationPermission.always &&
-          permission != LocationPermission.whileInUse) {
-
-        return;
-      }
-
-      _locationPermission = permission;
-    }
-
-    if (_locationPermission == LocationPermission.deniedForever) {
-      _showError(
-        'Location permission permanently denied. Please enable in settings.',
-      );
-      _hasShownBanner = false;
-      await _showOpenSettingsDialog();
-      return;
-    }
-
-    // Check one more time to be sure
-    final hasPermission =
-        _locationPermission == LocationPermission.always ||
-        _locationPermission == LocationPermission.whileInUse;
-
-    if (!hasPermission) {
-      _showError('Location permission is required to visit shops.');
-      return;
-    }
-
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => WillPopScope(
-          onWillPop: () async => false,
-          child: Dialog(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Getting your location...',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'This may take a few seconds',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+  // Show dialog for location service disabled
+  Future<bool> _showLocationServiceDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.warningColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.location_off, color: AppTheme.warningColor),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Location Service Disabled',
+                style: TextStyle(fontSize: 18),
               ),
             ),
+          ],
+        ),
+        content: const Text(
+          'Please enable location services to mark your visit to this shop.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+            ),
+            child: const Text('Enable Location'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  // Show dialog for permission denied
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.location_disabled, color: AppTheme.errorColor),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Permission Denied',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Location permission is required to mark your shop visits. Please grant permission to continue.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show dialog for permission permanently denied
+  Future<bool> _showPermissionPermanentlyDeniedDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.block, color: AppTheme.errorColor),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Permission Required',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Location permission was permanently denied. Please enable it from app settings to mark shop visits.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+            ),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  // Old method removed - no longer needed
+  void _showLocationDialog(
+    String title,
+    String message, {
+    bool isServiceDisabled = false,
+    bool isPermanentlyDenied = false,
+  }) {
+    // This method is deprecated - use the specific dialog methods above
+  }
+
+  // Handle shop card tap
+  Future<void> _onShopTap(ShopDetails shop) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: AppTheme.accentColor),
+              const SizedBox(height: 16),
+              const Text('Getting your location...'),
+            ],
           ),
         ),
-      );
+      ),
+    );
 
-      // Get user location
-      final position = await _getUserLocation();
-      debugPrint(
-        'User location: Lat=${position.latitude}, Lng=${position.longitude}, Accuracy=${position.accuracy}m',
-      );
-      int? userId;
+    try {
+      // Get current position
+      final position = await _getCurrentLocation();
 
-      ref
-          .read(adminloginViewModelProvider)
-          .phoneCheckResult
-          ?.when(
-            data: (admins) {
-              if (admins.isNotEmpty) {
-                userId = admins.first.userId;
-              }
-            },
-            loading: () {},
-            error: (_, __) {},
-          );
+      // Dismiss loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (position == null) return;
+
       // Create visit payload
       final visit = VisitPayload(
-        shopId: shop.shopId.toString(),
+        localId: const Uuid().v4(),
+        shopId: shop.shopId ?? 0,
         lat: position.latitude,
         lng: position.longitude,
         accuracy: position.accuracy,
         capturedAt: DateTime.now(),
         visitedAt: DateTime.now(),
-        employeeId: userId,
+        employeeId: ref.read(adminloginViewModelProvider).userId,
       );
 
-      // Dismiss loading dialog
-      if (mounted) Navigator.pop(context);
-
-      // Check connectivity
-      final connectivity = await Connectivity().checkConnectivity();
-
-      try {
-        await sendVisitToServer(visit);
-
-        _showSuccess('Visit recorded successfully!');
-      } catch (e) {
-        await saveVisitOffline(visit);
-        _showWarning('Visit saved offline. Will sync later.');
-      }
+      // Add visit
+      ref.read(visitViewModelProvider.notifier).addVisit(visit);
 
       // Navigate to visit screen
       if (mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ShopVisitScreen(shop: shop)),
+          MaterialPageRoute(
+            builder: (_) => ShopVisitScreen(shop: shop),
+          ),
         );
       }
     } catch (e) {
@@ -356,732 +367,487 @@ void initState() {
       }
 
       // Show error message
-      String errorMessage = e.toString().replaceAll('Exception: ', '');
-      _showError(errorMessage);
-
-      // Offer to fix if it's a permission/service issue
-      if (errorMessage.contains('disabled') ||
-          errorMessage.contains('denied')) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) {
-          _hasShownBanner = false;
-          await _handleLocationSetup();
-        }
-      }
-    }
-  }
-
-  /// Show a persistent banner prompting user to enable location
-  // void _showLocationSetupBanner() {
-  //   if (!mounted) return;
-
-  //   ScaffoldMessenger.of(context).removeCurrentMaterialBanner();
-  //   ScaffoldMessenger.of(context).showMaterialBanner(
-  //     MaterialBanner(
-  //       backgroundColor: Colors.orange.shade100,
-  //       content: Text(
-  //         !_isLocationServiceEnabled
-  //             ? 'GPS is turned off. Enable device location to visit shops.'
-  //             : _locationPermission == LocationPermission.deniedForever
-  //             ? 'Location permission permanently denied. Enable in app settings.'
-  //             : 'Location permission required to visit shops.',
-  //         style: const TextStyle(
-  //           color: Colors.black87,
-  //           fontSize: 13,
-  //           fontWeight: FontWeight.w500,
-  //         ),
-  //       ),
-  //       leading: const Icon(Icons.location_off, color: Colors.orange),
-  //       // actions: [
-  //       //   TextButton(
-  //       //     onPressed: () {
-  //       //       _hasShownBanner = false; // Reset flag when dismissed
-  //       //       ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-  //       //     },
-  //       //     child: const Text('DISMISS'),
-  //       //   ),
-  //       //   TextButton(
-  //       //     onPressed: () {
-  //       //       _hasShownBanner = false; // Reset flag when user takes action
-  //       //       _handleLocationSetup();
-  //       //     },
-  //       //     child: const Text('FIX'),
-  //       //   ),
-  //       // ],
-  //     ),
-  //   );
-  // }
-
-
-void _showLocationSetupBanner() {
-  if (!mounted) return;
-
-  final messenger = ScaffoldMessenger.of(context);
-
-  // Always remove any existing banner first
-  messenger.removeCurrentMaterialBanner();
-
-  messenger.showMaterialBanner(
-    MaterialBanner(
-      backgroundColor: Colors.orange.shade100,
-      content: Text(
-        !_isLocationServiceEnabled
-            ? 'GPS is turned off. Enable device location to visit shops.'
-            : 'Location permission required to visit shops.',
-        style: const TextStyle(
-          color: Colors.black87,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      leading: const Icon(Icons.location_off, color: Colors.orange),
-      actions: [
-        /// 🔹 DISMISS
-        TextButton(
-          onPressed: () {
-            messenger.removeCurrentMaterialBanner();
-            _hasShownBanner = false;
-          },
-          child: const Text('DISMISS'),
-        ),
-
-        /// 🔹 FIX
-        TextButton(
-          onPressed: () async {
-            // 1. Remove banner immediately
-            messenger.removeCurrentMaterialBanner();
-            _hasShownBanner = false;
-
-            // 2. Wait for UI to settle (THIS IS CRITICAL)
-            await Future.delayed(Duration.zero);
-
-            // 3. Open location settings
-            await Geolocator.openLocationSettings();
-          },
-          child: const Text('FIX'),
-        ),
-      ],
-    ),
-  );
-
-  _hasShownBanner = true;
-}
-
-
-
-  /// Show dialog asking user to enable location services
-  Future<void> _showLocationServiceDialog() async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enable Location Services'),
-        content: const Text(
-          'This app requires GPS to verify shop visits. Please enable location services in your device settings.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await Geolocator.openLocationSettings();
-              await Future.delayed(const Duration(seconds: 2));
-              await _checkLocationPermissions();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-            ),
-            child: const Text('OPEN SETTINGS'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Show dialog to open app settings for permanently denied permission
-  Future<void> _showOpenSettingsDialog() async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-          'Location permission is permanently denied. Please enable it in app settings to use this feature.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await Geolocator.openAppSettings();
-              await Future.delayed(const Duration(seconds: 2));
-              await _checkLocationPermissions();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-            ),
-            child: const Text('OPEN SETTINGS'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> saveVisitOffline(VisitPayload visit) async {
-    final prefs = await SharedPreferences.getInstance();
-    final queue = prefs.getStringList('offline_visits') ?? [];
-
-    queue.add(jsonEncode(visit.toJson()));
-    await prefs.setStringList('offline_visits', queue);
-    debugPrint(
-      'Visit saved offline: ShopID=${visit.shopId}, Lat=${visit.lat}, Lng=${visit.lng}, Accuracy=${visit.accuracy}m',
-    );
-  }
-
-  Future<void> sendVisitToServer(VisitPayload visit) async {
-    final result = ref.read(shopViewModelProvider.notifier).addVisit(visit);
-    debugPrint(
-      'Sending visit to server: ShopID=${visit.shopId}, Lat=${visit.lat}, Lng=${visit.lng}, Accuracy=${visit.accuracy}m',
-    );
-
-    if (!(await result)) {
-      throw Exception('Sync failed');
-    }
-  }
-
-  Future<List<VisitPayload>> getOfflineVisits() async {
-    final prefs = await SharedPreferences.getInstance();
-    final queue = prefs.getStringList('offline_visits') ?? [];
-
-    return queue.map((e) => VisitPayload.fromJson(jsonDecode(e))).toList();
-  }
-
-  bool _isSyncing = false;
-
-  Future<void> syncOfflineVisits() async {
-    if (_isSyncing) return;
-    _isSyncing = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final queue = prefs.getStringList('offline_visits') ?? [];
-
-      if (queue.isEmpty) return;
-
-      final remaining = <String>[];
-      int synced = 0;
-
-      for (final item in queue) {
-        try {
-          final visit = VisitPayload.fromJson(jsonDecode(item));
-          await sendVisitToServer(visit); // must throw on failure
-          synced++;
-        } catch (e) {
-          // keep only failed items
-          remaining.add(item);
-        }
-      }
-
-      await prefs.setStringList('offline_visits', remaining);
-
-      if (synced > 0 && mounted) {
-        _showSuccess('$synced visit(s) synced');
-      }
-    } finally {
-      _isSyncing = false;
-    }
-  }
-Future<void> _loadShops() async {
-  try {
-    // Trigger API call to refresh shop list
-    await ref.read(shopViewModelProvider.notifier).getShopList();
-  } catch (e) {
-    _showError('Failed to load shops');
-    debugPrint('Load shops error: $e');
-  }
-}
-  /// Get user location with comprehensive error handling and validation
-  Future<Position> _getUserLocation() async {
-    // Check if location service is enabled
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception(
-        'Location services are disabled. Please enable GPS in device settings.',
-      );
-    }
-
-    // Check permission status
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception(
-          'Location permission denied. Please grant permission to continue.',
         );
       }
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception(
-        'Location permission permanently denied. Please enable it in app settings.',
-      );
-    }
-
-    // Get current position with timeout and accuracy settings
-    Position position;
-    try {
-      position =
-          await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              timeLimit: Duration(seconds: 15),
-            ),
-          ).timeout(
-            const Duration(seconds: 20),
-            onTimeout: () {
-              throw Exception('Location request timed out. Please try again.');
-            },
-          );
-    } catch (e) {
-      if (e.toString().contains('timeout')) {
-        rethrow;
-      }
-      throw Exception('Failed to get location: ${e.toString()}');
-    }
-
-    // Validate coordinates are reasonable
-    if (position.latitude == 0.0 && position.longitude == 0.0) {
-      throw Exception('Invalid GPS coordinates received. Please try again.');
-    }
-
-    return position;
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: AppTheme.errorColor,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    final shopState = ref.watch(shopViewModelProvider);
 
-  void _showSuccess(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+    return Scaffold(
 
-  void _showWarning(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
- @override
-Widget build(BuildContext context) {
-  // Watch shop state
-  final shopState = ref.watch(shopViewModelProvider);
-  final shopAsync = shopState.shopList;
-
-  return Scaffold(
-    backgroundColor: AppTheme.backgroundColor,
-    body: SafeArea(
-      child: Column(
+      body: Column(
         children: [
-          const SizedBox(height: 10),
-
-          /// 🔍 Search Bar
+          // Search Box
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              style: const TextStyle(color: AppTheme.textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Search shops by name or address...',
-                hintStyle:
-                    const TextStyle(color: AppTheme.textSecondary),
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: AppTheme.textSecondary,
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.primaryColor,
+                  width: 1.5,
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.clear,
-                          color: AppTheme.textSecondary,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppTheme.textLight,
-                    width: 1,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentColor.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppTheme.primaryColor,
-                    width: 2,
-                  ),
-                ),
+                ],
+              ),
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _searchController,
+                builder: (context, value, child) {
+                  return TextField(
+                    controller: _searchController,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontFamily: 'Poppins',
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search shops by name, owner, phone, address...',
+                      hintStyle: TextStyle(
+                        color: AppTheme.textSecondary.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppTheme.textSecondary,
+                      ),
+                      suffixIcon: value.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: AppTheme.textSecondary,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
+          // Shop List
+          Expanded(
+            child: _buildBody(shopState),
+          ),
+        ],
+      ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.accentColor.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddShopScreen(),
+              ),
+            );
+            
+            // Refresh the list if a shop was added
+            if (result == true && mounted) {
+              ref.read(shopViewModelProvider.notifier).getShopList();
+            }
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(
+            Icons.add_business,
+            color: AppTheme.textPrimary,
+          ),
+          label: const Text(
+            'Add Shop',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-          const SizedBox(height: 10),
+  Widget _buildBody(ShopState shopState) {
+    // Wrap everything in RefreshIndicator for pull-to-refresh
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(shopViewModelProvider.notifier).getShopList();
+      },
+      color: AppTheme.accentColor,
+      backgroundColor: AppTheme.primaryColor,
+      child: _buildContent(shopState),
+    );
+  }
 
-          /// 📊 Shops Count + Map Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+  Widget _buildContent(ShopState shopState) {
+    // Loading state
+    if (shopState.isLoading && shopState.shopList == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: AppTheme.accentColor),
+            const SizedBox(height: 16),
+            const Text(
+              'Loading shops...',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Error state
+    if (shopState.error != null) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - 100,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
-                  child: shopAsync?.maybeWhen(
-                        data: (shops) =>
-                            Text(
-                              '${shops.length} Shop${shops.length != 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                        orElse: () => const Text(
-                          '0 Shops',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ) ??
-                      const SizedBox(),
+                Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading shops',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    _showInfo('Map view coming soon!');
-                  },
-                  icon: const Icon(Icons.map, size: 18),
-                  label: const Text('View Map'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.primaryColor,
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    shopState.error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppTheme.textSecondary),
                   ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    ref.read(shopViewModelProvider.notifier).getShopList();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
                 ),
               ],
             ),
           ),
+        ),
+      );
+    }
 
-          const SizedBox(height: 6),
-
-          /// 🏬 Shop List
-          Expanded(
-            child: shopAsync == null
-                ? const Center(child: Text('No data'))
-                : shopAsync.when(
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (err, _) => Center(
-                      child: Text(
-                        err.toString(),
-                        style:
-                            const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    data: (shops) {
-                      final filteredShops =
-                          _searchController.text.isEmpty
-                              ? shops
-                              : shops.where((shop) {
-                                  final query =
-                                      _searchController.text
-                                          .toLowerCase();
-                                  return (shop.shopName ?? '')
-                                          .toLowerCase()
-                                          .contains(query) ||
-                                      (shop.address ?? '')
-                                          .toLowerCase()
-                                          .contains(query) ||
-                                      (shop.ownerName ?? '')
-                                          .toLowerCase()
-                                          .contains(query);
-                                }).toList();
-
-                      if (filteredShops.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.store_outlined,
-                                size: 80,
-                                color: AppTheme.textLight,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _searchController
-                                        .text.isNotEmpty
-                                    ? 'No shops match your search'
-                                    : 'No shops available',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      AppTheme.textSecondary,
-                                ),
-                              ),
-                              if (_searchController
-                                  .text.isNotEmpty)
-                                TextButton(
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {});
-                                  },
-                                  child:
-                                      const Text('Clear search'),
-                                ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16),
-                        itemCount: filteredShops.length,
-                        itemBuilder: (context, index) {
-                          final shop = filteredShops[index];
-                          return _ShopCard(
-                            shop: shop,
-                            onTap: () => _selectShop(shop),
-                          );
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    ),
-
-    /// ➕ Add Shop Button
-    floatingActionButton: FloatingActionButton.extended(
-      backgroundColor: AppTheme.primaryColor,
-      icon: const Icon(Icons.add),
-      label: const Text('Add Shop'),
-      onPressed: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AddShopScreen(),
-          ),
-        );
-
-        if (result != null && result is ShopDetails) {
-          await ref
-              .read(shopViewModelProvider.notifier)
-              .getShopList();
-
-          _showSuccess(
-              'Shop "${result.shopName}" added successfully!');
-        }
-      },
-    ),
-  );
-}
-
-
-  void _showInfo(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _searchController.dispose();
-    _connectivitySub.cancel();
-    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-    super.dispose();
-  }
-}
-
-class _ShopCard extends StatelessWidget {
-  final ShopDetails shop;
-  final VoidCallback onTap;
-
-  const _ShopCard({required this.shop, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      color: AppTheme.cardBackground,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shop Icon
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.store, color: Colors.white, size: 28),
-              ),
-              const SizedBox(width: 12),
-              // Shop Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      shop.shopName ??'',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+    // Shop list
+    return shopState.shopList?.when(
+          data: (shops) {
+            final filteredShops = _filterShops(shops);
+            
+            if (filteredShops.isEmpty) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height - 200,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: AppTheme.textSecondary,
+                        Icon(
+                          _searchQuery.isNotEmpty
+                              ? Icons.search_off
+                              : Icons.store_outlined,
+                          size: 80,
+                          color: AppTheme.textLight,
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            shop.address ?? '',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'No shops found'
+                              : 'No shops available',
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                      ],
-                    ),
-                    if (shop.ownerName != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.person_outline,
-                                  size: 14,
-                                  color: AppTheme.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    shop.ownerName!,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.phone,
-                                  size: 14,
-                                  color: AppTheme.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    shop.mobileNo ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Try searching with different keywords'
+                              : 'Pull down to refresh or add your first shop',
+                          style: const TextStyle(color: AppTheme.textSecondary),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_searchQuery.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Clear Search'),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 80, top: 8),
+              itemCount: filteredShops.length,
+              itemBuilder: (context, index) {
+                final shop = filteredShops[index];
+                return ShopCard(
+                  shop: shop,
+                  onTap: () => _onShopTap(shop),
+                  searchQuery: _searchQuery,
+                );
+              },
+            );
+          },
+          loading: () => Center(
+            child: CircularProgressIndicator(color: AppTheme.accentColor),
+          ),
+          error: (error, stack) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height - 200,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        'Error: ${error.toString()}',
+                        textAlign: TextAlign.center,
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref.read(shopViewModelProvider.notifier).getShopList();
+                      },
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
+            ),
+          ),
+        ) ??
+        const SizedBox.shrink();
+  }
+}
+
+// ========================
+// SHOP CARD WIDGET
+// ========================
+class ShopCard extends StatelessWidget {
+  final ShopDetails shop;
+  final VoidCallback onTap;
+  final String? searchQuery;
+
+  const ShopCard({
+    Key? key,
+    required this.shop,
+    required this.onTap,
+    this.searchQuery,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Card(
+        elevation: 2,
+        shadowColor: AppTheme.accentColor.withOpacity(0.2),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor.withOpacity(0.1),
+                  Colors.white,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Shop Icon with gradient background
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.store,
+                      size: 32,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Shop Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Shop Name
+                        Text(
+                          shop.shopName ?? 'Unknown Shop',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        // Owner Name
+                        if (shop.ownerName != null)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline,
+                                size: 14,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  shop.ownerName!,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 4),
+                        // Phone Number
+                        if (shop.mobileNo != null)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone_outlined,
+                                size: 14,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  shop.mobileNo!,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 4),
+                        // Address
+                        if (shop.address != null)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  shop.address!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textLight,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Arrow Icon
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -4,6 +4,7 @@ part 'shop_details.g.dart';
 
 @JsonSerializable()
 class ShopDetails {
+  final String? localId;
 
   @JsonKey(name: 'shop_id')
   final int? shopId;
@@ -35,8 +36,15 @@ class ShopDetails {
   @JsonKey(name: 'longitude')
   final double? longitude;
 
+  @JsonKey(name: 'isSynced')
+  final bool isSynced;
+
+  @JsonKey(name: 'updatedAt')
+  final DateTime? updatedAt;
+
   ShopDetails({
-     this.shopId,
+    this.localId,
+    this.shopId,
     this.shopName,
     this.ownerName,
     this.address,
@@ -45,13 +53,48 @@ class ShopDetails {
     this.regionId,
     this.createdBy,
     this.latitude,
-    this.longitude
+    this.longitude,
+    this.isSynced = false,
+    this.updatedAt,
   });
 
-  
+  /// FROM API JSON
   factory ShopDetails.fromJson(Map<String, dynamic> json) =>
       _$ShopDetailsFromJson(json);
 
-  /// 🔁 To API JSON
+  /// TO API JSON
   Map<String, dynamic> toJson() => _$ShopDetailsToJson(this);
+
+  // 🔁 copyWith left exactly as requested
+  ShopDetails copyWith({
+    String? localId,
+    int? shopId,
+    String? shopName,
+    String? ownerName,
+    String? address,
+    String? mobileNo,
+    String? email,
+    int? regionId,
+    int? createdBy,
+    double? latitude,
+    double? longitude,
+    bool? isSynced,
+    DateTime? updatedAt,
+  }) {
+    return ShopDetails(
+      localId: localId ?? this.localId,
+      shopId: shopId ?? this.shopId,
+      shopName: shopName ?? this.shopName,
+      ownerName: ownerName ?? this.ownerName,
+      address: address ?? this.address,
+      mobileNo: mobileNo ?? this.mobileNo,
+      email: email ?? this.email,
+      regionId: regionId ?? this.regionId,
+      createdBy: createdBy ?? this.createdBy,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      isSynced: isSynced ?? this.isSynced,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
