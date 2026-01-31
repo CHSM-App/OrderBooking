@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
@@ -327,15 +328,15 @@ void _showLogoutDialog(BuildContext context) {
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () {
-            Navigator.pop(context); // close dialog
-
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false, // remove all previous routes
-            );
-          },
+             onPressed: () {
+                ref.read(tokenProvider.notifier).clearTokens();
+                ref.read(adminloginViewModelProvider.notifier).clearLogin();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
           child: const Text(
             'Logout',
             style: TextStyle(color: Colors.red),
