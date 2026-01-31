@@ -25,6 +25,8 @@ dependencies:
   shared_preferences: ^2.5.4
   sqflite: ^2.3.3
 
+  sqflite_common_ffi: ^2.3.2
+
   # Networking
   dio: ^5.9.0
   retrofit: 4.9.2
