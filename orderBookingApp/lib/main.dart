@@ -1,11 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/controllers/sync_controller.dart';
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
  
  
 void main() {
+  //   WidgetsFlutterBinding.ensureInitialized();
+
+  // // 👇 REQUIRED for desktop
+  // if (Platform.isWindows ||
+  //     Platform.isLinux ||
+  //     Platform.isMacOS) {
+  //   sqfliteFfiInit();
+  //   databaseFactory = databaseFactoryFfi;
+  // }
    runApp(
     ProviderScope(
       child: Consumer(
