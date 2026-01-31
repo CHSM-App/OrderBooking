@@ -120,7 +120,7 @@ void didUpdateWidget(covariant AddProductPage oldWidget) {
         "subItemId": null,
         "productName": productName,
         "productType": productType ?? '',
-        "createdBy": '1',
+        "createdBy": ref.read(adminloginViewModelProvider).userId??0,
         "measuringUnit": measuringUnit ?? '',
         "availableUnit": unitController.text,
         "price": priceController.text,
@@ -159,7 +159,7 @@ void didUpdateWidget(covariant AddProductPage oldWidget) {
       productId: widget.productId,
       productName: productName,
       productType: productType!,
-      createdBy: 1,
+      createdBy: ref.read(adminloginViewModelProvider).userId??0,
       subtypes: subItems,
       companyId: "C0001"
     );

@@ -77,10 +77,11 @@ class _AdminDashboardScreenState
 
       case 3:
         return const AdminEmployeesPage();
-
-      case 4:
-        return const AdminProfilePage(mobileNo: '9876543210');
-
+ case 4:
+      // 👇 Remove const, read mobileNo from provider
+      return AdminProfilePage(
+        mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? '',
+      );
       default:
         return AdminHomePage(onNavigate: navigateToTab);
     }

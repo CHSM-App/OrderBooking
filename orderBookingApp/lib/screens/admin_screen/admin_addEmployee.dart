@@ -92,6 +92,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
       empAddress: address,
       regionId: 1,
       roleId: 2,
+      adminId: ref.read(adminloginViewModelProvider).userId??0,
+      companyId: ref.read(adminloginViewModelProvider).companyId??""
     );
 
     await ref

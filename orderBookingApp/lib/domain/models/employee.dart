@@ -32,6 +32,12 @@ class EmployeeLogin {
   final String? joiningDate;
   @JsonKey(name: 'role_id')
   final int? roleId;
+  
+  @JsonKey(name: 'company_id')
+  final String? companyId;
+
+  @JsonKey(name: 'admin_id')
+  final int? adminId;
  
   EmployeeLogin({
     this.empName,
@@ -45,6 +51,9 @@ class EmployeeLogin {
     this.empId,
     this.joiningDate,
     this.roleId,
+    this.companyId,
+    this.adminId
+
   });
 
   // JSON deserialization

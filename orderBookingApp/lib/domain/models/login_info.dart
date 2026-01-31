@@ -52,6 +52,9 @@ class LoginInfo {
   final int? adminId;
     @JsonKey(name: 'emp_id')
   final int? empId;
+      @JsonKey(name: 'company_id')
+  final String? companyId;
+
 
   LoginInfo({
     this.isCheckedIn,
@@ -70,7 +73,8 @@ class LoginInfo {
     this.joiningDate,
     this.activeStatus,
     this.adminId,
-    this.empId
+    this.empId,
+    this.companyId
   });
 
   /// From JSON

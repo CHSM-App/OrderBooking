@@ -14,6 +14,7 @@ class AdminloginState {
   final String? companyName;
   final String? token;
   final String? isCheckedIn;
+  final String? companyId;
 
   final AsyncValue<List<AdminLogin>>? adminDetails;
   final AsyncValue<List<LoginInfo>> phoneCheckResult;
@@ -31,6 +32,7 @@ class AdminloginState {
     this.companyName,
     this.token,
     this.isCheckedIn,
+    this.companyId,
   });
 
   AdminloginState copyWith({
@@ -46,6 +48,7 @@ class AdminloginState {
     String? companyName,
     String? token,
     String? isCheckedIn,
+    String? companyId,
   }) {
     return AdminloginState(
       isLoading: isLoading ?? this.isLoading,
@@ -60,6 +63,7 @@ class AdminloginState {
       companyName: companyName ?? this.companyName,
       token: token ?? this.token,
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
+        companyId: companyId ?? this.companyId,
     );
   }
 }
@@ -78,8 +82,11 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final companyName = await TokenStorage.getValue('company_name');
     final token = await TokenStorage.getValue('token');
     final isCheckedIn = await TokenStorage.getValue('isCheckedIn');
-
+  final userIdStr = await TokenStorage.getValue('user_id');
+  final userId = int.tryParse(userIdStr ?? '0') ?? 0;
+     final companyId = await TokenStorage.getValue('company_id');
     state = state.copyWith(
+          userId: userId,
       name: name,
       mobileNo: mobileNo,
       email: email,
@@ -87,6 +94,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       companyName: companyName,
       token: token,
       isCheckedIn: isCheckedIn,
+      companyId: companyId,
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
@@ -96,6 +104,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
           companyName: companyName,
           Token: token,
           isCheckedIn: isCheckedIn,
+          companyId: companyId,
         ),
       ]),
     );
@@ -149,6 +158,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     companyName: null,
     token: null,
     isCheckedIn: null,
+    companyId: null,
   );
 
   await TokenStorage.clear();
