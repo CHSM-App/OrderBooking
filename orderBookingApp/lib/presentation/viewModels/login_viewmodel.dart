@@ -66,8 +66,10 @@ class AdminloginState {
 
 class AdminloginViewModel extends StateNotifier<AdminloginState> {
   final AdminloginUsecase usecase;
-  AdminloginViewModel(this.usecase) : super(const AdminloginState());
-
+  AdminloginViewModel(this.usecase) : super(const AdminloginState()) {
+    // Initial fetch or setup can be done here if needed
+    loadFromStorage();
+  }
   Future<void> loadFromStorage() async {
     final name = await TokenStorage.getValue('name');
     final mobileNo = await TokenStorage.getValue('mobile_no');
@@ -132,4 +134,23 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       state = state.copyWith(phoneCheckResult: AsyncValue.error(e, st));
     }
   }
+
+  Future<void> clearLogin() async {
+  state = const AdminloginState(
+    isLoading: false,
+    error: null,
+    adminDetails: AsyncValue.data([]),
+    phoneCheckResult: AsyncValue.data([]),
+    userId: 0,
+    name: null,
+    mobileNo: null,
+    email: null,
+    roleId: null,
+    companyName: null,
+    token: null,
+    isCheckedIn: null,
+  );
+
+  await TokenStorage.clear();
+}
 }

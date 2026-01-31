@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:order_booking_app/data/DB/app_database.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/models/region.dart';
-import 'app_database.dart';
+
 
 class OfflineRegionDao {
   /// Insert a region into the offline_regions table

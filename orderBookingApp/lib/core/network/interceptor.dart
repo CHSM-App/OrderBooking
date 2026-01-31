@@ -1,7 +1,10 @@
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
+import 'package:order_booking_app/main.dart';
+import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
  
 import '../../data/repositories/auth_impl.dart';
 import 'token_provider.dart';
@@ -80,7 +83,7 @@ class TokenInterceptor extends Interceptor {
           tokenResponse.refreshToken == null ||
           tokenResponse.refreshToken!.isEmpty) {
         await ref.read(tokenProvider.notifier).clearTokens();
-     //   _goToLogin();
+        _goToLogin();
         return handler.next(err);
       }
  
@@ -96,7 +99,7 @@ class TokenInterceptor extends Interceptor {
     } catch (e) {
       _isRefreshing = false;
       await ref.read(tokenProvider.notifier).clearTokens();
-    //  _goToLogin();
+     _goToLogin();
       return handler.next(err);
     }
   }
@@ -117,12 +120,12 @@ class TokenInterceptor extends Interceptor {
     }
   }
 
-// void _goToLogin() {
-//   Future.microtask(() {
-//     navigatorKey.currentState?.pushAndRemoveUntil(
-//       MaterialPageRoute(builder: (context) => MobileNumberScreen()),
-//       (route) => false, // remove all previous screens
-//     );
-//   });
-// }
+void _goToLogin() {
+  Future.microtask(() {
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (route) => false, // remove all previous screens
+    );
+  });
+}
 }
