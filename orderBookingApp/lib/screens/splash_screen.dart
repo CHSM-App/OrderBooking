@@ -22,10 +22,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _initAuth() async {
     // Load from TokenStorage via AdminloginViewModel
     await ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
-
     final state = ref.read(adminloginViewModelProvider);
     await Future.delayed(const Duration(seconds: 2));
-
     if (!mounted) return;
 
     final loginInfo = state.phoneCheckResult.value?.first;

@@ -6,9 +6,10 @@ import 'package:order_booking_app/presentation/controllers/sync_controller.dart'
 import 'package:order_booking_app/screens/splash_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
  
- final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();void main() {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();//Global navigator access
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =GlobalKey<ScaffoldMessengerState>();//Global scaffold messenger access
+
+void main() {
   runApp(
     ProviderScope(
       child: Consumer(
