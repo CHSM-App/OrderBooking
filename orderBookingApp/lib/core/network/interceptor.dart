@@ -83,7 +83,7 @@ class TokenInterceptor extends Interceptor {
           tokenResponse.refreshToken == null ||
           tokenResponse.refreshToken!.isEmpty) {
         await ref.read(tokenProvider.notifier).clearTokens();
-        _goToLogin();
+      _goToLogin();
         return handler.next(err);
       }
  

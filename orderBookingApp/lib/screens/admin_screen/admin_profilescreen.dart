@@ -25,7 +25,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
     super.initState();
     // Fetch admin details when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails("9876543210");
+      ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(ref.read(adminloginViewModelProvider).mobileNo??"");
     });
   }
 
@@ -54,7 +54,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                         onPressed: () {
                           ref
                               .read(adminloginViewModelProvider.notifier)
-                              .fetchAdminDetails("9876543210");
+                              .fetchAdminDetails(ref.read(adminloginViewModelProvider).mobileNo??"");
                         },
                         child: const Text('Retry'),
                       ),
@@ -205,7 +205,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 MaterialPageRoute(
                   builder: (context) => EditProfilePage(
                     adminLogin: adminLogin,
-                    mobileNo: "9876543210",
+                    mobileNo: ref.read(adminloginViewModelProvider).mobileNo??"",
                   ),
                 ),
               );
@@ -423,7 +423,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       await ref.read(adminloginViewModelProvider.notifier).addAdminDetails(updatedProfile);
 
       // Refresh the profile data
-      await ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails("9876543210");
+      await ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(ref.read(adminloginViewModelProvider).mobileNo??"");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
