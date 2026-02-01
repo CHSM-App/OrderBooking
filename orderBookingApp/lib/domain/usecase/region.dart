@@ -1,6 +1,5 @@
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/repository/region.dart';
-import 'package:order_booking_app/domain/repository/region_repo.dart';
 
 class RegionUsecaseoffline {
   final RegionRepooffline regionRepooffline;

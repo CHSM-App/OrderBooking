@@ -7,6 +7,9 @@ class OrderItem {
   @JsonKey(name: 'product_id')
   final int productId;
 
+  @JsonKey(name:'product_name')
+  final String? productName;
+
   @JsonKey(name: 'sub_item_id')
   final int subItemId;
 
@@ -23,11 +26,13 @@ class OrderItem {
   final double totalPrice;
 
   OrderItem({
+    this.productName,
     required this.productId,
     required this.subItemId,
     required this.productUnit,
     required this.price,
     required this.quantity,
+    double? totalPrice,
   }) : totalPrice = price * quantity;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) =>

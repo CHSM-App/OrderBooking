@@ -1,5 +1,4 @@
 import 'package:order_booking_app/domain/models/shop_details.dart';
-import 'package:order_booking_app/domain/models/visite.dart';
 
 import 'package:order_booking_app/domain/repository/shop_repo.dart';
 

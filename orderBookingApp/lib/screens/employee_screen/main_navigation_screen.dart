@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
@@ -8,7 +9,6 @@ import 'package:order_booking_app/screens/theme.dart';
 
 import 'home_page.dart';
 import 'shops_page.dart';
-import 'orders_page.dart';
 import 'catalog_page.dart';
 import 'profile_page.dart';
 
@@ -31,9 +31,9 @@ class _MainNavigationScreenState
   final List<Widget> _pages = const [
     HomePage(),
     ShopListPage(),
-    // OrdersPage(),
+    OrdersListPage(),
     CatalogPage(),
-    ProfilePage(mobileNo: '8416113132'),
+    ProfilePage(mobileNo: '1111111111'),
   ];
 
   final int _notificationCount = 3;
