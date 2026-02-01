@@ -62,6 +62,7 @@ final visitViewModelProvider =
   final usecase = ref.watch(visitUseCaseProvider);
   return VisitViewModel(usecase);
 });
+
 final regionofflineViewModelProvider =
     StateNotifierProvider<RegionofflineViewModel, AsyncValue<List<Region>>>((ref) {
   final usecase = ref.watch(regionUseCaseofflineProvider);

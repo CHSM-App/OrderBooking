@@ -57,3 +57,4 @@ class ShopViewModel extends StateNotifier<ShopState> {
     await usecase.sync();
   }
 }
+

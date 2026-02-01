@@ -70,7 +70,7 @@ class RegionImplOffline implements RegionRepooffline {
       final serverData = await apiService.fetchRegionList();
       List<Region> serverRegions;
       // ServerData type check
-      if (serverData.isNotEmpty && serverData.first is Region) {
+      if (serverData.isNotEmpty) {
         serverRegions = serverData.cast<Region>();
       } else {
         serverRegions = (serverData as List)

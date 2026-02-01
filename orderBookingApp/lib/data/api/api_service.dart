@@ -20,6 +20,8 @@ abstract class ApiService {
   @GET("/")
   Future<HttpResponse> checkHealth();
 
+
+
   //POST METHODS
   @POST("login/CreateLogin")
   Future<TokenResponse> createLogin(@Body() TokenResponse tokenResponse);
@@ -29,6 +31,9 @@ abstract class ApiService {
 
   @POST("insert/employee")
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
+
+  @POST("insert/deleteEmployee/{emp_id}")
+  Future<dynamic> deleteEmployee(@Path("emp_id") int empId);
 
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
@@ -51,7 +56,6 @@ abstract class ApiService {
   @POST("users/checkOut/{emp_id}")
   Future<void> checkOut(@Path("emp_id") int empId);
 
-
   //GET METHODS
   @GET("users/employeeList")
   Future<List<EmployeeLogin>> getEmployeeList();
@@ -66,12 +70,12 @@ abstract class ApiService {
 
   @GET("users/adminDetails/{mobile_no}")
   Future<List<AdminLogin>> fetchAdminDetails(
-  @Path("mobile_no") String mobileNo,
-);
+    @Path("mobile_no") String mobileNo,
+  );
 
- @GET("users/shopList")
-  Future<List<ShopDetails>> getShopList( );
-  
+  @GET("users/shopList")
+  Future<List<ShopDetails>> getShopList();
+
   @GET("users/regionList")
   Future<List<Region>> fetchRegionList();
 
@@ -83,22 +87,20 @@ abstract class ApiService {
   //Login Check
   @GET("login/checkPhone")
   Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
- 
+
   //Products
   @GET("users/productList/{admin_id}")
   Future<List<Product>> fetchProductList(@Path("admin_id") int adminId);
-  
+
   @GET("users/productDetails/{product_id}/{admin_id}")
   Future<ProductDetailsResponse> fetchProductDetails(
     @Path("product_id") int productId,
     @Path("admin_id") int adminId,
   );
 
-
   //DELETE API
-@DELETE("index/deleteProductSubType/{sub_item_id}")
-Future<ProductResponse> deleteProductSubType(
-  @Path("sub_item_id") int subItemId,
-);
-
+  @DELETE("index/deleteProductSubType/{sub_item_id}")
+  Future<ProductResponse> deleteProductSubType(
+    @Path("sub_item_id") int subItemId,
+  );
 }

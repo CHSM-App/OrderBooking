@@ -8,6 +8,8 @@ class ProductDetailsResponse {
   final Product product;
   final List<ProductSubType> subitems;
 
+  var productName;
+
   ProductDetailsResponse({
     required this.product,
     required this.subitems,
@@ -15,6 +17,8 @@ class ProductDetailsResponse {
 
   factory ProductDetailsResponse.fromJson(Map<String, dynamic> json) =>
       _$ProductDetailsResponseFromJson(json);
+
+  
 
   Map<String, dynamic> toJson() => _$ProductDetailsResponseToJson(this);
 }

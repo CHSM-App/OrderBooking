@@ -6,7 +6,6 @@ import 'package:order_booking_app/presentation/controllers/sync_controller.dart'
 import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
  
  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =

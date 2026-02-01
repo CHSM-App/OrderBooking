@@ -58,12 +58,6 @@ class _MainNavigationScreenState
     await prefs.setBool(_checkInKey, value);
   }
 
-
-
-
-
-
-
 void _toggleCheckIn() async {
   final empId = ref.read(adminloginViewModelProvider).userId;
   final vm = ref.read(checkInViewModelProvider.notifier);
