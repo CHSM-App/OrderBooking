@@ -13,11 +13,12 @@ ProductDetailsResponse _$ProductDetailsResponseFromJson(
   subitems: (json['subitems'] as List<dynamic>)
       .map((e) => ProductSubType.fromJson(e as Map<String, dynamic>))
       .toList(),
-);
+)..productName = json['productName'];
 
 Map<String, dynamic> _$ProductDetailsResponseToJson(
   ProductDetailsResponse instance,
 ) => <String, dynamic>{
   'product': instance.product,
   'subitems': instance.subitems,
+  'productName': instance.productName,
 };

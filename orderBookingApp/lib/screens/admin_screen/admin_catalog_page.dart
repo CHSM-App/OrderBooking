@@ -58,17 +58,13 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
           /// 📦 PRODUCT LIST
           Expanded(
             child: state.productList!.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              error: (err, _) => Center(
-                child: Text("Error: $err"),
-              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text("Error: $err")),
               data: (products) {
                 final filtered = products.where((p) {
-                  return p.productName!
-                      .toLowerCase()
-                      .contains(searchQuery.toLowerCase());
+                  return p.productName!.toLowerCase().contains(
+                    searchQuery.toLowerCase(),
+                  );
                 }).toList();
 
                 if (filtered.isEmpty) {
@@ -113,8 +109,9 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
     );
   }
 
-  /// 🧱 PRODUCT CARD
   Widget _productCard(BuildContext context, Product product) {
+    final units = product.subtypes ?? [];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -128,53 +125,34 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.all(16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        leading: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+          child: Icon(getIconForType(product.productType), size: 30),
+        ),
+
+        title: Text(
+          product.productName ?? "",
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          product.productType ?? "",
+          style: const TextStyle(color: Colors.grey),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            /// 📦 COMMON ICON
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.inventory_2_rounded,
-                color: Color(0xFFF57C00),
-                size: 30,
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            /// PRODUCT INFO
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.productName ?? "",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    product.productType ?? "",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-
-            /// ✏️ EDIT
             IconButton(
               icon: const Icon(Icons.edit_rounded),
               onPressed: () async {
-                // Navigate to AddProductPage with productId (Edit)
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -185,15 +163,113 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   ),
                 );
 
-                // Refresh list if edited
                 if (result == true) {
                   ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
                 }
               },
             ),
+
+            // 👇 DROPDOWN INDICATOR (no logic, no state)
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.grey,
+              size: 28,
+            ),
           ],
         ),
+
+        children: [_buildAdminUnits(units)],
       ),
     );
+  }
+
+  IconData getIconForType(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'beverage':
+        return Icons.local_drink_rounded;
+      case 'grocery':
+        return Icons.shopping_bag_rounded;
+      case 'ice cream':
+        return Icons.icecream_rounded;
+      case 'bakery & snacks':
+        return Icons.fastfood_rounded;
+      case 'dairy':
+        return Icons.emoji_food_beverage_rounded;
+      case 'personal & home care':
+        return Icons.home_repair_service_rounded;
+      default:
+        return Icons.inventory_2_rounded; // fallback
+    }
+  }
+
+  Widget _buildAdminUnits(List<ProductSubType> units) {
+    if (units.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Text("No available units", style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return Column(
+      children: units.map((u) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text(
+                    "${formatAvailableUnit(u.availableUnit, u.measuringUnit)}",
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              Text(
+                "₹${u.price}",
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String formatAvailableUnit(double? value, String? unit) {
+    if (value == null || unit == null) return '';
+
+    final lowerUnit = unit.toLowerCase();
+
+    // Liter → ml
+    if (lowerUnit == 'liter' || lowerUnit == 'litre' || lowerUnit == 'l') {
+      if (value < 1) {
+        return '${(value * 1000).toInt()} ml';
+      }
+      return '$value Liter';
+    }
+
+    // Kilogram → gram
+    if (lowerUnit == 'kilogram' || lowerUnit == 'kg') {
+      if (value < 1) {
+        return '${(value * 1000).toInt()} g';
+      }
+      return '$value Kg';
+    }
+
+    // Default (no conversion)
+    return '$value $unit';
   }
 }

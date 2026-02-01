@@ -57,22 +57,18 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     
     if (list == null || list.isEmpty) return;
     
-    final employee = list.first;
-    
-    // Navigate to edit form with prefilled data
+    final employee = list.first;   
+
     final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddEmployeeForm(
-          // empId: employee.empId,
-          // initialName: employee.empName,
-          // initialMobile: employee.empMobile,
-          // initialEmail: employee.empEmail,
-          // initialAddress: employee.empAddress,
-          // initialRegion: employee.empAddress, // or use actual region field if available
-        ),
-      ),
-    );
+  context,
+  MaterialPageRoute(
+    builder: (_) => AddEmployeeForm(
+      isEdit: true,
+      employee: employee,
+    ),
+  ),
+);
+
 
     // Refresh employee details if updated
     if (result == true) {

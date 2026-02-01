@@ -25,4 +25,9 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) {
     return apiService.fetchEmployeeInfo(mobileNo);
   }
+
+   @override
+  Future<dynamic> deleteEmployee(int empId) {
+    return apiService.deleteEmployee(empId);
+  }
 }

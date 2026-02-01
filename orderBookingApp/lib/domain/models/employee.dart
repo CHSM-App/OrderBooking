@@ -1,26 +1,26 @@
-import 'package:json_annotation/json_annotation.dart';
+  import 'package:json_annotation/json_annotation.dart';
 
-part 'employee.g.dart';
+  part 'employee.g.dart';
 
-@JsonSerializable()
-class EmployeeLogin {
-  @JsonKey(name: 'emp_name')
-  final String? empName;
+  @JsonSerializable()
+  class EmployeeLogin {
+    @JsonKey(name: 'emp_name')
+    final String? empName;
 
-  @JsonKey(name: 'emp_mobile')
-  final String? empMobile;
+    @JsonKey(name: 'emp_mobile')
+    final String? empMobile;
 
-  @JsonKey(name: 'emp_address')
-  final String? empAddress;
+    @JsonKey(name: 'emp_address')
+    final String? empAddress;
 
-  @JsonKey(name: 'emp_email')
-  final String? empEmail;
+    @JsonKey(name: 'emp_email')
+    final String? empEmail;
 
-  @JsonKey(name: 'region_id')
-  final int? regionId;
+    @JsonKey(name: 'region_id')
+    final int? regionId;
 
-  @JsonKey(name: 'image_url')
-  final String? imageUrl;
+    @JsonKey(name: 'image_url')
+    final String? imageUrl;
 
   @JsonKey(name: 'id_proof')
   final String? idProof;
@@ -56,10 +56,12 @@ class EmployeeLogin {
 
   });
 
-  // JSON deserialization
-  factory EmployeeLogin.fromJson(Map<String, dynamic> json) =>
-      _$EmployeeLoginFromJson(json);
+    // JSON deserialization
+    factory EmployeeLogin.fromJson(Map<String, dynamic> json) =>
+        _$EmployeeLoginFromJson(json);
 
-  // JSON serialization
-  Map<String, dynamic> toJson() => _$EmployeeLoginToJson(this);
-}
+  
+
+    // JSON serialization
+    Map<String, dynamic> toJson() => _$EmployeeLoginToJson(this);
+  }

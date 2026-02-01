@@ -20,11 +20,11 @@ class _AdminEmployeesPageState
   /// ✅ AVATAR COLORS (FIXED)
   final List<Color> avatarColors = [
     const Color(0xFF0A3D62),
-    const Color(0xFF1E3799),
-    const Color(0xFF38ADA9),
-    const Color(0xFFF79F1F),
-    const Color(0xFFB71540),
-    const Color(0xFF6A89CC),
+    // const Color(0xFF1E3799),
+    // const Color(0xFF38ADA9),
+    // const Color(0xFFF79F1F),
+    // const Color(0xFFB71540),
+    // const Color(0xFF6A89CC),
   ];
 
   @override

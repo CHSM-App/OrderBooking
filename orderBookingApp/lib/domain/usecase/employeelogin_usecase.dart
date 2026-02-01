@@ -9,15 +9,20 @@ class EmployeeloginUsecase {
   Future<dynamic> addEmployee(EmployeeLogin employeeLogin) {
     return employeeloginRepository.addEmployee(employeeLogin);
   }
-  Future<List<EmployeeLogin>>getEmployeeList(){
+
+  Future<List<EmployeeLogin>> getEmployeeList() {
     return employeeloginRepository.getEmployeeList();
   }
-    Future<List<EmployeeLogin>>fetchEmployeeDetails(int empId){
+
+  Future<List<EmployeeLogin>> fetchEmployeeDetails(int empId) {
     return employeeloginRepository.fetchEmployeeDetails(empId);
   }
 
-      Future<List<EmployeeLogin>>fetchEmployeeInfo(String mobileNo){
+  Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) {
     return employeeloginRepository.fetchEmployeeInfo(mobileNo);
   }
- 
+
+  Future<dynamic> deleteEmployee(int empId) {
+    return employeeloginRepository.deleteEmployee(empId);
+  }
 }
