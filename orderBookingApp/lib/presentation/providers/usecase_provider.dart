@@ -3,6 +3,7 @@ import 'package:order_booking_app/domain/usecase/checkin_usecase.dart';
 import 'package:order_booking_app/domain/usecase/login_usecase.dart';
 import 'package:order_booking_app/domain/usecase/auth_usecase.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
+import 'package:order_booking_app/domain/usecase/order_usecase.dart';
 
 import 'package:order_booking_app/domain/usecase/product_usecase.dart';
 import 'package:order_booking_app/domain/usecase/region.dart';
@@ -52,3 +53,7 @@ final regionUseCaseofflineProvider = Provider<RegionUsecaseoffline>((ref) {
   final regionRepooffline = ref.watch(regionRepositorofflineProvider);
   return RegionUsecaseoffline(regionRepooffline);
 });
+
+final ordersUsecaseProvider=Provider<OrderUsecase>((ref){
+  final ordersRepo=ref.watch(ordersRepositoryProvider);
+  return OrderUsecase(ordersRepo);});

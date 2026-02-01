@@ -1,20 +1,46 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 
 import 'admin_addEmployee.dart';
 import 'admin_addProduct.dart';
 import 'admin_regionDetails.dart';
 import 'admin_shopDetails.dart';
 
-
-
-class AdminHomePage extends StatelessWidget {
+class AdminHomePage extends ConsumerStatefulWidget {
   final Function(int, {int ordersTab}) onNavigate;
 
   const AdminHomePage({
     super.key,
     required this.onNavigate,
   });
+
+  @override
+  ConsumerState<AdminHomePage> createState() => _AdminHomePageState();
+}
+
+class _AdminHomePageState extends ConsumerState<AdminHomePage> {
+  // Example dynamic values (replace these with your providers)
+  int pendingOrders = 0;
+  int activeEmployees = 0;
+  int totalProducts = 0;
+  String totalRevenue = "₹0";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    // Replace with your provider/fetch logic
+    setState(() {
+      pendingOrders = 24; // e.g., ref.read(pendingOrdersProvider)
+      activeEmployees = 12;
+      totalProducts = 156;
+      totalRevenue = "₹45K";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +89,7 @@ class AdminHomePage extends StatelessWidget {
                 // 🔸 Pending Orders
                 _modernDashboardCard(
                   title: "Pending Orders",
-                  value: "24",
+                  value: pendingOrders.toString(),
                   icon: Icons.pending_actions_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
@@ -71,13 +97,12 @@ class AdminHomePage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   trend: "",
-                  onTap: () => onNavigate(2, ordersTab: 0), // Orders → Pending
+                  onTap: () => widget.onNavigate(2, ordersTab: 0),
                 ),
-
                 // 🔸 Active Employees
                 _modernDashboardCard(
                   title: "Active Employees",
-                  value: "12",
+                  value: activeEmployees.toString(),
                   icon: Icons.people_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF00897B), Color(0xFF26A69A)],
@@ -85,13 +110,12 @@ class AdminHomePage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   trend: "",
-                  onTap: () => onNavigate(3), // Employees
+                  onTap: () => widget.onNavigate(3),
                 ),
-
                 // 🔸 Products
                 _modernDashboardCard(
                   title: "Products",
-                  value: "156",
+                  value: totalProducts.toString(),
                   icon: Icons.inventory_2_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF5E35B1), Color(0xFF7E57C2)],
@@ -99,12 +123,12 @@ class AdminHomePage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   trend: "",
-                  onTap: () => onNavigate(1), // Catalog
+                  onTap: () => widget.onNavigate(1),
                 ),
                 // 🔸 Total Revenue
                 _modernDashboardCard(
                   title: "Total Revenue",
-                  value: "₹45K",
+                  value: totalRevenue,
                   icon: Icons.attach_money_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1976D2), Color(0xFF2196F3)],
@@ -112,9 +136,7 @@ class AdminHomePage extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   trend: "",
-                  onTap: () {
-                    // No navigation for revenue
-                  },
+                  onTap: () {},
                 ),
               ],
             ),
@@ -208,7 +230,6 @@ class AdminHomePage extends StatelessWidget {
     );
   }
 
-
   Widget _quickActionsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,21 +245,25 @@ class AdminHomePage extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(
-              child: _quickActionCard(
-                title: "Add Product",
-                icon: Icons.add_box_outlined,
-                color: const Color(0xFFF57C00),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddProductPage(adminId: 1,),
-                    ),
-                  );
-                },
-              ),
-            ),
+          Expanded(
+  child: _quickActionCard(
+    title: "Add Product",
+    icon: Icons.add_box_outlined,
+    color: const Color(0xFFF57C00),
+    onTap: () {
+      // Read the provider value
+      final adminId = ref.read(adminloginViewModelProvider).userId; 
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddProductPage(adminId: adminId),
+        ),
+      );
+    },
+  ),
+),
+
             const SizedBox(width: 12),
             Expanded(
               child: _quickActionCard(

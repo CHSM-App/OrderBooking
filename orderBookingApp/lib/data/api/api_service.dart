@@ -4,6 +4,7 @@ import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
@@ -99,8 +100,13 @@ abstract class ApiService {
   );
 
   //DELETE API
-  @DELETE("index/deleteProductSubType/{sub_item_id}")
-  Future<ProductResponse> deleteProductSubType(
-    @Path("sub_item_id") int subItemId,
-  );
+@DELETE("index/deleteProductSubType/{sub_item_id}")
+Future<ProductResponse> deleteProductSubType(
+  @Path("sub_item_id") int subItemId,
+);
+
+@POST("insert/addOrder")
+Future<dynamic> addProduct(
+  @Body() Order product);
+
 }

@@ -10,6 +10,9 @@ class Product {
   @JsonKey(name: 'product_name')
   final String? productName;
 
+  @JsonKey(name: 'employee_id')
+  final int? employeeId;
+
   @JsonKey(name: 'product_type')
   final String? productType;
 
@@ -25,6 +28,11 @@ class Product {
     @JsonKey(name: 'company_id')
   final String? companyId;
 
+  final String? productUnit;
+
+  final double? TotalPrice;
+  final int? shopId;
+
   Product({
     this.productId,
     this.productName,
@@ -32,7 +40,11 @@ class Product {
     this.createdBy,
     this.adminId,
     this.subtypes,
-    this.companyId
+    this.companyId, 
+    this.productUnit,
+    this.employeeId,
+    this.shopId,
+    this.TotalPrice,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) =>
@@ -55,11 +67,14 @@ class ProductSubType {
   @JsonKey(name: 'price')
   final double? price;
 
+  final int? total;
+
   ProductSubType({
     this.subItemId,
     this.measuringUnit,
     this.availableUnit,
     this.price,
+    this.total
   });
 
   factory ProductSubType.fromJson(Map<String, dynamic> json) =>
@@ -67,3 +82,5 @@ class ProductSubType {
 
   Map<String, dynamic> toJson() => _$ProductSubTypeToJson(this);
 }
+
+

@@ -21,7 +21,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
     /// fetch product list (admin id = 1)
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(1);
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
     });
   }
 
@@ -88,15 +88,20 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFFF57C00),
         onPressed: () async {
+              final userId = ref.read(adminloginViewModelProvider).userId;
+
+    if (userId == 0) return; 
           // Navigate to Add Product page (null productId = Add)
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddProductPage(adminId: 1)),
+            MaterialPageRoute(
+        builder: (_) => AddProductPage(adminId: userId),
+      ),
           );
 
           // Refresh list if product added
           if (result == true) {
-            ref.read(productViewModelProvider.notifier).fetchProductList(1);
+            ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
           }
         },
         child: const Icon(Icons.add, color: Colors.white),
@@ -153,15 +158,13 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   MaterialPageRoute(
                     builder: (_) => AddProductPage(
                       productId: product.productId,
-                      adminId: 1,
+                      adminId: ref.read(adminloginViewModelProvider).userId??0,
                     ),
                   ),
                 );
 
                 if (result == true) {
-                  ref
-                      .read(productViewModelProvider.notifier)
-                      .fetchProductList(1);
+                  ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
                 }
               },
             ),

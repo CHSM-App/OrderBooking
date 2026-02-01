@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_catalog_page.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_home_screen.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_orderdetails.dart';
@@ -9,17 +12,31 @@ import 'admin_notifications.dart';
 // ============================================
 // SINGLE UNIFIED ADMIN DASHBOARD
 // ============================================
-class AdminDashboardScreen extends StatefulWidget {
+
+class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+class _AdminDashboardScreenState
+    extends ConsumerState<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _ordersInitialTab = 0;
 
+  @override
+  void initState() {
+    super.initState();
+
+    /// Load admin data from local storage
+    Future.microtask(() {
+      ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
+    });
+  }
+
+  // ✅ FIXED CALLBACK SIGNATURE
   void navigateToTab(int index, {int ordersTab = 0}) {
     setState(() {
       _selectedIndex = index;
@@ -27,37 +44,44 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
   }
 
-  // Page titles
+  // ================= PAGE TITLE =================
   String get _currentTitle {
     switch (_selectedIndex) {
-      // case 0:
-      //   return "Admin Dashboard";
-      // case 1:
-      //   return "Catalog";
-      // case 2:
-      //   return "Orders";
-      // case 3:
-      //   return "Employees";
-      // case 4:
-      //   return "Profile";
+      case 0:
+        return "Home";
+      case 1:
+        return "Catalog";
+      case 2:
+        return "Orders";
+      case 3:
+        return "Employees";
+      case 4:
+        return "Profile";
       default:
         return "Admin";
     }
   }
 
-  // Pages
+  // ================= CURRENT PAGE =================
   Widget get _currentPage {
     switch (_selectedIndex) {
       case 0:
         return AdminHomePage(onNavigate: navigateToTab);
+
       case 1:
         return const AdminCatalogPage();
-      case 2:
-        return AdminOrdersPage();
+
+     case 2:
+  return AdminOrdersPage();
+
+
       case 3:
         return const AdminEmployeesPage();
-      case 4:
-        return const AdminProfilePage(mobileNo: '9876543210',);
+ case 4:
+      // 👇 Remove const, read mobileNo from provider
+      return AdminProfilePage(
+        mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? '',
+      );
       default:
         return AdminHomePage(onNavigate: navigateToTab);
     }
@@ -65,8 +89,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loginState = ref.watch(adminloginViewModelProvider);
+    final adminName = loginState.name ?? "Admin";
+
     return Scaffold(
-      // ============ APPBAR ============
+      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: const Color(0xFFF57C00),
         elevation: 0,
@@ -74,56 +101,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         titleSpacing: 16,
         title: Row(
           children: [
-            GestureDetector(
-              onTap: () {
-                // Open profile or drawer
-              },
-              child: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  color: Color(0xFFF57C00),
-                ),
+            const CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white,
+              child: Icon(
+                Icons.person,
+                color: Color(0xFFF57C00),
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              _currentTitle,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Hi, $adminName",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+               
+              ],
             ),
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              icon: const Icon(
-                Icons.notifications_none_rounded,
-                size: 26,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminNotificationPage(),
-                  ),
-                );
-              },
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              size: 26,
+              color: Colors.white,
             ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminNotificationPage(),
+                ),
+              );
+            },
           ),
         ],
       ),
 
-      // ============ BODY ============
+      // ================= BODY =================
       body: _currentPage,
 
-      // ============ BOTTOM NAVIGATION ============
+      // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => navigateToTab(index),

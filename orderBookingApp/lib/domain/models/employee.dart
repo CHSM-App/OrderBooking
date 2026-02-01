@@ -22,30 +22,39 @@
     @JsonKey(name: 'image_url')
     final String? imageUrl;
 
-    @JsonKey(name: 'id_proof')
-    final String? idProof;
-    @JsonKey(name: 'active_status')
-    final int? activeStatus;
-    @JsonKey(name: 'emp_id')
-    final int? empId;
-    @JsonKey(name: 'joining_date')
-    final String? joiningDate;
-    @JsonKey(name: 'role_id')
-    final int? roleId;
+  @JsonKey(name: 'id_proof')
+  final String? idProof;
+   @JsonKey(name: 'active_status')
+  final int? activeStatus;
+   @JsonKey(name: 'emp_id')
+  final int? empId;
+  @JsonKey(name: 'joining_date')
+  final String? joiningDate;
+  @JsonKey(name: 'role_id')
+  final int? roleId;
   
-    EmployeeLogin({
-      this.empName,
-      this.empMobile,
-      this.empAddress,
-      this.empEmail,
-      this.regionId,
-      this.imageUrl,
-      this.idProof,
-      this.activeStatus,
-      this.empId,
-      this.joiningDate,
-      this.roleId,
-    });
+  @JsonKey(name: 'company_id')
+  final String? companyId;
+
+  @JsonKey(name: 'admin_id')
+  final int? adminId;
+ 
+  EmployeeLogin({
+    this.empName,
+    this.empMobile,
+    this.empAddress,
+    this.empEmail,
+    this.regionId,
+    this.imageUrl,
+    this.idProof,
+    this.activeStatus,
+    this.empId,
+    this.joiningDate,
+    this.roleId,
+    this.companyId,
+    this.adminId
+
+  });
 
     // JSON deserialization
     factory EmployeeLogin.fromJson(Map<String, dynamic> json) =>

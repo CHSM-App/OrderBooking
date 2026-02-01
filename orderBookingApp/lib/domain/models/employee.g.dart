@@ -19,6 +19,8 @@ EmployeeLogin _$EmployeeLoginFromJson(Map<String, dynamic> json) =>
       empId: (json['emp_id'] as num?)?.toInt(),
       joiningDate: json['joining_date'] as String?,
       roleId: (json['role_id'] as num?)?.toInt(),
+      companyId: json['company_id'] as String?,
+      adminId: (json['admin_id'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$EmployeeLoginToJson(EmployeeLogin instance) =>
@@ -34,4 +36,6 @@ Map<String, dynamic> _$EmployeeLoginToJson(EmployeeLogin instance) =>
       'emp_id': instance.empId,
       'joining_date': instance.joiningDate,
       'role_id': instance.roleId,
+      'company_id': instance.companyId,
+      'admin_id': instance.adminId,
     };

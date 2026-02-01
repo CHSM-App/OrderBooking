@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/notification_page.dart';
 import 'package:order_booking_app/screens/theme.dart';
+
 import 'home_page.dart';
 import 'shops_page.dart';
 import 'orders_page.dart';
 import 'catalog_page.dart';
 import 'profile_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -29,21 +31,26 @@ class _MainNavigationScreenState
   final List<Widget> _pages = const [
     HomePage(),
     ShopListPage(),
-    OrdersPage(),
+    // OrdersPage(),
     CatalogPage(),
     ProfilePage(mobileNo: '8416113132'),
   ];
 
-  final String _employeeName = "Ramesh Kumar";
   final int _notificationCount = 3;
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ Load login data from storage
+    Future.microtask(() {
+      ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
+    });
+
     _restoreCheckInState();
   }
 
-  /// RESTORE CHECK-IN STATE
+  /// ================= RESTORE CHECK-IN STATE =================
   Future<void> _restoreCheckInState() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -52,63 +59,42 @@ class _MainNavigationScreenState
     });
   }
 
-  /// SAVE CHECK-IN STATE
+  /// ================= SAVE CHECK-IN STATE =================
   Future<void> _persistCheckInState(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_checkInKey, value);
   }
 
-void _toggleCheckIn() async {
-  final empId = ref.read(adminloginViewModelProvider).userId;
-  final vm = ref.read(checkInViewModelProvider.notifier);
+  /// ================= CHECK-IN / CHECK-OUT =================
+  void _toggleCheckIn() async {
+    final empId = ref.read(adminloginViewModelProvider).userId;
+    final vm = ref.read(checkInViewModelProvider.notifier);
 
-  // 🚫 prevent double tap while loading
-  if (ref.read(checkInViewModelProvider).isLoading) return;
+    if (ref.read(checkInViewModelProvider).isLoading) return;
 
-  final wasCheckedIn = _isCheckedIn;
+    final wasCheckedIn = _isCheckedIn;
 
-  // ✅ IMMEDIATELY UPDATE UI
-  setState(() {
-    _isCheckedIn = !wasCheckedIn;
-    _currentIndex = 0;
-  });
-
-  await _persistCheckInState(!wasCheckedIn);
-
-  try {
-    if (wasCheckedIn) {
-      await vm.checkOut(empId);
-    } else {
-      await vm.checkIn(empId);
-    }
-  } catch (e) {
-    // 🔁 rollback UI if API fails
     setState(() {
-      _isCheckedIn = wasCheckedIn;
+      _isCheckedIn = !wasCheckedIn;
+      _currentIndex = 0;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
-    );
+    await _persistCheckInState(!wasCheckedIn);
+
+    try {
+      if (wasCheckedIn) {
+        await vm.checkOut(empId);
+      } else {
+        await vm.checkIn(empId);
+      }
+    } catch (e) {
+      setState(() => _isCheckedIn = wasCheckedIn);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
-}
-
-  /// TOGGLE CHECK-IN / CHECK-OUT
- 
-  // void _toggleCheckIn() async {
-  //   final newValue = !_isCheckedIn;
-  //   setState(() {
-  //     _isCheckedIn = newValue;
-  //     _currentIndex = 0;
-  //   });
-  //   ref.read(checkInViewModelProvider.notifier).checkIn(  ref.read(adminloginViewModelProvider).userId,);
-  //   // ref.read(checkInViewModelProvider.notifier).checkOut(  ref.read(adminloginViewModelProvider).userId,);
-  //   await _persistCheckInState(newValue);
-
-  //   // 🔥 Later:
-  //   // ref.read(attendanceViewModelProvider.notifier).checkIn();
-  //   // ref.read(attendanceViewModelProvider.notifier).checkOut();
-  // }
 
   void _onTabTapped(int index) {
     if (!_isCheckedIn) return;
@@ -122,6 +108,9 @@ void _toggleCheckIn() async {
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    final loginState = ref.watch(adminloginViewModelProvider);
+    final employeeName = loginState.name ?? "Employee";
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -159,7 +148,7 @@ void _toggleCheckIn() async {
                       style: TextStyle(color: Colors.white, fontSize: 11),
                     ),
                     Text(
-                      _employeeName,
+                      employeeName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -173,15 +162,15 @@ void _toggleCheckIn() async {
 
             /// ACTIONS
             actions: [
-              /// CHECK IN / OUT BUTTON
+              /// CHECK IN / OUT
               Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: InkWell(
                   onTap: _toggleCheckIn,
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color:
                           _isCheckedIn ? Colors.redAccent : Colors.white,
@@ -215,17 +204,21 @@ void _toggleCheckIn() async {
                 ),
               ),
 
-              /// NOTIFICATION ICON
+              /// NOTIFICATIONS
               if (_isCheckedIn)
                 Stack(
                   children: [
                     IconButton(
-                      icon:
-                          const Icon(Icons.notifications_outlined),
+                      icon: const Icon(Icons.notifications_outlined),
                       color: Colors.white,
                       iconSize: 26,
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationPage()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationPage(),
+                          ),
+                        );
                       },
                     ),
                     if (_notificationCount > 0)
@@ -279,11 +272,8 @@ void _toggleCheckIn() async {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.lock_outline,
-                      size: 50,
-                      color: Colors.white,
-                    ),
+                    Icon(Icons.lock_outline,
+                        size: 50, color: Colors.white),
                     SizedBox(height: 10),
                     Text(
                       "Please Check In to Continue",
@@ -313,14 +303,11 @@ void _toggleCheckIn() async {
           BottomNavigationBarItem(
               icon: Icon(Icons.store_rounded), label: 'Shops'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_bag_rounded),
-              label: 'Orders'),
+              icon: Icon(Icons.shopping_bag_rounded), label: 'Orders'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
-              label: 'Catalog'),
+              icon: Icon(Icons.grid_view_rounded), label: 'Catalog'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Profile'),
+              icon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
       ),
     );
