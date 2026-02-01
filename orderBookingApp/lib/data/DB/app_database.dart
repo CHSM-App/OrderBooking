@@ -21,6 +21,8 @@ class AppDatabase {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
         await _createRegionTable(db);
+        await _createProductsTable(db);
+        await _createProductSubtypesTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // Runs for existing users
@@ -80,4 +82,31 @@ class AppDatabase {
           )
         ''');
   }
+
+  static Future<void> _createProductsTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS products (
+      product_id INTEGER PRIMARY KEY,
+      product_name TEXT,
+      product_type TEXT,
+      created_by INTEGER,
+      admin_id INTEGER,
+      company_id TEXT,
+      updated_at TEXT
+    )
+  ''');
+}
+
+static Future<void> _createProductSubtypesTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS product_subtypes (
+      sub_item_id INTEGER PRIMARY KEY,
+      product_id INTEGER,
+      measuring_unit TEXT,
+      available_unit REAL,
+      price REAL
+    )
+  ''');
+}
+
 }

@@ -7,6 +7,7 @@ import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/employee_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/network_model.dart';
 import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/product_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/region.dart';
 
@@ -66,4 +67,11 @@ final regionofflineViewModelProvider =
     StateNotifierProvider<RegionofflineViewModel, AsyncValue<List<Region>>>((ref) {
   final usecase = ref.watch(regionUseCaseofflineProvider);
   return RegionofflineViewModel(usecase);
+});
+
+
+final ordersViewModelProvider =
+    StateNotifierProvider<ordersStateNotifier, ordersState>((ref) {
+  final usecase = ref.watch(ordersUsecaseProvider);
+  return ordersStateNotifier(usecase);
 });

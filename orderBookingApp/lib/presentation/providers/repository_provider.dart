@@ -5,8 +5,10 @@ import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/offline_region_dao.dart';
 import 'package:order_booking_app/data/local/offline_visit_dao.dart';
+import 'package:order_booking_app/data/local/product_dao.dart';
 import 'package:order_booking_app/data/local/shop_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
+import 'package:order_booking_app/data/repositories/orders.impl.dart';
 import 'package:order_booking_app/data/repositories/product_impl.dart';
 import 'package:order_booking_app/data/repositories/region.dart';
 
@@ -17,6 +19,7 @@ import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/data/repositories/employee_impl.dart';
 import 'package:order_booking_app/data/repositories/shot_visit.dart';
 import 'package:order_booking_app/domain/repository/checkin_repo.dart';
+import 'package:order_booking_app/domain/repository/orders_repo.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';
 import 'package:order_booking_app/domain/repository/region.dart';
 
@@ -77,7 +80,8 @@ final checkInRepositoryProvider = Provider<CheckinRepository>((ref) {
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return ProductImpl(api);
+  final local = ProductDao();
+  return ProductImpl(api, local);
 });
 
 final visitRepositoryProvider = Provider<VisitRepository>((ref) {
@@ -101,4 +105,8 @@ final regionRepositorofflineProvider = Provider<RegionRepooffline>((ref) {
   );
 });
 
-
+final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
+  final dio = ref.watch(dioProvider).value!;
+  final api = ApiService(dio);
+  return OrdersRepositoryImpl(api);
+});
