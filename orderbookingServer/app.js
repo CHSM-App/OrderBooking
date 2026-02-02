@@ -16,7 +16,7 @@ const insertRouter = require('./routes/insert');
 const loginRouter = require('./routes/login');
 var db = require('./routes/db');
 
-app.use('/users',protect, usersRouter);
+app.use('/users', usersRouter);
 app.use('/insert', insertRouter);
 app.use('/login', loginRouter);
 

@@ -12,6 +12,7 @@ OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => OrderItem(
   productUnit: json['product_unit'] as String,
   price: (json['price'] as num).toDouble(),
   quantity: (json['quantity'] as num).toInt(),
+  totalPrice: (json['total_price'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$OrderItemToJson(OrderItem instance) => <String, dynamic>{
@@ -20,4 +21,5 @@ Map<String, dynamic> _$OrderItemToJson(OrderItem instance) => <String, dynamic>{
   'product_unit': instance.productUnit,
   'price': instance.price,
   'quantity': instance.quantity,
+  'total_price': instance.totalPrice,
 };

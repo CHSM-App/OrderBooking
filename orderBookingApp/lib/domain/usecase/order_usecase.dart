@@ -14,4 +14,12 @@ class OrderUsecase {
    Future<List<Order>> getOrderList() {
      return ordersRepository.getOrderList();
    }
+  Future<void> syncOfflineOrders() {
+    return ordersRepository.syncOfflineOrders();
+  }
+
+  Future<List<Order>> getAllOrders(){
+    return ordersRepository.getAllOrders();
+  }
+
 }

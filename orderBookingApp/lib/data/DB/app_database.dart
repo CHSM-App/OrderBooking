@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 3, // 👈 bumped version
+      version: 4, // 👈 bumped version
       onCreate: (db, _) async {
         // Runs only on fresh install
         await _createOfflineVisitsTable(db);
@@ -23,6 +23,8 @@ class AppDatabase {
         await _createRegionTable(db);
         await _createProductsTable(db);
         await _createProductSubtypesTable(db);
+        await _createOfflineOrdersTable(db);
+        await _createOfflineOrdersItemsTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         // Runs for existing users
@@ -84,7 +86,7 @@ class AppDatabase {
   }
 
   static Future<void> _createProductsTable(Database db) async {
-  await db.execute('''
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS products (
       product_id INTEGER PRIMARY KEY,
       product_name TEXT,
@@ -95,10 +97,10 @@ class AppDatabase {
       updated_at TEXT
     )
   ''');
-}
+  }
 
-static Future<void> _createProductSubtypesTable(Database db) async {
-  await db.execute('''
+  static Future<void> _createProductSubtypesTable(Database db) async {
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS product_subtypes (
       sub_item_id INTEGER PRIMARY KEY,
       product_id INTEGER,
@@ -107,6 +109,44 @@ static Future<void> _createProductSubtypesTable(Database db) async {
       price REAL
     )
   ''');
-}
+  }
 
+  static Future<void> _createOfflineOrdersTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE offline_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        local_order_id TEXT UNIQUE,
+        server_order_id INTEGER,      
+        employee_id INTEGER,
+        shop_id INTEGER,
+        shop_name TEXT,
+        order_date TEXT,
+        total_price REAL,
+        status TEXT,                
+        retry_count INTEGER DEFAULT 0,
+        created_at TEXT
+      );
+
+    )
+  ''');
+  }
+
+  static Future<void> _createOfflineOrdersItemsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE offline_order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        local_order_id TEXT,          
+        product_id INTEGER,
+        sub_item_id INTEGER,
+        product_name TEXT,
+        product_unit TEXT,
+        price REAL,
+        quantity INTEGER,
+        total_price REAL
+      );
+
+
+    )
+  ''');
+  }
 }

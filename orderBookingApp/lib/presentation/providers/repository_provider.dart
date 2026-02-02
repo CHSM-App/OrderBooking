@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/local/offline_order_dao.dart';
 import 'package:order_booking_app/data/local/offline_region_dao.dart';
 import 'package:order_booking_app/data/local/offline_visit_dao.dart';
 import 'package:order_booking_app/data/local/product_dao.dart';
@@ -107,5 +108,6 @@ final regionRepositorofflineProvider = Provider<RegionRepooffline>((ref) {
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return OrdersRepositoryImpl(api);
+  final local = OfflineOrderDao();
+  return OrdersRepositoryImpl(api, local);
 });

@@ -6,6 +6,7 @@ import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class OrderFormScreen extends ConsumerStatefulWidget {
   final ShopDetails shop;
@@ -136,6 +137,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     // Convert temporary items to OrderItem objects
     final List<OrderItem> orderItems = _orderItems.map((item) {
       return OrderItem(
+        productName: item.productName,
         productId: item.productId,
         subItemId: item.subItemId,
         productUnit: item.unit,
@@ -146,6 +148,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
     // Create Order object
     final Order order = Order(
+      localOrderId:  const Uuid().v4(),
+      shopNamep: widget.shop.shopName,
       employeeId: ref.read(adminloginViewModelProvider).userId,
       shopId: widget.shop.shopId??0,
       orderDate: DateTime.now().toIso8601String(),

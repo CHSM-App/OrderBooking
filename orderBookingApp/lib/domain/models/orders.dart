@@ -5,8 +5,14 @@ part 'orders.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class Order {
+
+  final String localOrderId;
+
   @JsonKey(name: 'employee_id')
   final int employeeId;
+
+  @JsonKey(name : 'shop_name')
+  final String? shopNamep;
 
   @JsonKey(name: 'shop_id')
   final int shopId;
@@ -21,6 +27,8 @@ class Order {
   final List<OrderItem> items;
 
   Order({
+    this.shopNamep,
+    required this.localOrderId,
     required this.employeeId,
     required this.shopId,
     required this.orderDate,
