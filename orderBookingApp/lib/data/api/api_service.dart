@@ -33,9 +33,6 @@ abstract class ApiService {
   @POST("insert/employee")
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
 
-  @POST("insert/deleteEmployee/{emp_id}")
-  Future<dynamic> deleteEmployee(@Path("emp_id") int empId);
-
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
@@ -72,7 +69,7 @@ abstract class ApiService {
   @GET("users/adminDetails/{mobile_no}")
   Future<List<AdminLogin>> fetchAdminDetails(
     @Path("mobile_no") String mobileNo,
-  );
+  );  
 
   @GET("users/shopList")
   Future<List<ShopDetails>> getShopList();
@@ -101,12 +98,19 @@ abstract class ApiService {
 
   //DELETE API
 @DELETE("index/deleteProductSubType/{sub_item_id}")
-Future<ProductResponse> deleteProductSubType(
-  @Path("sub_item_id") int subItemId,
-);
+  Future<ProductResponse> deleteProductSubType(
+    @Path("sub_item_id") int subItemId,
+  );
+
+@DELETE("index/deleteEmployee/{emp_id}")
+  Future<EmployeeLogin> deleteEmployee(@Path("emp_id") int empId);
 
 @POST("insert/addOrder")
 Future<dynamic> addProduct(
   @Body() Order product);
+
+
+@GET("users/getAllOrders/{company_id}")
+  Future<List<Order>> getOrderList();
 
 }

@@ -9,14 +9,14 @@ class ProductState {
   final String? error;
   final AsyncValue<ProductResponse?>? addUpdateResponse;
   final AsyncValue<List<Product>>? productList;
-    final AsyncValue<ProductDetailsResponse?> productDetails;
+  final AsyncValue<ProductDetailsResponse?> productDetails;
 
   const ProductState({
     this.isLoading = false,
     this.error,
     this.addUpdateResponse = const AsyncValue.data(null),
     this.productList = const AsyncValue.loading(),
-     this.productDetails = const AsyncValue.data(null),
+    this.productDetails = const AsyncValue.data(null),
   });
 
   ProductState copyWith({
@@ -24,14 +24,14 @@ class ProductState {
     String? error,
     AsyncValue<ProductResponse>? addUpdateResponse,
     AsyncValue<List<Product>>? productList,
-        AsyncValue<ProductDetailsResponse?>? productDetails,
+    AsyncValue<ProductDetailsResponse?>? productDetails,
   }) {
     return ProductState(
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       addUpdateResponse: addUpdateResponse ?? this.addUpdateResponse,
       productList: productList ?? this.productList,
-       productDetails: productDetails ?? this.productDetails,
+      productDetails: productDetails ?? this.productDetails,
     );
   }
 }
@@ -51,18 +51,17 @@ class ProductViewModel extends StateNotifier<ProductState> {
         addUpdateResponse: AsyncValue.data(response),
       );
     } catch (e) {
-    state = state.copyWith(
-  isLoading: false,
-  error: e.toString(),
-  addUpdateResponse: AsyncValue.error(
-    e, 
-    StackTrace.current,
-  ),
-);
-
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        addUpdateResponse: AsyncValue.error(e, StackTrace.current),
+      );
     }
   }
-   Future<void> fetchProductList(int adminId) async {
+
+  
+
+  Future<void> fetchProductList(int adminId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final productlist = await usecase.fetchProductList(adminId);
@@ -74,16 +73,18 @@ class ProductViewModel extends StateNotifier<ProductState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
-
+  
 
   /// ✅ NEW: Fetch Product Details (Edit Screen)
-  Future<void> fetchProductDetails( int productId, int adminId,) async {
-    state = state.copyWith(isLoading: true,error: null,productDetails: const AsyncValue.loading(),
+  Future<void> fetchProductDetails(int productId, int adminId) async {
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      productDetails: const AsyncValue.loading(),
     );
 
     try {
-      final details =
-          await usecase.fetchProductDetails(productId, adminId);
+      final details = await usecase.fetchProductDetails(productId, adminId);
 
       state = state.copyWith(
         isLoading: false,
@@ -97,6 +98,7 @@ class ProductViewModel extends StateNotifier<ProductState> {
       );
     }
   }
+
   /// ✅ NEW: Delete Subtype
   Future<void> deleteProductSubType(int subItemId) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -115,10 +117,9 @@ class ProductViewModel extends StateNotifier<ProductState> {
       );
     }
   }
+
   /// Optional reset
   void clearProductDetails() {
-    state = state.copyWith(
-      productDetails: const AsyncValue.data(null),
-    );
+    state = state.copyWith(productDetails: const AsyncValue.data(null));
   }
 }

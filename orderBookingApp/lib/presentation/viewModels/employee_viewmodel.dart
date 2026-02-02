@@ -2,13 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
 
-
 class EmployeeloginState {
   final bool isLoading;
   final String? error;
   final AsyncValue<List<EmployeeLogin>>? employeeList;
   final AsyncValue<List<EmployeeLogin>>? employeeDetails;
-  
+
   const EmployeeloginState({
     this.isLoading = false,
     this.error,
@@ -33,6 +32,8 @@ class EmployeeloginState {
 
 class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   final EmployeeloginUsecase usecase;
+
+  var companyId;
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
 
   // EXISTING: Add Employee
@@ -47,8 +48,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
-
-  
 
   // EXISTING: Get Employee List
   Future<void> getEmployeeList() async {
@@ -78,31 +77,51 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
- 
-
-    Future<void>fetchEmployeeInfo(String mobileNo)async{
-  state=state.copyWith(isLoading: true,error:null);
-  try{
-    final employeedetails=await usecase.fetchEmployeeInfo(mobileNo);
-    state=state.copyWith(isLoading: false,employeeDetails:  AsyncValue.data(employeedetails));
-  }
-  catch(e){
-    state=state.copyWith(isLoading: false,error: e.toString());
-  }
- }
-
-  Future<void> deleteEmployee(int empId) async {
+  
+  Future<void> fetchEmployeeInfo(String mobileNo) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await usecase.deleteEmployee(empId);
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after adding
-      getEmployeeList();
+      final employeedetails = await usecase.fetchEmployeeInfo(mobileNo);
+      state = state.copyWith(
+        isLoading: false,
+        employeeDetails: AsyncValue.data(employeedetails),
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
+  //   Future<void> deleteEmployee(int empId) async {
+  //   state = state.copyWith(isLoading: true, error: null);
 
- 
+  //   try {
+  //     await usecase.deleteEmployee(empId);
+
+  //     // ✅ WAIT for refresh
+  //     await getEmployeeList();
+
+  //     state = state.copyWith(isLoading: false);
+  //   } catch (e) {
+  //     state = state.copyWith(
+  //       isLoading: false,
+  //       error: e.toString(),
+  //     );
+  //   }
+  // }
+
+  Future<void> deleteEmployee(int empId) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await usecase.deleteEmployee(empId);
+
+      // ✅ Clear stale employee details so nothing tries to re-fetch the deleted ID
+      state = state.copyWith(employeeDetails: null);
+
+      // ✅ Refresh the list (this already sets isLoading: false internally)
+      await getEmployeeList();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
 }

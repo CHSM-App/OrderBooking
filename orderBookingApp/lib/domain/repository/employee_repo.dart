@@ -9,5 +9,5 @@ abstract class EmployeeloginRepository {
 
   Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo);
 
-  Future<dynamic> deleteEmployee(int empId);
+  Future<EmployeeLogin> deleteEmployee(int empId);
 }

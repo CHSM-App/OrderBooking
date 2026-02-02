@@ -27,7 +27,7 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   }
 
    @override
-  Future<dynamic> deleteEmployee(int empId) {
+  Future<EmployeeLogin> deleteEmployee(int empId) {
     return apiService.deleteEmployee(empId);
   }
 }

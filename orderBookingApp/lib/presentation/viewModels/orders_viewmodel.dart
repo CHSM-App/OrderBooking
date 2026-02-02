@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as ref;
 
 
 import 'package:order_booking_app/domain/models/orders.dart';
@@ -9,10 +10,13 @@ class ordersState{
   final bool isLoading;
   final String? errorMessage;
   final bool isSuccess;
+  final companyId;
+  
  const ordersState({
     required this.isLoading,
     required this.isSuccess,
      this.errorMessage,
+     this.companyId
   });
 
 
@@ -49,4 +53,21 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
       );
     }
   }
+
+   Future<void> getOrderList(String companyId) async {
+    debugPrint("In the viwModal");
+
+    state = state.copyWith(isLoading: true, errorMessage: null,);
+    try {
+      final result=  await usecase.getOrderList();
+      state = state.copyWith(isLoading: false,);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        isSuccess: false,
+      );
+    }
+  }
+
 }

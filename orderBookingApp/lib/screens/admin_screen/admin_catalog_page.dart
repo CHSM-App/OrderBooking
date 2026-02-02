@@ -21,14 +21,14 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
     /// fetch product list (admin id = 1)
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productViewModelProvider);
-
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: Column(
@@ -75,6 +75,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   padding: const EdgeInsets.all(16),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
+                    debugPrint("Hello");
                     return _productCard(context, filtered[index]);
                   },
                 );
@@ -101,7 +102,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
           // Refresh list if product added
           if (result == true) {
-            ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
+            ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
           }
         },
         child: const Icon(Icons.add, color: Colors.white),
@@ -158,13 +159,13 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   MaterialPageRoute(
                     builder: (_) => AddProductPage(
                       productId: product.productId,
-                      adminId: ref.read(adminloginViewModelProvider).userId??0,
+                      adminId: ref.read(adminloginViewModelProvider).userId,
                     ),
                   ),
                 );
 
                 if (result == true) {
-                  ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId??0);
+                  ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
                 }
               },
             ),

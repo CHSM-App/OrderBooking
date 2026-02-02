@@ -78,71 +78,95 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
   }
 
-  Future<void> _deleteEmployee() async {
-    // Show confirmation dialog
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text('Delete Employee'),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to delete this employee? This action cannot be undone.',
-          style: TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Delete'),
-          ),
+ 
+
+Future<void> _deleteEmployee() async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Row(
+        children: [
+          Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+          SizedBox(width: 12),
+          Text('Delete Employee'),
         ],
       ),
-    );
+      content: const Text(
+        'Are you sure you want to delete this employee? This action cannot be undone.',
+        style: TextStyle(fontSize: 15),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
 
-    if (confirm != true) return;
+  if (confirm != true) return;
 
-    // Call delete API
-    // await ref
-    //     .read(employeeloginViewModelProvider.notifier)
-    //     .deleteEmployee(widget.empId);
+  try {
+    debugPrint("Deleting employee id: ${widget.empId}");
 
-    final state = ref.read(employeeloginViewModelProvider);
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .deleteEmployee(widget.empId);
+
+    // ✅ AWAIT the refresh so the list updates BEFORE popping
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList();
 
     if (!mounted) return;
 
-    if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.error!),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Employee deleted successfully"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context, true); // Return to previous screen
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Employee deleted successfully"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // ✅ Small delay so the snackbar is visible before navigating
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+
+    Navigator.pop(context, true);
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
+
+String formatJoiningDate(String? isoDate) {
+  if (isoDate == null || isoDate.isEmpty) return "N/A";
+
+  final date = DateTime.parse(isoDate).toLocal();
+  return "${date.day.toString().padLeft(2, '0')}-"
+         "${date.month.toString().padLeft(2, '0')}-"
+          "${date.year.toString().padLeft(2, '0')}";       
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -328,11 +352,15 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                 // 🧾 BASIC INFO
                 _sectionTitle("Basic Information", Icons.info_outline),
                 _infoCard([
-                  _infoRow(Icons.phone, "Mobile No.", employee.empMobile ?? "N/A"),
+                  _infoRow(
+                    Icons.phone,
+                    "Mobile No.",
+                    employee.empMobile ?? "N/A",
+                  ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
-                  _infoRow(Icons.calendar_today, "Joining Date",
-                      employee.joiningDate ?? "N/A"),
+                  // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
+                  _infoRow(Icons.calendar_today, "Joining Date", formatJoiningDate(employee.joiningDate),),
                 ]),
 
                 const SizedBox(height: 24),

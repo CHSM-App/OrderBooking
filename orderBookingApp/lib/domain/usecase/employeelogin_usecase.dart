@@ -22,7 +22,7 @@ class EmployeeloginUsecase {
     return employeeloginRepository.fetchEmployeeInfo(mobileNo);
   }
 
-  Future<dynamic> deleteEmployee(int empId) {
+  Future<EmployeeLogin> deleteEmployee(int empId) {
     return employeeloginRepository.deleteEmployee(empId);
   }
 }

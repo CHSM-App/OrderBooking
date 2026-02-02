@@ -24,12 +24,16 @@
 
   @JsonKey(name: 'id_proof')
   final String? idProof;
+
    @JsonKey(name: 'active_status')
   final int? activeStatus;
+
    @JsonKey(name: 'emp_id')
   final int? empId;
+
   @JsonKey(name: 'joining_date')
   final String? joiningDate;
+  
   @JsonKey(name: 'role_id')
   final int? roleId;
   

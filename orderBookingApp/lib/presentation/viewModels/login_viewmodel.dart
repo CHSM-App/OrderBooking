@@ -70,6 +70,8 @@ class AdminloginState {
 
 class AdminloginViewModel extends StateNotifier<AdminloginState> {
   final AdminloginUsecase usecase;
+
+  var companyId;
   AdminloginViewModel(this.usecase) : super(const AdminloginState()) {
     // Initial fetch or setup can be done here if needed
     loadFromStorage();
@@ -163,4 +165,6 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
 
   await TokenStorage.clear();
 }
+
+ 
 }

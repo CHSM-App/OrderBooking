@@ -17,4 +17,9 @@ class OrdersRepositoryImpl implements OrdersRepository {
       throw Exception('Failed to add order line item: $e');
     }
   }
+
+  
+  Future<List<Order>> getOrderList(){
+     return _apiService.getOrderList();
+  }
 }

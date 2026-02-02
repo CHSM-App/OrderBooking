@@ -11,4 +11,7 @@ class OrderUsecase {
     return ordersRepository.addProduct(order);
   }
 
+   Future<List<Order>> getOrderList() {
+     return ordersRepository.getOrderList();
+   }
 }
