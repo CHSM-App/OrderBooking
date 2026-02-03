@@ -228,6 +228,7 @@ class _AdminEmployeesPageState
     int index, // ✅ FIXED
   ) {
     final isActive = employee["status"] == "Active";
+    final initials = _getInitials(employee["name"]?.toString() ?? "");
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -262,10 +263,7 @@ class _AdminEmployeesPageState
               ),
               child: Center(
                 child: Text(
-                  employee["name"]
-                      .split(" ")
-                      .map((e) => e[0])
-                      .join(),
+                  initials,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -320,5 +318,14 @@ class _AdminEmployeesPageState
         ),
       ),
     );
+  }
+
+  String _getInitials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+    final parts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    if (parts.isEmpty) return '?';
+    final initials = parts.map((p) => p[0]).take(2).join();
+    return initials.isEmpty ? '?' : initials;
   }
 }

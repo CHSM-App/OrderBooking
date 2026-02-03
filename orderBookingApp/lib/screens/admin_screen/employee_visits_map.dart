@@ -1,8 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/employee_visit_viewmodel.dart';
@@ -23,8 +22,6 @@ class EmployeeVisitsMapPage extends ConsumerStatefulWidget {
 }
 
 class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
-  GoogleMapController? _mapController;
-
   @override
   void initState() {
     super.initState();
@@ -33,12 +30,6 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
           .read(employeeVisitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
     });
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
   }
 
   @override
@@ -75,94 +66,87 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     }
 
     final sortedVisits = [...visits]..sort(_compareVisitsByDateTime);
-    final points = sortedVisits
+    final center =
+        LatLng(sortedVisits.first.latitude, sortedVisits.first.longitude);
+    final markers = <Marker>[];
+    for (var i = 0; i < sortedVisits.length; i++) {
+      markers.add(_buildMarker(sortedVisits[i], i + 1));
+    }
+
+    final routePoints = sortedVisits
         .map((v) => LatLng(v.latitude, v.longitude))
         .toList();
 
-    final markers = _buildMarkers(sortedVisits);
-    final polylines = _buildPolylines(points);
-
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: points.first,
-        zoom: 14,
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 14,
       ),
-      markers: markers,
-      polylines: polylines,
-      myLocationButtonEnabled: false,
-      mapToolbarEnabled: false,
-      onMapCreated: (controller) {
-        _mapController = controller;
-        _fitBounds(points);
-      },
-    );
-  }
-
-  Set<Marker> _buildMarkers(List<EmployeeVisit> visits) {
-    final markers = <Marker>{};
-    for (var i = 0; i < visits.length; i++) {
-      final visit = visits[i];
-      final isStart = i == 0;
-      final isEnd = i == visits.length - 1;
-      markers.add(
-        Marker(
-          markerId: MarkerId('visit_${visit.locationId}_$i'),
-          position: LatLng(visit.latitude, visit.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            isStart
-                ? BitmapDescriptor.hueGreen
-                : isEnd
-                    ? BitmapDescriptor.hueRed
-                    : BitmapDescriptor.hueAzure,
-          ),
-          infoWindow: InfoWindow(
-            title: 'Visit #${i + 1}',
-            snippet: '${visit.date} ${visit.time} | Shop ${visit.shopId}',
-            onTap: () => _showVisitDetails(visit, i + 1),
-          ),
-          onTap: () => _showVisitDetails(visit, i + 1),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.vengurlatech.orderbooking',
         ),
-      );
-    }
-    return markers;
-  }
-
-  Set<Polyline> _buildPolylines(List<LatLng> points) {
-    if (points.length < 2) return {};
-    return {
-      Polyline(
-        polylineId: const PolylineId('visit_path'),
-        points: points,
-        color: const Color(0xFF1976D2),
-        width: 5,
-      ),
-    };
-  }
-
-  void _fitBounds(List<LatLng> points) {
-    if (_mapController == null || points.isEmpty) return;
-
-    double? minLat, maxLat, minLng, maxLng;
-    for (final p in points) {
-      minLat = minLat == null ? p.latitude : min(minLat, p.latitude);
-      maxLat = maxLat == null ? p.latitude : max(maxLat, p.latitude);
-      minLng = minLng == null ? p.longitude : min(minLng, p.longitude);
-      maxLng = maxLng == null ? p.longitude : max(maxLng, p.longitude);
-    }
-
-    if (minLat == null ||
-        maxLat == null ||
-        minLng == null ||
-        maxLng == null) {
-      return;
-    }
-
-    final bounds = LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
+        if (routePoints.length >= 2)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: routePoints,
+                strokeWidth: 4,
+                color: const Color(0xFF1976D2),
+              ),
+            ],
+          ),
+        MarkerLayer(markers: markers),
+      ],
     );
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 60),
+  }
+
+  Marker _buildMarker(EmployeeVisit visit, int sequence) {
+    final isStart = sequence == 1;
+    final isEnd = sequence > 1 && sequence == (ref
+            .read(employeeVisitViewModelProvider)
+            .visits
+            ?.value
+            ?.length ??
+        sequence);
+    final color = isStart
+        ? Colors.green
+        : isEnd
+            ? Colors.red
+            : Colors.blue;
+
+    return Marker(
+      width: 44,
+      height: 44,
+      point: LatLng(visit.latitude, visit.longitude),
+      child: GestureDetector(
+        onTap: () => _showVisitDetails(visit, sequence),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              sequence.toString(),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

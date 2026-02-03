@@ -260,7 +260,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                             radius: 42,
                             backgroundColor: Colors.white,
                             child: Text(
-                              employee.empName?[0] ?? "",
+                              (employee.empName?.isNotEmpty ?? false)
+                                  ? employee.empName![0]
+                                  : '?',
                               style: const TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
