@@ -7,7 +7,7 @@ import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
-  const EmployeeDetailsPage({super.key, required this.empId});
+  const EmployeeDetailsPage({super.key, required this.empId, required Map<String, dynamic> companyId});
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>

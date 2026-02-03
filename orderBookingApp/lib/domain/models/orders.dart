@@ -13,7 +13,7 @@ class Order {
 
   @JsonKey(name : 'shop_name')
   final String? shopNamep;
-
+  
   @JsonKey(name: 'shop_id')
   final int shopId;
 

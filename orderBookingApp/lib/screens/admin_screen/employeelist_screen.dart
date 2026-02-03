@@ -165,7 +165,7 @@ class _AdminEmployeesPageState
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       EmployeeDetailsPage(
-                                    empId: emp["id"],
+                                    empId: emp["id"], companyId: {},
                                   ),
                                 ),
                               );

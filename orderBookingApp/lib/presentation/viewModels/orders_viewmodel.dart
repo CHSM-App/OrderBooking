@@ -9,6 +9,7 @@ class ordersState {
   final String? errorMessage;
   final bool isSuccess;
   final AsyncValue<List<Order>>? orders;
+  final String? companyId;
 
   const ordersState({
     required this.isLoading,
@@ -64,6 +65,25 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
   }
 
   Future<void> getAllOrders() async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      isSuccess: false,
+    );
+
+    try {
+     final result =  await usecase.getAllOrders();
+       state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> getOrderList(String s) async {
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,

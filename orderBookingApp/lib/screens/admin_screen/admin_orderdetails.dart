@@ -214,6 +214,9 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 
 // }
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
+import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 class AdminOrdersPage extends ConsumerStatefulWidget {
   const AdminOrdersPage({super.key});
@@ -231,7 +234,7 @@ class _AdminOrdersPageState extends ConsumerState<AdminOrdersPage> {
   void initState(){
       super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId?? '');
+      ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId??'');
     });
   }
 
@@ -239,18 +242,15 @@ class _AdminOrdersPageState extends ConsumerState<AdminOrdersPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(ordersViewModelProvider);
 
-    final employees = state.when(
+    final orders = state.orders?.when(
           data: (list) => list
               .map(
                 (e) => {
-                  "shop_id": e.shop_id,
-                  "name": e.empName ?? "",
-                  "mobile": e.empMobile ?? "",
-                  "email": e.empEmail ?? "",
-                  "address": e.empAddress ?? "",
-                  "region": e.empAddress ?? "",
-                  "status":
-                      e.activeStatus == 1 ? "Active" : "Inactive",
+                  "shop_id": e.shopId,
+                  "shop_name": e.shopNamep ?? "",
+                  "total_price": e.totalPrice,
+                  "order_id": e.
+
                 },
               )
               .toList(),
@@ -284,36 +284,60 @@ class _AdminOrdersPageState extends ConsumerState<AdminOrdersPage> {
           ),
 
           /// ORDER LIST
-          Expanded(
-            child: ordersAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Center(child: Text("Error: $e")),
-              data: (orders) {
-                final filtered = orders.where((o) {
-                  final q = _searchQuery.toLowerCase();
-                  return o.shopName.toLowerCase().contains(q) ||
-                      o.region.toLowerCase().contains(q) ||
-                      o.address.toLowerCase().contains(q) ||
-                      o.totalPrice.toString().contains(q);
-                }).toList();
+          // Expanded(
+          //   child: state.when(
+          //     loading: () =>
+          //         const Center(child: CircularProgressIndicator()),
+          //     error: (e, _) =>
+          //         Center(child: Text("Error: $e")),
+          //     data: (orders) {
+          //       final filtered = orders.where((o) {
+          //         final q = _searchQuery.toLowerCase();
+          //         return o.shopName.toLowerCase().contains(q) ||
+          //             o.totalPrice.toString().contains(q);
+          //       }).toList();
 
-                if (filtered.isEmpty) {
-                  return const Center(
-                    child: Text("No orders found"),
-                  );
-                }
+          //       if (filtered.isEmpty) {
+          //         return const Center(
+          //           child: Text("No orders found"),
+          //         );
+          //       }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  itemBuilder: (_, i) =>
-                      _modernOrderCard(context, filtered[i]),
-                );
-              },
-            ),
-          ),
+          //       return ListView.builder(
+          //         padding: const EdgeInsets.all(16),
+          //         itemCount: filtered.length,
+          //         itemBuilder: (_, i) =>
+          //             _modernOrderCard(context, filtered[i]),
+          //       );
+          //     },
+          //   ),
+          // ),
+
+           Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16),
+                        itemBuilder: (context, index) {
+                          return InkWell(
+                            borderRadius:
+                                BorderRadius.circular(20),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      OrderDetailsPage(order: orders, orderNumber: , 
+                                         
+                                  ),
+                                ),
+                              );
+                            },
+                            child:
+                                _employeeCard(context, emp, index),
+                          );
+                        },
+                      ),
+                    ),
         ],
       ),
     );
@@ -381,6 +405,8 @@ class _AdminOrdersPageState extends ConsumerState<AdminOrdersPage> {
 }
 
 }
+
+
 
 
 //===================================== ORDER DETAILS PAGE ====================================//
