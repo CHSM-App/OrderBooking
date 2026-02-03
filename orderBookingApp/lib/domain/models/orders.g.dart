@@ -7,7 +7,9 @@ part of 'orders.dart';
 // **************************************************************************
 
 Order _$OrderFromJson(Map<String, dynamic> json) => Order(
-  localOrderId: json['localOrderId'] as String,
+  shopNamep: json['shop_name'] as String?,
+  serverOrderId: (json['order_id'] as num?)?.toInt(),
+  localOrderId: json['localOrderId'] as String?,
   employeeId: (json['employee_id'] as num).toInt(),
   shopId: (json['shop_id'] as num).toInt(),
   orderDate: json['order_date'] as String,
@@ -19,7 +21,9 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
 
 Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
   'localOrderId': instance.localOrderId,
+  'order_id': instance.serverOrderId,
   'employee_id': instance.employeeId,
+  'shop_name': instance.shopNamep,
   'shop_id': instance.shopId,
   'order_date': instance.orderDate,
   'total_price': instance.totalPrice,

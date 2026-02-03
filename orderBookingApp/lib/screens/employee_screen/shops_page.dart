@@ -295,9 +295,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   // Old method removed - no longer needed
   void _showLocationDialog(
     String title,
-    String message, {
-    bool isPermanentlyDenied = false,
-  }) {
+    String message) {
     // This method is deprecated - use the specific dialog methods above
   }
 

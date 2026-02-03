@@ -52,10 +52,10 @@ abstract class ApiService {
   Future<ProductResponse> addOrUpdateProduct(@Body() Product product);
 
   @POST("users/checkIn/{emp_id}")
-  Future<void> checkIn(@Path("emp_id") int empId);
+  Future<CheckInStatusRequest> checkIn(@Path("emp_id") int empId);
 
   @POST("users/checkOut/{emp_id}")
-  Future<void> checkOut(@Path("emp_id") int empId);
+  Future<CheckInStatusRequest> checkOut(@Path("emp_id") int empId);
 
   //GET METHODS
   @GET("users/employeeList")
@@ -98,6 +98,9 @@ abstract class ApiService {
     @Path("product_id") int productId,
     @Path("admin_id") int adminId,
   );
+
+  @GET("users/getOrders/{emp_id}")
+  Future<List<Order>> getOrders(@Path("emp_id") int empId);
 
   //DELETE API
 @DELETE("index/deleteProductSubType/{sub_item_id}")

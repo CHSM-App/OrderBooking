@@ -7,11 +7,11 @@ class CheckinUsecase {
 
   CheckinUsecase(this.repository);
 
-  Future<void> checkIn(int empId) {
+  Future<CheckInStatusRequest> checkIn(int empId) {
     return repository.checkIn(empId);
   }
 
-  Future<void> checkOut(int empId) {
+  Future<CheckInStatusRequest> checkOut(int empId) {
     return repository.checkOut(empId);
   }
 

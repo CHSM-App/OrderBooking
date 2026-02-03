@@ -4,7 +4,6 @@ import 'package:order_booking_app/domain/repository/region.dart';
 import '../../domain/models/region.dart';
 import '../local/offline_region_dao.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
-import '../../domain/repository/region_repo.dart';
 
 class RegionImplOffline implements RegionRepooffline {
   final OfflineRegionDao local;

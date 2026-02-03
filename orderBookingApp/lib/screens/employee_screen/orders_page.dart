@@ -19,6 +19,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     // Fetch orders when page loads
     Future.microtask(() {
       ref.read(ordersViewModelProvider.notifier).getAllOrders();
+      
+              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
     });
   }
 
@@ -107,6 +109,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           ElevatedButton.icon(
             onPressed: () {
               ref.read(ordersViewModelProvider.notifier).getAllOrders();
+              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
@@ -179,6 +182,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return RefreshIndicator(
       onRefresh: () async {
         await ref.read(ordersViewModelProvider.notifier).getAllOrders();
+        
+              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),

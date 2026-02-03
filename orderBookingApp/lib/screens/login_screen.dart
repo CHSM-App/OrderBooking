@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_signUp.dart';
-import 'package:order_booking_app/screens/employee_screen/otp_screen.dart';
+import 'package:order_booking_app/screens/otp_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 
@@ -10,12 +10,10 @@ class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<LoginScreen> createState() =>
-      _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState
-    extends ConsumerState<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _mobileController = TextEditingController();
   late AnimationController _controller;
@@ -78,9 +76,9 @@ class _LoginScreenState
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('User not found!')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('User not found!')));
           }
         },
         error: (e, _) {
@@ -166,15 +164,18 @@ class _LoginScreenState
                 const Text(
                   'Order Booking Portal',
                   style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.5),
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
@@ -211,8 +212,7 @@ class _LoginScreenState
                       const SizedBox(height: 8),
                       Text(
                         'Enter your mobile number to continue',
-                        style:
-                            TextStyle(fontSize: 15, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 15, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 40),
 
@@ -223,9 +223,10 @@ class _LoginScreenState
                           Text(
                             'Mobile Number',
                             style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.grey[800],
-                                fontWeight: FontWeight.w600),
+                              fontSize: 15,
+                              color: Colors.grey[800],
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           AnimatedContainer(
@@ -256,13 +257,16 @@ class _LoginScreenState
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 18),
+                                    horizontal: 20,
+                                    vertical: 18,
+                                  ),
                                   child: const Text(
                                     '+91',
                                     style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF1F2937)),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1F2937),
+                                    ),
                                   ),
                                 ),
                                 Container(
@@ -282,13 +286,16 @@ class _LoginScreenState
                                       keyboardType: TextInputType.phone,
                                       maxLength: 10,
                                       style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                       decoration: const InputDecoration(
                                         hintText: 'Enter mobile number',
                                         border: InputBorder.none,
                                         contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 20, vertical: 18),
+                                          horizontal: 20,
+                                          vertical: 18,
+                                        ),
                                         counterText: '',
                                       ),
                                     ),
@@ -330,13 +337,17 @@ class _LoginScreenState
                                     Text(
                                       'Send OTP',
                                       style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                     SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward,
-                                        color: Colors.white, size: 20),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                   ],
                                 ),
                         ),
@@ -345,46 +356,48 @@ class _LoginScreenState
                       Center(
                         child: Text(
                           'By continuing, you agree to our Terms & Conditions',
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
                       const SizedBox(height: 16),
                       const SizedBox(height: 24),
 
-// Terms & Sign Up Row
-Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const Text(
-      'Don\'t have an account? ',
-      style: TextStyle(fontSize: 12, color: Colors.grey),
-    ),
-    GestureDetector(
-      onTap: () {
-        // Navigate to SignUp screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AdminSignup(), // Create this screen separately
-          ),
-        );
-      },
-      child: const Text(
-        'Sign Up',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-          decoration: TextDecoration.underline,
-        ),
-      ),
-    ),
-  ],
-),
-const SizedBox(height: 16),
-
+                      // Terms & Sign Up Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Don\'t have an account? ',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              // Navigate to SignUp screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AdminSignup(), // Create this screen separately
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),

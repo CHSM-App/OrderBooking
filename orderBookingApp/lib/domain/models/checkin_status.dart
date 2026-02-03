@@ -24,7 +24,15 @@ class CheckInStatusRequest {
   @JsonKey(name: 'checkin_status')
   final int? checkinStatus;
 
+  @JsonKey(name: 'message')
+  final String? message;
+
+  @JsonKey(name: 'success')
+  final int? success;
+
   CheckInStatusRequest({
+    this.message,
+    this.success,
     this.empId,
     this.inDate,
     this.inTime,

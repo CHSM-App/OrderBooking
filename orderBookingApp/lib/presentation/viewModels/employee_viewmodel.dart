@@ -2,13 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
 
-
 class EmployeeloginState {
   final bool isLoading;
   final String? error;
   final AsyncValue<List<EmployeeLogin>>? employeeList;
   final AsyncValue<List<EmployeeLogin>>? employeeDetails;
-  
+
   const EmployeeloginState({
     this.isLoading = false,
     this.error,
@@ -48,8 +47,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  
-
   // EXISTING: Get Employee List
   Future<void> getEmployeeList() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -78,18 +75,21 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
- 
+  Future<void> fetchEmployeeInfo(String mobileNo) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final employeedetails = await usecase.fetchEmployeeInfo(mobileNo);
+      state = state.copyWith(
+        isLoading: false,
+        employeeDetails: AsyncValue.data(employeedetails),
+      );
 
-    Future<void>fetchEmployeeInfo(String mobileNo)async{
-  state=state.copyWith(isLoading: true,error:null);
-  try{
-    final employeedetails=await usecase.fetchEmployeeInfo(mobileNo);
-    state=state.copyWith(isLoading: false,employeeDetails:  AsyncValue.data(employeedetails));
+        print(employeedetails.toString());
+    
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
-  catch(e){
-    state=state.copyWith(isLoading: false,error: e.toString());
-  }
- }
 
   Future<void> deleteEmployee(int empId) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -102,7 +102,4 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
-
-
- 
 }

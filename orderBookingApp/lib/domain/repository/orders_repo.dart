@@ -6,4 +6,5 @@ abstract class OrdersRepository {
   Future<dynamic> addProduct(Order order);
   Future<void> syncOfflineOrders();
   Future<List<Order>> getAllOrders();
+  Future<void> syncServerOrdersToLocal(int empId);
 }

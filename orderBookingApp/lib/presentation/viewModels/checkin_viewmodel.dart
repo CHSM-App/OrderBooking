@@ -6,26 +6,31 @@ import 'package:order_booking_app/domain/usecase/checkin_usecase.dart';
 class CheckinState {
   final bool isLoading;
   final String? error;
+  final String? message; // ✅ Added message state
   final AsyncValue<CheckInStatusRequest?> attendance;
-  
+  final bool isCheckedIn;
 
   const CheckinState({
+    this.isCheckedIn = false,
     this.isLoading = false,
     this.error,
+    this.message,
     this.attendance = const AsyncValue.loading(),
-   
   });
 
   CheckinState copyWith({
+    bool? isCheckedIn,
     bool? isLoading,
     String? error,
+    String? message,
     AsyncValue<CheckInStatusRequest?>? attendance,
-    
   }) {
     return CheckinState(
+      isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-      attendance: attendance ?? this.attendance,  
+      error: error,
+      message: message,
+      attendance: attendance ?? this.attendance,
     );
   }
 }
@@ -38,17 +43,21 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
 
   /// LOAD TODAY STATUS
   Future<void> loadTodayStatus(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, message: null);
     try {
       final result = await usecase.fetchTodayStatus(empId);
       state = state.copyWith(
         isLoading: false,
         attendance: AsyncValue.data(result),
+        isCheckedIn: result?.checkinStatus == 1,
+        error: null,
+        message: null,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
+        message: null,
         attendance: const AsyncValue.data(null),
       );
     }
@@ -56,29 +65,59 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
 
   /// CHECK-IN
   Future<void> checkIn(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, message: null);
     try {
-      final result = await usecase.checkIn(empId);
-      await loadTodayStatus(empId);
+      // ✅ Get response from usecase
+      final response = await usecase.checkIn(empId);
+
+      // ✅ Extract message from response
+      final message = response.message ?? 'Checked in successfully!';
+      // ✅ Update state with message
+      state = state.copyWith(
+        isLoading: false,
+        isCheckedIn: true,
+        message: message,
+        error: null,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
+        message: null,
       );
+      rethrow;
     }
   }
 
   /// CHECK-OUT
   Future<void> checkOut(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, message: null);
     try {
-      await usecase.checkOut(empId);
-      await loadTodayStatus(empId);
+      // ✅ Get response from usecase
+      final response = await usecase.checkOut(empId);
+      print('resposne $response');
+      // ✅ Extract message from response
+      final message = response.message ?? 'Checked out successfully!';
+
+      // ✅ Update state with message
+      state = state.copyWith(
+        isLoading: false,
+        isCheckedIn: false,
+        message: message,
+        error: null,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
+        message: null,
       );
+      rethrow;
     }
+  }
+
+  /// Clear message (call after showing snackbar)
+  void clearMessage() {
+    state = state.copyWith(message: null, error: null);
   }
 }
