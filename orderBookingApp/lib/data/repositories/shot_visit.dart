@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/repository/shop_visit.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 
 import '../../domain/models/visite.dart';
 import '../local/offline_visit_dao.dart';
@@ -55,6 +56,11 @@ class VisitImpl implements VisitRepository {
     } finally {
       _isSyncing = false;
     }
+  }
+
+  @override
+  Future<List<EmployeeVisit>> getEmployeeVisits(int empId) {
+    return apiService.getEmployeeVisits(empId);
   }
 
 }

@@ -5,6 +5,7 @@ import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
@@ -101,6 +102,9 @@ abstract class ApiService {
 
   @GET("users/getOrders/{emp_id}")
   Future<List<Order>> getOrders(@Path("emp_id") int empId);
+
+  @GET("users/employeeVisits/{emp_id}")
+  Future<List<EmployeeVisit>> getEmployeeVisits(@Path("emp_id") int empId);
 
   //DELETE API
 @DELETE("index/deleteProductSubType/{sub_item_id}")
