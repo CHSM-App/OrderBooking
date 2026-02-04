@@ -15,13 +15,24 @@ class OrdersListPage extends ConsumerStatefulWidget {
 class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  // ===== DATE FILTER =====
+  static const _filterToday = 'Today';
+  static const _filterYesterday = 'Yesterday';
+  static const _filterThisMonth = 'This Month';
+  static const _filterCustom = 'Custom';
+
+  String? _selectedFilter;
+  DateTimeRange? _customRange;
+  static const _filterAll = 'All';
 
   @override
   void initState() {
     super.initState();
     // Fetch orders when page loads
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId?? '');
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '');
     });
   }
 
@@ -59,7 +70,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: Icon(Icons.clear, color: Colors.grey[400], size: 20),
+                      icon: Icon(
+                        Icons.clear,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -69,16 +84,36 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     )
                   : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
             ),
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Add filter functionality
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.filter_list,
+              color: _selectedFilter != null ? Colors.green : null,
+            ),
+            onSelected: (value) {
+              if (value == _filterAll) {
+                setState(() {
+                  _selectedFilter = null;
+                  _customRange = null;
+                });
+              } else {
+                _onFilterSelected(value);
+              }
             },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: _filterAll, child: Text('All')),
+              PopupMenuItem(value: _filterToday, child: Text('Today')),
+              PopupMenuItem(value: _filterYesterday, child: Text('Yesterday')),
+              PopupMenuItem(value: _filterThisMonth, child: Text('This Month')),
+              PopupMenuItem(value: _filterCustom, child: Text('Custom')),
+            ],
           ),
         ],
       ),
@@ -89,9 +124,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   Widget _buildBody(ordersState state) {
     // Handle loading state
     if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     // Handle error state
@@ -122,11 +155,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 80,
-            color: Colors.grey[300],
-          ),
+          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             'No Orders Yet',
@@ -139,25 +168,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           const SizedBox(height: 8),
           Text(
             'Orders will appear here once created',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId?? '');
+              ref
+                  .read(ordersViewModelProvider.notifier)
+                  .getOrderList(
+                    ref.read(adminloginViewModelProvider).companyId ?? '',
+                  );
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
@@ -172,32 +199,26 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             const Text(
               'Failed to load orders',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               errorMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId?? '');
+                ref
+                    .read(ordersViewModelProvider.notifier)
+                    .getOrderList(
+                      ref.read(adminloginViewModelProvider).companyId ?? '',
+                    );
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
@@ -219,12 +240,20 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   bool _orderMatchesSearch(Order order, int orderNumber, String query) {
     if (query.isEmpty) return true;
 
-    // Search by order number
-    if (orderNumber.toString().contains(query)) return true;
+    // Search by order number (supports "12", "Order#12", "#12")
+    final numericQuery = query.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numericQuery.isNotEmpty &&
+        orderNumber.toString().contains(numericQuery)) {
+      return true;
+    }
 
     // Search by shop name
     final shopName = (order.shopNamep ?? '').toLowerCase();
     if (shopName.contains(query)) return true;
+
+    // Search by employee name
+    final empName = (order.empName ?? '').toLowerCase();
+    if (empName.contains(query)) return true;
 
     // Search by total price/amount
     final totalPrice = order.totalPrice.toString();
@@ -246,15 +275,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       if (item.productName?.toLowerCase().contains(query) ?? false) {
         return true;
       }
-      
-      
-     
-      
+
       // Search by quantity
       if (item.quantity.toString().contains(query)) {
         return true;
       }
-      
+
       // Search by price
       if (item.price.toString().contains(query)) {
         return true;
@@ -264,39 +290,123 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return false;
   }
 
+  Future<void> _onFilterSelected(String label) async {
+    if (label == _filterCustom) {
+      final now = DateTime.now();
+      final initialStart =
+          _customRange?.start ?? DateTime(now.year, now.month, now.day);
+      final initialEnd =
+          _customRange?.end ?? DateTime(now.year, now.month, now.day);
+
+      final range = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(now.year - 5),
+        lastDate: DateTime(now.year + 1),
+        initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      );
+
+      if (range == null) return;
+
+      setState(() {
+        _selectedFilter = label;
+        _customRange = range;
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedFilter = label;
+    });
+  }
+
+  bool _passesDateFilter(Order order) {
+    if (_selectedFilter == null || _selectedFilter == _filterAll) {
+      return true;
+    }
+
+    DateTime orderDate;
+    try {
+      // ⚠️ DO NOT convert toLocal blindly
+      orderDate = _dateOnly(DateTime.parse(order.orderDate));
+    } catch (_) {
+      return false;
+    }
+
+    final today = _dateOnly(DateTime.now());
+
+    if (_selectedFilter == _filterToday) {
+      return orderDate == today;
+    }
+
+    if (_selectedFilter == _filterYesterday) {
+      final yesterday = today.subtract(const Duration(days: 1));
+      return orderDate == yesterday;
+    }
+
+    if (_selectedFilter == _filterThisMonth) {
+      return orderDate.year == today.year && orderDate.month == today.month;
+    }
+
+    if (_selectedFilter == _filterCustom) {
+      if (_customRange == null) return true;
+
+      final start = _dateOnly(_customRange!.start);
+      final end = _dateOnly(_customRange!.end);
+
+      return !orderDate.isBefore(start) && !orderDate.isAfter(end);
+    }
+
+    return true;
+  }
+
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
   String _formatDateForSearch(DateTime date) {
     final months = [
-      'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
     ];
-    
+
     // Return multiple formats for better search matching
     return '${months[date.month - 1]} ${date.day} ${date.year} ${date.day}/${date.month}/${date.year}';
   }
 
   Widget _buildOrdersList(BuildContext context, List<Order> orders) {
     // sort latest order first
-    orders.sort((a, b) =>
-        DateTime.parse(b.orderDate).compareTo(
-          DateTime.parse(a.orderDate),
-        ));
+    orders.sort(
+      (a, b) =>
+          DateTime.parse(b.orderDate).compareTo(DateTime.parse(a.orderDate)),
+    );
 
-    // Filter orders based on search query
-    final filteredOrders = orders.where((order) {
-      final orderNumber = orders.length - orders.indexOf(order);
-      return _orderMatchesSearch(order, orderNumber, _searchQuery);
-    }).toList();
+    final List<Order> filteredOrders = [];
+
+    for (int i = 0; i < orders.length; i++) {
+      final order = orders[i];
+      final orderNumber = orders.length - i;
+
+      if (!_passesDateFilter(order)) continue;
+
+      if (_orderMatchesSearch(order, orderNumber, _searchQuery)) {
+        filteredOrders.add(order);
+      }
+    }
 
     if (filteredOrders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey[300],
-            ),
+            Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
               'No results found',
@@ -309,10 +419,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             const SizedBox(height: 8),
             Text(
               'Try searching with different keywords',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -323,7 +430,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       onRefresh: () async {
         await ref
             .read(ordersViewModelProvider.notifier)
-            .getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '');
+            .getOrderList(
+              ref.read(adminloginViewModelProvider).companyId ?? '',
+            );
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -334,10 +443,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           // 🔥 highest number for latest order
           final orderNumber = orders.length - orders.indexOf(order);
 
-          return _OrderCard(
-            order: order,
-            orderNumber: orderNumber,
-          );
+          return _OrderCard(order: order, orderNumber: orderNumber);
         },
       ),
     );
@@ -348,19 +454,26 @@ class _OrderCard extends StatelessWidget {
   final Order order;
   final int orderNumber;
 
-  const _OrderCard({
-    required this.order,
-    required this.orderNumber,
-  });
+  const _OrderCard({required this.order, required this.orderNumber});
 
   String _formatDate(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
-      
+
       return '${months[date.month - 1]} ${date.day}, ${date.year} at ${_formatTime(date)}';
     } catch (e) {
       return isoDate;
@@ -368,7 +481,9 @@ class _OrderCard extends StatelessWidget {
   }
 
   String _formatTime(DateTime date) {
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final hour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -379,18 +494,14 @@ class _OrderCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderDetailsPage(
-                order: order,
-                orderNumber: orderNumber,
-              ),
+              builder: (context) =>
+                  OrderDetailsPage(order: order, orderNumber: orderNumber),
             ),
           );
         },
@@ -423,7 +534,7 @@ class _OrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Order${order.companyId != null ? '-${order.companyId}' : ''}#$orderNumber',
+                            'Order#$orderNumber',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -456,6 +567,12 @@ class _OrderCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  _buildInfoChip(
+                    Icons.people_sharp,
+                    'Employee: ${order.empName ?? 'Unknown'}',
+                    Colors.red,
+                  ),
+                  const SizedBox(width: 8),
                   _buildInfoChip(
                     Icons.store,
                     'Shop: ${order.shopNamep ?? 'Unknown'}',

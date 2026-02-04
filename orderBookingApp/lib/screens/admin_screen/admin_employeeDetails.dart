@@ -5,13 +5,16 @@ import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
+import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
- 
-
-  const EmployeeDetailsPage({super.key, required this.empId, required Map<String, dynamic> companyId});
+  const EmployeeDetailsPage({
+    super.key,
+    required this.empId,
+    required Map<String, dynamic> companyId,
+  });
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
@@ -37,17 +40,19 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     );
 
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
 
-    //   ref
-    //       .read(ordersViewModelProvider.notifier)
-    //       .getEmployeeOrders(widget.empId);  
+      //   ref
+      //       .read(ordersViewModelProvider.notifier)
+      //       .getEmployeeOrders(widget.empId);
     });
 
     _controller.forward();
@@ -62,21 +67,17 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   Future<void> _editEmployee() async {
     final state = ref.read(employeeloginViewModelProvider);
     final List<EmployeeLogin>? list = state.employeeDetails?.value;
-    
+
     if (list == null || list.isEmpty) return;
-    
-    final employee = list.first;   
+
+    final employee = list.first;
 
     final result = await Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => AddEmployeeForm(
-      isEdit: true,
-      employee: employee,
-    ),
-  ),
-);
-
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEmployeeForm(isEdit: true, employee: employee),
+      ),
+    );
 
     // Refresh employee details if updated
     if (result == true) {
@@ -86,95 +87,86 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
   }
 
- 
-
-Future<void> _deleteEmployee() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Row(
-        children: [
-          Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-          SizedBox(width: 12),
-          Text('Delete Employee'),
+  Future<void> _deleteEmployee() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text('Delete Employee'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to delete this employee? This action cannot be undone.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Delete'),
+          ),
         ],
       ),
-      content: const Text(
-        'Are you sure you want to delete this employee? This action cannot be undone.',
-        style: TextStyle(fontSize: 15),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  try {
-    debugPrint("Deleting employee id: ${widget.empId}");
-
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .deleteEmployee(widget.empId);
-
-    // ✅ AWAIT the refresh so the list updates BEFORE popping
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList();
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Employee deleted successfully"),
-        backgroundColor: Colors.green,
-      ),
     );
 
-    // ✅ Small delay so the snackbar is visible before navigating
-    await Future.delayed(const Duration(milliseconds: 500));
+    if (confirm != true) return;
 
-    if (!mounted) return;
+    try {
+      debugPrint("Deleting employee id: ${widget.empId}");
 
-    Navigator.pop(context, true);
-  } catch (e) {
-    if (!mounted) return;
+      await ref
+          .read(employeeloginViewModelProvider.notifier)
+          .deleteEmployee(widget.empId);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString()),
-        backgroundColor: Colors.red,
-      ),
-    );
+      // ✅ AWAIT the refresh so the list updates BEFORE popping
+      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Employee deleted successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // ✅ Small delay so the snackbar is visible before navigating
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
   }
-}
 
+  String formatJoiningDate(String? isoDate) {
+    if (isoDate == null || isoDate.isEmpty) return "N/A";
 
-String formatJoiningDate(String? isoDate) {
-  if (isoDate == null || isoDate.isEmpty) return "N/A";
-
-  final date = DateTime.parse(isoDate).toLocal();
-  return "${date.day.toString().padLeft(2, '0')}-"
-         "${date.month.toString().padLeft(2, '0')}-"
-          "${date.year.toString().padLeft(2, '0')}";       
-}
-
+    final date = DateTime.parse(isoDate).toLocal();
+    return "${date.day.toString().padLeft(2, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.year.toString().padLeft(2, '0')}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,18 +174,12 @@ String formatJoiningDate(String? isoDate) {
 
     final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
 
-
-
     if (state.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (state.error != null) {
-      return Scaffold(
-        body: Center(child: Text(state.error!)),
-      );
+      return Scaffold(body: Center(child: Text(state.error!)));
     }
 
     final List<EmployeeLogin>? list = state.employeeDetails?.value;
@@ -206,20 +192,13 @@ String formatJoiningDate(String? isoDate) {
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 0;
 
+    final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+    List<Order> employeeOrders = [];
 
-
-
-
-  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
-  List<Order> employeeOrders = [];
-
-ordersAsync?.whenData((orders) {
-  employeeOrders = orders
-      ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
-});
-
-
-
+    ordersAsync?.whenData((orders) {
+      employeeOrders = orders
+        ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
+    });
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -229,7 +208,7 @@ ordersAsync?.whenData((orders) {
           style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: const Color(0xFFF57C00),
-         iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: false,
         titleSpacing: 0,
         elevation: 0,
@@ -355,9 +334,13 @@ ordersAsync?.whenData((orders) {
                                 const SizedBox(height: 10),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isActive ? Colors.green : Colors.redAccent,
+                                    color: isActive
+                                        ? Colors.green
+                                        : Colors.redAccent,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -389,7 +372,11 @@ ordersAsync?.whenData((orders) {
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
-                  _infoRow(Icons.calendar_today, "Joining Date", formatJoiningDate(employee.joiningDate),),
+                  _infoRow(
+                    Icons.calendar_today,
+                    "Joining Date",
+                    formatJoiningDate(employee.joiningDate),
+                  ),
                 ]),
 
                 const SizedBox(height: 24),
@@ -509,11 +496,6 @@ ordersAsync?.whenData((orders) {
 
                 const SizedBox(height: 24),
 
-
-
-            
-
-
                 // 📦 RECENT ORDERS
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -522,8 +504,11 @@ ordersAsync?.whenData((orders) {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.receipt_long_rounded,
-                              color: Color(0xFF2196F3), size: 24),
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            color: Color(0xFF2196F3),
+                            size: 24,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             "Recent Orders",
@@ -552,21 +537,27 @@ ordersAsync?.whenData((orders) {
                         child: DropdownButton<String>(
                           value: selectedFilter,
                           underline: const SizedBox(),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 20),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                          ),
                           style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2196F3)),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2196F3),
+                          ),
                           items: filters
-                              .map((f) => DropdownMenuItem(
-                                    value: f,
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text(f),
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                  ))
+                                    child: Text(f),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             setState(() => selectedFilter = value!);
@@ -579,28 +570,29 @@ ordersAsync?.whenData((orders) {
 
                 const SizedBox(height: 12),
 
-                // Dummy recent orders
-               ordersAsync == null || employeeOrders.isEmpty
-         ? const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text("No orders found for this employee"),
-      )
-    : ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: employeeOrders.length,
-        itemBuilder: (_, index) {
-          final order = employeeOrders[index];
-          return _AnimatedOrderCard(
-            orderNumber: employeeOrders.length - index, // latest = top
-            amount: order.totalPrice.toInt(), 
-            filter: selectedFilter,
-            delay: index * 100,
-          );
-        },
-      ),
-
+                // recent orders list
+                ordersAsync == null || employeeOrders.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text("No orders found for this employee"),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: employeeOrders.length,
+                        itemBuilder: (_, index) {
+                          final order = employeeOrders[index];
+                          return _AnimatedOrderCard(
+                            order: order,
+                            orderNumber:
+                                employeeOrders.length - index, // latest = top
+                            amount: order.totalPrice.toInt(),
+                            filter: selectedFilter,
+                            delay: index * 100,
+                          );
+                        },
+                      ),
 
                 const SizedBox(height: 24),
               ],
@@ -611,67 +603,74 @@ ordersAsync?.whenData((orders) {
     );
   }
 
-  // ================= HELPER WIDGETS ================= 
+  // ================= HELPER WIDGETS =================
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF2196F3)),
-            const SizedBox(width: 8),
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          ],
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+    child: Row(
+      children: [
+        Icon(icon, color: const Color(0xFF2196F3)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _infoCard(List<Widget> children) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-        child: Column(children: children),
-      );
+      ],
+    ),
+    child: Column(children: children),
+  );
 
   Widget _infoRow(IconData icon, String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: const Color(0xFF2196F3)),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  const SizedBox(height: 2),
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2196F3).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF2196F3)),
         ),
-      );
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ============================================
@@ -706,19 +705,19 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        duration: const Duration(milliseconds: 500), vsync: this);
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
 
-    _scaleAnimation =
-        Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    ));
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
@@ -744,9 +743,10 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4))
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -761,19 +761,25 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
                 child: Icon(widget.icon, color: widget.color, size: 24),
               ),
               const Spacer(),
-              Text(widget.value,
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: widget.color)),
+              Text(
+                widget.value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: widget.color,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(widget.title,
-                  style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                widget.title,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
@@ -790,8 +796,10 @@ class _AnimatedOrderCard extends StatefulWidget {
   final int amount;
   final String filter;
   final int delay;
+  final Order order;
 
   const _AnimatedOrderCard({
+    required this.order,
     required this.orderNumber,
     required this.amount,
     required this.filter,
@@ -812,17 +820,19 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        duration: const Duration(milliseconds: 500), vsync: this);
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero)
-            .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.3, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
@@ -848,16 +858,27 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2))
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailsPage(
+                      orderNumber: widget.orderNumber,
+                      order: widget.order,
+                    ),
+                  ),
+                );
+              },
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -870,41 +891,55 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.shopping_bag_rounded,
-                          color: Colors.white, size: 24),
+                      child: const Icon(
+                        Icons.shopping_bag_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Order #${widget.orderNumber}",
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87)),
+                          Text(
+                            "Order#${widget.orderNumber}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.blue[50],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text(widget.filter,
-                                    style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF2196F3),
-                                        fontWeight: FontWeight.w600)),
+                                child: Text(
+                                  widget.filter,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF2196F3),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              Text("₹${widget.amount}",
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.w600)),
+                              Text(
+                                "₹${widget.amount}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -916,9 +951,12 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.grey[100],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 14, color: Colors.grey),
-                    )
+                      child: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
               ),
