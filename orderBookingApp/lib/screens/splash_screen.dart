@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
+import 'package:order_booking_app/screens/login_screen.dart';
 import 'package:order_booking_app/screens/employee_screen/main_navigation_screen.dart';
-import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_bottom_nav.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

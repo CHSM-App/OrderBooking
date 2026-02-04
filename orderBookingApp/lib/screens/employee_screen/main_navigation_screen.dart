@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/notification_page.dart';
@@ -20,20 +19,15 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
       _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState
-    extends ConsumerState<MainNavigationScreen> {
+class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
-  bool _isCheckedIn = false;
-  bool _isLoading = true;
-
-  static const String _checkInKey = "is_checked_in";
 
   final List<Widget> _pages = const [
     HomePage(),
     ShopListPage(),
     OrdersListPage(),
     CatalogPage(),
-    ProfilePage(mobileNo: '1111111111'),
+    ProfilePage(),
   ];
 
   final int _notificationCount = 3;
@@ -45,72 +39,68 @@ class _MainNavigationScreenState
     // ✅ Load login data from storage
     Future.microtask(() {
       ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
-    });
-
-    _restoreCheckInState();
+      
+      // Load check-in status after login data is loaded
+      final userId = ref.read(adminloginViewModelProvider).userId;
+      ref.read(checkInViewModelProvider.notifier).loadTodayStatus(userId);
+        });
   }
 
-  /// ================= RESTORE CHECK-IN STATE =================
-  Future<void> _restoreCheckInState() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isCheckedIn = prefs.getBool(_checkInKey) ?? false;
-      _isLoading = false;
-    });
-  }
-
-  /// ================= SAVE CHECK-IN STATE =================
-  Future<void> _persistCheckInState(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_checkInKey, value);
-  }
-
-  /// ================= CHECK-IN / CHECK-OUT =================
   void _toggleCheckIn() async {
-    final empId = ref.read(adminloginViewModelProvider).userId;
-    final vm = ref.read(checkInViewModelProvider.notifier);
-
-    if (ref.read(checkInViewModelProvider).isLoading) return;
-
-    final wasCheckedIn = _isCheckedIn;
-
-    setState(() {
-      _isCheckedIn = !wasCheckedIn;
-      _currentIndex = 0;
-    });
-
-    await _persistCheckInState(!wasCheckedIn);
+    final loginState = ref.read(adminloginViewModelProvider);
+    final checkInState = ref.read(checkInViewModelProvider);
+    final userId = loginState.userId;
 
     try {
-      if (wasCheckedIn) {
-        await vm.checkOut(empId);
+      if (checkInState.isCheckedIn) {
+        // CHECK OUT
+        await ref.read(checkInViewModelProvider.notifier).checkOut(userId);
       } else {
-        await vm.checkIn(empId);
+        // CHECK IN
+        await ref.read(checkInViewModelProvider.notifier).checkIn(userId);
+      }
+
+      // ✅ Show message from ViewModel state
+      if (mounted) {
+        final updatedState = ref.read(checkInViewModelProvider);
+        if (updatedState.message != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(updatedState.message!),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          // Clear message after showing
+          ref.read(checkInViewModelProvider.notifier).clearMessage();
+        }
       }
     } catch (e) {
-      setState(() => _isCheckedIn = wasCheckedIn);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (mounted) {
+        final errorState = ref.read(checkInViewModelProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorState.error ?? 'An error occurred'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   void _onTabTapped(int index) {
-    if (!_isCheckedIn) return;
+    if (!ref.read(checkInViewModelProvider).isCheckedIn) return;
     setState(() => _currentIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     final loginState = ref.watch(adminloginViewModelProvider);
+    final checkInState = ref.watch(checkInViewModelProvider);
+    
     final employeeName = loginState.name ?? "Employee";
+    final isCheckedIn = checkInState.isCheckedIn;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -162,38 +152,51 @@ class _MainNavigationScreenState
 
             /// ACTIONS
             actions: [
-              /// CHECK IN / OUT
+              /// CHECK IN / OUT BUTTON
               Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: InkWell(
-                  onTap: _toggleCheckIn,
+                  onTap: checkInState.isLoading ? null : _toggleCheckIn,
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          _isCheckedIn ? Colors.redAccent : Colors.white,
+                      color: isCheckedIn ? Colors.redAccent : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          _isCheckedIn
-                              ? Icons.logout
-                              : Icons.login,
-                          size: 14,
-                          color: _isCheckedIn
-                              ? Colors.white
-                              : AppTheme.primaryColor,
-                        ),
+                        if (checkInState.isLoading)
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isCheckedIn
+                                    ? Colors.white
+                                    : AppTheme.primaryColor,
+                              ),
+                            ),
+                          )
+                        else
+                          Icon(
+                            isCheckedIn ? Icons.logout : Icons.login,
+                            size: 14,
+                            color: isCheckedIn
+                                ? Colors.white
+                                : AppTheme.primaryColor,
+                          ),
                         const SizedBox(width: 4),
                         Text(
-                          _isCheckedIn ? "Check Out" : "Check In",
+                          isCheckedIn ? "Check Out" : "Check In",
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: _isCheckedIn
+                            color: isCheckedIn
                                 ? Colors.white
                                 : AppTheme.primaryColor,
                           ),
@@ -205,7 +208,7 @@ class _MainNavigationScreenState
               ),
 
               /// NOTIFICATIONS
-              if (_isCheckedIn)
+              if (isCheckedIn)
                 Stack(
                   children: [
                     IconButton(
@@ -259,21 +262,17 @@ class _MainNavigationScreenState
       body: Stack(
         children: [
           IgnorePointer(
-            ignoring: !_isCheckedIn,
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _pages,
-            ),
+            ignoring: !isCheckedIn,
+            child: IndexedStack(index: _currentIndex, children: _pages),
           ),
-          if (!_isCheckedIn)
+          if (!isCheckedIn)
             Container(
               color: Colors.black.withOpacity(0.45),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock_outline,
-                        size: 50, color: Colors.white),
+                    Icon(Icons.lock_outline, size: 50, color: Colors.white),
                     SizedBox(height: 10),
                     Text(
                       "Please Check In to Continue",
@@ -293,21 +292,31 @@ class _MainNavigationScreenState
       /// ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _isCheckedIn ? _onTabTapped : null,
+        onTap: isCheckedIn ? _onTabTapped : null,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primaryColor,
         unselectedItemColor: Colors.grey.shade400,
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded), label: 'Home'),
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.store_rounded), label: 'Shops'),
+            icon: Icon(Icons.store_rounded),
+            label: 'Shops',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_bag_rounded), label: 'Orders'),
+            icon: Icon(Icons.shopping_bag_rounded),
+            label: 'Orders',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded), label: 'Catalog'),
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Catalog',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded), label: 'Profile'),
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
         ],
       ),
     );

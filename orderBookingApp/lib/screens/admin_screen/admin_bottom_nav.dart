@@ -24,7 +24,6 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
 class _AdminDashboardScreenState
     extends ConsumerState<AdminDashboardScreen> {
   int _selectedIndex = 0;
-  int _ordersInitialTab = 0;
 
   @override
   void initState() {
@@ -40,26 +39,7 @@ class _AdminDashboardScreenState
   void navigateToTab(int index, {int ordersTab = 0}) {
     setState(() {
       _selectedIndex = index;
-      _ordersInitialTab = ordersTab;
     });
-  }
-
-  // ================= PAGE TITLE =================
-  String get _currentTitle {
-    switch (_selectedIndex) {
-      case 0:
-        return "Home";
-      case 1:
-        return "Catalog";
-      case 2:
-        return "Orders";
-      case 3:
-        return "Employees";
-      case 4:
-        return "Profile";
-      default:
-        return "Admin";
-    }
   }
 
   // ================= CURRENT PAGE =================

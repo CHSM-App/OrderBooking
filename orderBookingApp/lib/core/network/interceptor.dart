@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 import 'package:order_booking_app/main.dart';
-import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
+import 'package:order_booking_app/screens/login_screen.dart';
  
 import '../../data/repositories/auth_impl.dart';
 import 'token_provider.dart';

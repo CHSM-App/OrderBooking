@@ -104,6 +104,45 @@ class OrdersRepositoryImpl implements OrdersRepository {
 }
 
 
+Future<void> syncServerOrdersToLocal(int employeeId) async {
+  print('Syncing server orders to local');
+
+  // 1️⃣ Fetch from server
+  final serverOrders = await _apiService.getOrders(employeeId);
+  // assuming this returns List<Order>
+
+  for (final serverOrder in serverOrders) {
+    // 🔑 server order id must come from API
+    final serverOrderId = serverOrder.serverOrderId; // or from JSON if mapped
+
+    // 2️⃣ Skip if already stored locally
+    final exists =
+        await offlineOrderDao.existsByServerOrderId(serverOrderId??0);
+
+    if (exists) continue;
+
+    // 3️⃣ Create a stable localOrderId
+    final localOrderId = 'server-$serverOrderId';
+
+    final localOrder = Order(
+      localOrderId: localOrderId,
+      employeeId: serverOrder.employeeId,
+      shopId: serverOrder.shopId,
+      shopNamep: serverOrder.shopNamep,
+      orderDate: serverOrder.orderDate,
+      items: serverOrder.items,
+      totalPrice: serverOrder.totalPrice,
+    );
+
+    // 4️⃣ Save to local DB
+    await offlineOrderDao.insertRemoteOrder(
+      order: localOrder,
+      serverOrderId: serverOrderId??0,
+    );
+  }
+}
+
+
 
 
   

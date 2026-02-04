@@ -60,8 +60,9 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-  Future<void> syncOfflineOrders() async {
+  Future<void> syncOfflineOrders(int empID) async {
     await usecase.syncOfflineOrders();
+    await usecase.syncServerOrdersToLocal(empID);
   }
 
   Future<void> getAllOrders() async {

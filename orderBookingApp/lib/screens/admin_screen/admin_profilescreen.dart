@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
+import 'package:order_booking_app/screens/login_screen.dart';
 
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;

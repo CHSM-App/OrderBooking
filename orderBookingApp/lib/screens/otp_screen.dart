@@ -3,10 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
-import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/auth_model.dart';
-import 'package:order_booking_app/screens/admin_screen/admin_bottomnav.dart';
-import 'main_navigation_screen.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_bottom_nav.dart';
+import 'employee_screen/main_navigation_screen.dart';
 
 class OTPScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
@@ -22,36 +21,12 @@ class OTPScreen extends ConsumerStatefulWidget {
 }
 
 class _OTPScreenState extends ConsumerState<OTPScreen> {
-  
   final List<TextEditingController> _otpControllers = List.generate(
     6,
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
-Future<bool> _showPermissionDialog() async {
-  return await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Location Permission'),
-          content: const Text(
-            'We need your location to show nearby shops and provide better service.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Skip'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Allow'),
-            ),
-          ],
-        ),
-      ) ??
-      false;
-}
 
   void _verifyOTP() async {
     String otp = _otpControllers.map((c) => c.text).join();
@@ -69,13 +44,13 @@ Future<bool> _showPermissionDialog() async {
 
     // Simulate verification delay
     await Future.delayed(const Duration(seconds: 1));
-    
-    final loginResponse = await ref.read(authViewModelProvider.notifier).login(
-      TokenResponse(mobile: widget.phoneNumber),
-    );
-    
+
+    final loginResponse = await ref
+        .read(authViewModelProvider.notifier)
+        .login(TokenResponse(mobile: widget.phoneNumber));
+
     setState(() => _isLoading = false);
-    
+
     if (loginResponse == null || loginResponse.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -85,7 +60,7 @@ Future<bool> _showPermissionDialog() async {
       );
       return;
     }
-    
+
     // Redirect based on role
     if (widget.loginInfo.roleId == 1) {
       // Admin
@@ -95,7 +70,7 @@ Future<bool> _showPermissionDialog() async {
       );
     } else if (widget.loginInfo.roleId == 2) {
       // Employee
-     //  final allowLocation = await _showPermissionDialog();
+      //  final allowLocation = await _showPermissionDialog();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
@@ -108,22 +83,21 @@ Future<bool> _showPermissionDialog() async {
         ),
       );
     }
-     ref.read(adminloginViewModelProvider).phoneCheckResult.whenData((loginInfos) {
-      if (loginInfos.isNotEmpty) {
-        final loginInfo = loginInfos.first;
-        if (loginInfo.roleId == 2) {
-          Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-          );
-          // _showPermissionDialog();
-        }
-      }
-  });
-  
+    // ref.read(adminloginViewModelProvider).phoneCheckResult.whenData((
+    //   loginInfos,
+    // ) {
+    //   if (loginInfos.isNotEmpty) {
+    //     final loginInfo = loginInfos.first;
+    //     if (loginInfo.roleId == 2) {
+    //       Navigator.pushReplacement(
+    //         context,
+    //         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+    //       );
+    //       // _showPermissionDialog();
+    //     }
+    //   }
+    // });
   }
-
-
 
   @override
   Widget build(BuildContext context) {

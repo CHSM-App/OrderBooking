@@ -4,12 +4,11 @@ import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
-import 'package:order_booking_app/screens/employee_screen/login_screen.dart';
+import 'package:order_booking_app/screens/login_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  final String mobileNo; 
-  const ProfilePage({Key? key, required this.mobileNo}) : super(key: key);
+  const ProfilePage({Key? key}) : super(key: key);
 
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
@@ -19,6 +18,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
   
   @override
   void initState() {
@@ -44,7 +44,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     _animationController.forward();
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(ref.read(adminloginViewModelProvider).mobileNo??"");
+      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
 
     });
     
@@ -61,7 +61,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final isLoading = employeeState.isLoading;
     final error = employeeState.error;
-    final list = employeeState.employeeDetails!.value as List<EmployeeLogin>;
+     List<EmployeeLogin> list = employeeState.employeeDetails!.value??[];
     final employeeDetails = list.isNotEmpty ? list.first : null;
 
     return Scaffold(
@@ -153,7 +153,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(widget.mobileNo);
+                ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(ref.read(adminloginViewModelProvider).mobileNo??"");
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
@@ -173,7 +173,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   Widget _buildProfileContent(EmployeeLogin employeeDetails) {
     final employeeName = employeeDetails.empName ?? "Unknown";
     final employeeId = employeeDetails.empId?.toString() ?? "N/A";
-    final phoneNumber = employeeDetails.empMobile ?? widget.mobileNo;
     final email = employeeDetails.empEmail ?? "";
     final address = employeeDetails.empAddress ?? "";
     final imageUrl = employeeDetails.imageUrl;
@@ -214,7 +213,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                   _CompactInfoTile(
                     icon: Icons.phone_rounded,
                     label: 'Phone',
-                    value: phoneNumber,
+                    value: mobileNo??"",
                     gradient: AppTheme.primaryGradient,
                   ),
                   if (email.isNotEmpty)
@@ -233,12 +232,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                       value: address,
                       gradient: AppTheme.warningGradient,
                     ),
-                  const SizedBox(height: 16),
-
-                  // Quick Actions - Compact
-                  _buildSectionTitle('Quick Actions'),
-                  const SizedBox(height: 8),
-                  _buildCompactQuickActions(),
                   const SizedBox(height: 16),
 
                   // Settings - Compact
@@ -293,7 +286,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: _buildEditButton(employeeName, widget.mobileNo, email, address),
+                child: _buildEditButton(employeeName, mobileNo??"N/A", email, address),
               ),
             ),
             
@@ -532,7 +525,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             label: 'Refresh',
             gradient: AppTheme.primaryGradient,
             onTap: () {
-              ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(widget.mobileNo);
+              ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Row(
@@ -622,7 +615,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                 email: email,
                 address: address,
                 onSave: (updatedData) {
-                  ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(widget.mobileNo);
+                  ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
                 },
               ),
             ),
@@ -676,6 +669,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
         gradient: AppTheme.errorGradient,
         boxShadow: [
           BoxShadow(
+            // ignore: deprecated_member_use
             color: AppTheme.errorColor.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),

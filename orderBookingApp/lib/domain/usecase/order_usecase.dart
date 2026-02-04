@@ -22,4 +22,8 @@ class OrderUsecase {
     return ordersRepository.getAllOrders();
   }
 
+  Future<void> syncServerOrdersToLocal(int empId){
+    return ordersRepository.syncServerOrdersToLocal(empId);
+  }
+
 }
