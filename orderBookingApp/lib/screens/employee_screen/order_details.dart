@@ -129,7 +129,7 @@ class OrderDetailsPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Order #$orderNumber',
+                      'Order#$orderNumber',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -373,7 +373,7 @@ class OrderDetailsPage extends StatelessWidget {
                           ],
                         ),
                         Text(
-                          item.productUnit,
+                          item.productUnit ,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,

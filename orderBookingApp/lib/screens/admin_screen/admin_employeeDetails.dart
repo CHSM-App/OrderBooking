@@ -134,7 +134,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           .deleteEmployee(widget.empId);
 
       // ✅ AWAIT the refresh so the list updates BEFORE popping
-      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
 
       if (!mounted) return;
 
@@ -383,11 +383,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Mobile No.",
                     employee.empMobile ?? "N/A",
                   ),
-                  _infoRow(
-                    Icons.phone,
-                    "Mobile No.",
-                    employee.empMobile ?? "N/A",
-                  ),
+              
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
@@ -396,11 +392,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Joining Date",
                     formatJoiningDate(employee.joiningDate),
                   ),
-                  _infoRow(
-                    Icons.calendar_today,
-                    "Joining Date",
-                    employee.joiningDate ?? "N/A",
-                  ),
+                
                 ]),
 
                 const SizedBox(height: 24),
@@ -1046,11 +1038,7 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.white,
                         size: 24,
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                     
                     ),
                     const SizedBox(width: 16),
                     Expanded(

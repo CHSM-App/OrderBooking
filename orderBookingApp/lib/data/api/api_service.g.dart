@@ -292,7 +292,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<EmployeeLogin>> getEmployeeList() async {
+  Future<List<EmployeeLogin>> getEmployeeList(String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -301,7 +301,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/employeeList',
+            'users/employeeList/${companyId}',
             queryParameters: queryParameters,
             data: _data,
           )

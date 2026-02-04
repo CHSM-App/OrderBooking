@@ -10,8 +10,8 @@ class EmployeeloginUsecase {
     return employeeloginRepository.addEmployee(employeeLogin);
   }
 
-  Future<List<EmployeeLogin>> getEmployeeList() {
-    return employeeloginRepository.getEmployeeList();
+  Future<List<EmployeeLogin>> getEmployeeList(String companyId) {
+    return employeeloginRepository.getEmployeeList(companyId);
   }
 
   Future<List<EmployeeLogin>> fetchEmployeeDetails(int empId) {

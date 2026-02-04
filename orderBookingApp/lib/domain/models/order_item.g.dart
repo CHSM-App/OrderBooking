@@ -8,6 +8,7 @@ part of 'order_item.dart';
 
 OrderItem _$OrderItemFromJson(Map<String, dynamic> json) => OrderItem(
   productName: json['product_name'] as String?,
+  measuringUnit: json['measuring_unit'] as String?,
   productId: (json['product_id'] as num).toInt(),
   subItemId: (json['sub_item_id'] as num).toInt(),
   productUnit: json['product_unit'] as String,
@@ -24,4 +25,5 @@ Map<String, dynamic> _$OrderItemToJson(OrderItem instance) => <String, dynamic>{
   'price': instance.price,
   'quantity': instance.quantity,
   'total_price': instance.totalPrice,
+  'measuring_unit': instance.measuringUnit,
 };

@@ -7,9 +7,11 @@ class EmployeeloginState {
   final String? error;
   final AsyncValue<List<EmployeeLogin>>? employeeList;
   final AsyncValue<List<EmployeeLogin>>? employeeDetails;
+  final String? companyId;
 
   const EmployeeloginState({
     this.isLoading = false,
+    this.companyId,
     this.error,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
@@ -43,17 +45,17 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       await usecase.addEmployee(employeeLogin);
       state = state.copyWith(isLoading: false);
       // Refresh employee list after adding
-      getEmployeeList();
+      getEmployeeList(companyId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   // EXISTING: Get Employee List
-  Future<void> getEmployeeList() async {
+  Future<void> getEmployeeList(String companyId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final employees = await usecase.getEmployeeList();
+      final employees = await usecase.getEmployeeList(companyId);
       state = state.copyWith(
         isLoading: false,
         employeeList: AsyncValue.data(employees),
@@ -91,24 +93,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  //   Future<void> deleteEmployee(int empId) async {
-  //   state = state.copyWith(isLoading: true, error: null);
-
-  //   try {
-  //     await usecase.deleteEmployee(empId);
-
-  //     // ✅ WAIT for refresh
-  //     await getEmployeeList();
-
-  //     state = state.copyWith(isLoading: false);
-  //   } catch (e) {
-  //     state = state.copyWith(
-  //       isLoading: false,
-  //       error: e.toString(),
-  //     );
-  //   }
-  // }
-
+  
   Future<void> deleteEmployee(int empId) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -119,7 +104,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(employeeDetails: null);
 
       // ✅ Refresh the list (this already sets isLoading: false internally)
-      await getEmployeeList();
+      await getEmployeeList(companyId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

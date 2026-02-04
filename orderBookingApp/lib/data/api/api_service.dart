@@ -56,8 +56,8 @@ abstract class ApiService {
   Future<CheckInStatusRequest> checkOut(@Path("emp_id") int empId);
 
   //GET METHODS
-  @GET("users/employeeList")
-  Future<List<EmployeeLogin>> getEmployeeList();
+  @GET("users/employeeList/{company_id}")
+  Future<List<EmployeeLogin>> getEmployeeList(@Path("company_id") String companyId);
 
   @GET("users/employeeDetails/{emp_id}")
   Future<List<EmployeeLogin>> fetchEmployeeDetails(@Path("emp_id") int empId);
