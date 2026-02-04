@@ -17,11 +17,7 @@ class EmployeeDetailsPage extends ConsumerStatefulWidget {
     required this.empId,
     required Map<String, dynamic> companyId,
   });
-  const EmployeeDetailsPage({
-    super.key,
-    required this.empId,
-    required Map<String, dynamic> companyId,
-  });
+
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>

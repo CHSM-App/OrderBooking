@@ -26,7 +26,7 @@ class _AdminEmployeesPageState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+       ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
     });
   }
 
@@ -224,8 +224,7 @@ class _AdminEmployeesPageState
     int index,
   ) {
     final isActive = employee["status"] == "Active";
-    String initials = _getInitials(employee["name"]?.toString() ?? "");
-    String initials = _getInitials(employee["name"]?.toString() ?? "");
+    String initials = _getInitials(employee["name"]?.toString() ?? "");    
 
     /// ✅ SAFE INITIALS (NO RANGE ERROR)
     initials = "NA";
