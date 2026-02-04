@@ -5,6 +5,8 @@ import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
+import 'dart:math';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
@@ -49,10 +51,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ref
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
-
-      //   ref
-      //       .read(ordersViewModelProvider.notifier)
-      //       .getEmployeeOrders(widget.empId);
+      ref
+          .read(employeeVisitViewModelProvider.notifier)
+          .fetchEmployeeVisits(widget.empId);
     });
 
     _controller.forward();
@@ -191,9 +192,22 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 0;
+    final avgDistanceText = _calculateAvgDistance(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
+    final avgShopTimeText = _calculateAvgShopTime(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
+    final avgShopsPerDayText = _calculateAvgShopsPerDay(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
 
-    final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
-    List<Order> employeeOrders = [];
+
+
+
+
+  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+  List<Order> employeeOrders = [];
 
     ordersAsync?.whenData((orders) {
       employeeOrders = orders
@@ -369,6 +383,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Mobile No.",
                     employee.empMobile ?? "N/A",
                   ),
+                  _infoRow(
+                    Icons.phone,
+                    "Mobile No.",
+                    employee.empMobile ?? "N/A",
+                  ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
@@ -376,6 +395,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     Icons.calendar_today,
                     "Joining Date",
                     formatJoiningDate(employee.joiningDate),
+                  ),
+                  _infoRow(
+                    Icons.calendar_today,
+                    "Joining Date",
+                    employee.joiningDate ?? "N/A",
                   ),
                 ]),
 
@@ -464,21 +488,21 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     children: [
                       _AnimatedStatCard(
                         title: "Avg Time / Shop",
-                        value: "10 min",
+                        value: avgShopTimeText,
                         icon: Icons.timer_outlined,
                         color: Colors.orange,
                         delay: 0,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Distance / Day",
-                        value: "100km",
+                        value: avgDistanceText,
                         icon: Icons.route_outlined,
                         color: Colors.purple,
                         delay: 100,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Shops / Day",
-                        value: "5",
+                        value: avgShopsPerDayText,
                         icon: Icons.store_outlined,
                         color: Colors.teal,
                         delay: 200,
@@ -671,6 +695,132 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ],
     ),
   );
+
+  String _calculateAvgDistance(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0 km";
+
+    final byDay = <String, List<EmployeeVisit>>{};
+    for (final v in visits) {
+      final ts = v.punchIn ?? v.punchOut;
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay.putIfAbsent(key, () => []).add(v);
+    }
+
+    if (byDay.isEmpty) return "0 km";
+
+    double totalKm = 0.0;
+    for (final dayVisits in byDay.values) {
+      dayVisits.sort(_compareVisitsByPunchIn);
+      for (var i = 1; i < dayVisits.length; i++) {
+        final prev = dayVisits[i - 1];
+        final curr = dayVisits[i];
+        totalKm += _haversineKm(
+          prev.latitude,
+          prev.longitude,
+          curr.latitude,
+          curr.longitude,
+        );
+      }
+    }
+
+    final avg = totalKm / byDay.length;
+    return _formatDistance(avg);
+  }
+
+  int _compareVisitsByPunchIn(EmployeeVisit a, EmployeeVisit b) {
+    final aDate = a.punchIn ?? a.punchOut;
+    final bDate = b.punchIn ?? b.punchOut;
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return 1;
+    if (bDate == null) return -1;
+    return aDate.compareTo(bDate);
+  }
+
+  DateTime _toIst(DateTime dt) {
+    return dt.toUtc().add(const Duration(hours: 5, minutes: 30));
+  }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = _degToRad(lat2 - lat1);
+    final dLon = _degToRad(lon2 - lon1);
+
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degToRad(lat1)) *
+            cos(_degToRad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180.0);
+
+  String _formatDistance(double km) {
+    if (km < 1) {
+      final meters = (km * 1000).round();
+      return '${meters} m';
+    }
+    return '${km.toStringAsFixed(2)} km';
+  }
+
+  String _calculateAvgShopTime(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0 min";
+
+    final durations = <Duration>[];
+    for (final v in visits) {
+      if (v.punchIn != null && v.punchOut != null) {
+        final start = _toIst(v.punchIn!);
+        final end = _toIst(v.punchOut!);
+        if (end.isAfter(start)) {
+          durations.add(end.difference(start));
+        }
+      }
+    }
+
+    if (durations.isEmpty) return "0 min";
+
+    final totalSeconds = durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
+    final avgSeconds = totalSeconds ~/ durations.length;
+    final avgDuration = Duration(seconds: avgSeconds);
+    return _formatDuration(avgDuration);
+  }
+
+  String _calculateAvgShopsPerDay(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0";
+
+    final byDay = <String, Set<int>>{};
+    for (final v in visits) {
+      final ts = v.punchIn ?? v.punchOut;
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay.putIfAbsent(key, () => <int>{}).add(v.shopId);
+    }
+
+    if (byDay.isEmpty) return "0";
+
+    final totalShops = byDay.values.fold<int>(
+      0,
+      (sum, set) => sum + set.length,
+    );
+    final avg = totalShops / byDay.length;
+    return avg.toStringAsFixed(1);
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes} min';
+  }
 }
 
 // ============================================
@@ -896,6 +1046,11 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.white,
                         size: 24,
                       ),
+                      child: const Icon(
+                        Icons.shopping_bag_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -904,6 +1059,14 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         children: [
                           Text(
                             "Order#${widget.orderNumber}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            "Order #${widget.orderNumber}",
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

@@ -1,20 +1,24 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'order_form_screen.dart';
 
 
-class ShopVisitScreen extends StatefulWidget {
+class ShopVisitScreen extends ConsumerStatefulWidget {
   final ShopDetails shop;
+  final VisitPayload visit;
 
-  const ShopVisitScreen({Key? key, required this.shop}) : super(key: key);
+  const ShopVisitScreen({Key? key, required this.shop, required this.visit}) : super(key: key);
 
   @override
-  State<ShopVisitScreen> createState() => _ShopVisitScreenState();
+    ConsumerState<ShopVisitScreen> createState() => _ShopVisitScreenState();
 }
 
-class _ShopVisitScreenState extends State<ShopVisitScreen> {
+class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
   bool _isPunchedIn = false;
   DateTime? _punchInTime;
   DateTime? _punchOutTime;
@@ -22,6 +26,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
   @override
   void initState() {
     super.initState();
+    
     // Auto punch in after a short delay
     Future.delayed(const Duration(milliseconds: 500), _autoPunchIn);
   }
@@ -62,15 +67,11 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _isPunchedIn = false;
-                _punchOutTime = DateTime.now();
-              });
+
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Punched Out from ${widget.shop.shopName}'),
+                  content: Text('Punched Out at ${_formatTime(_punchOutTime)}'),
                   backgroundColor: AppTheme.warningColor,
                 ),
               );
@@ -358,7 +359,7 @@ class _ShopVisitScreenState extends State<ShopVisitScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  OrderFormScreen(shop: widget.shop),
+                                  OrderFormScreen(shop: widget.shop, visit: widget.visit),
                             ),
                           );
                         },

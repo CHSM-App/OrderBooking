@@ -22,6 +22,14 @@ class EmployeeVisitsMapPage extends ConsumerStatefulWidget {
 }
 
 class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
+  static const _filterToday = 'Today';
+  static const _filterMonth = 'This Month';
+  static const _filterYear = 'This Year';
+  static const _filterCustom = 'Custom';
+
+  String _selectedFilter = _filterToday;
+  DateTimeRange? _customRange;
+
   @override
   void initState() {
     super.initState();
@@ -66,40 +74,220 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     }
 
     final sortedVisits = [...visits]..sort(_compareVisitsByDateTime);
-    final center =
-        LatLng(sortedVisits.first.latitude, sortedVisits.first.longitude);
-    final markers = <Marker>[];
-    for (var i = 0; i < sortedVisits.length; i++) {
-      markers.add(_buildMarker(sortedVisits[i], i + 1));
+    final filteredVisits = _applyFilter(sortedVisits);
+    if (filteredVisits.isEmpty) {
+      return Column(
+        children: [
+          _buildFilterBar(),
+          const Expanded(
+            child: Center(
+              child: Text(
+                'No visits match the selected filter.',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      );
     }
 
-    final routePoints = sortedVisits
+    final center =
+        LatLng(filteredVisits.first.latitude, filteredVisits.first.longitude);
+    final markers = <Marker>[];
+    for (var i = 0; i < filteredVisits.length; i++) {
+      markers.add(_buildMarker(filteredVisits[i], i + 1));
+    }
+
+    final routePoints = filteredVisits
         .map((v) => LatLng(v.latitude, v.longitude))
         .toList();
 
-    return FlutterMap(
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: 14,
-      ),
+    return Column(
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.vengurlatech.orderbooking',
+        _buildFilterBar(),
+        Expanded(
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: 14,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.vengurlatech.orderbooking',
+              ),
+              if (routePoints.length >= 2)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: routePoints,
+                      strokeWidth: 4,
+                      color: const Color(0xFF1976D2),
+                    ),
+                  ],
+                ),
+              MarkerLayer(markers: markers),
+            ],
+          ),
         ),
-        if (routePoints.length >= 2)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: routePoints,
-                strokeWidth: 4,
-                color: const Color(0xFF1976D2),
+      ],
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+      child: Column(
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _filterChip(_filterToday),
+              _filterChip(_filterMonth),
+              _filterChip(_filterYear),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _filterChip(
+                  _filterCustom,
+                  showRange: true,
+                  fullWidth: true,
+                ),
               ),
             ],
           ),
-        MarkerLayer(markers: markers),
-      ],
+        ],
+      ),
     );
+  }
+
+  Widget _filterChip(
+    String label, {
+    bool showRange = false,
+    bool fullWidth = false,
+  }) {
+    final isSelected = _selectedFilter == label;
+    final subtitle = showRange && _customRange != null
+        ? _formatRange(_customRange!)
+        : null;
+    final subtitleColor =
+        isSelected ? Colors.white : Colors.black54;
+    return ChoiceChip(
+      label: SizedBox(
+        width: fullWidth ? 290 : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, textAlign: TextAlign.center),
+            if (subtitle != null)
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: subtitleColor),
+              ),
+          ],
+        ),
+      ),
+      selected: isSelected,
+      onSelected: (_) => _onFilterSelected(label),
+      selectedColor: const Color(0xFF0A3D62),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Future<void> _onFilterSelected(String label) async {
+    if (label == _filterCustom) {
+      final now = DateTime.now();
+      final initialStart =
+          _customRange?.start ?? DateTime(now.year, now.month, now.day);
+      final initialEnd =
+          _customRange?.end ?? DateTime(now.year, now.month, now.day);
+      final range = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(now.year - 5),
+        lastDate: DateTime(now.year + 1),
+        initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
+      );
+      if (range == null) return;
+      setState(() {
+        _selectedFilter = label;
+        _customRange = range;
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedFilter = label;
+    });
+  }
+
+  List<EmployeeVisit> _applyFilter(List<EmployeeVisit> visits) {
+    final now = DateTime.now();
+    if (_selectedFilter == _filterToday) {
+      return visits.where((v) => _isSameDay(_visitDate(v), now)).toList();
+    }
+    if (_selectedFilter == _filterMonth) {
+      return visits
+          .where((v) => _isSameMonth(_visitDate(v), now))
+          .toList();
+    }
+    if (_selectedFilter == _filterYear) {
+      return visits
+          .where((v) => _isSameYear(_visitDate(v), now))
+          .toList();
+    }
+    if (_selectedFilter == _filterCustom) {
+      if (_customRange == null) return visits;
+      return visits.where((v) {
+        final d = _visitDate(v);
+        if (d == null) return false;
+        final local = d.toLocal();
+        return !local.isBefore(_customRange!.start) &&
+            !local.isAfter(_customRange!.end);
+      }).toList();
+    }
+    return visits;
+  }
+
+  DateTime? _visitDate(EmployeeVisit visit) {
+    return visit.punchIn ?? visit.punchOut;
+  }
+
+  bool _isSameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    final local = a.toLocal();
+    return local.year == b.year &&
+        local.month == b.month &&
+        local.day == b.day;
+  }
+
+  bool _isSameMonth(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    final local = a.toLocal();
+    return local.year == b.year && local.month == b.month;
+  }
+
+  bool _isSameYear(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    final local = a.toLocal();
+    return local.year == b.year;
+  }
+
+  String _formatRange(DateTimeRange range) {
+    final start = range.start;
+    final end = range.end;
+    final s =
+        '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
+    final e =
+        '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
+    return '$s to $e';
   }
 
   Marker _buildMarker(EmployeeVisit visit, int sequence) {
@@ -151,17 +339,12 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
   }
 
   int _compareVisitsByDateTime(EmployeeVisit a, EmployeeVisit b) {
-    final aDate = _parseVisitDateTime(a);
-    final bDate = _parseVisitDateTime(b);
+    final aDate = a.punchIn;
+    final bDate = b.punchIn;
     if (aDate == null && bDate == null) return 0;
     if (aDate == null) return 1;
     if (bDate == null) return -1;
     return aDate.compareTo(bDate);
-  }
-
-  DateTime? _parseVisitDateTime(EmployeeVisit visit) {
-    final raw = '${visit.date}T${visit.time}';
-    return DateTime.tryParse(raw);
   }
 
   void _showVisitDetails(EmployeeVisit visit, int sequence) {
@@ -185,9 +368,22 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              _detailRow('Date', visit.date),
-              _detailRow('Time', visit.time),
-              _detailRow('Shop ID', visit.shopId.toString()),
+              _detailRow(
+                'Punch In',
+                _formatDateTime(visit.punchIn),
+              ),
+              _detailRow(
+                'Punch Out',
+                _formatDateTime(visit.punchOut),
+              ),
+              if (visit.shopName != null && visit.shopName!.isNotEmpty)
+                _detailRow('Shop', visit.shopName!),
+              if (visit.ownerName != null && visit.ownerName!.isNotEmpty)
+                _detailRow('Owner', visit.ownerName!),
+              if (visit.mobileNo != null && visit.mobileNo!.isNotEmpty)
+                _detailRow('Mobile', visit.mobileNo!),
+              if (visit.address != null && visit.address!.isNotEmpty)
+                _detailRow('Address', visit.address!),
               _detailRow('Accuracy', '${visit.accuracy.toStringAsFixed(2)} m'),
               _detailRow(
                 'Lat/Lng',
@@ -220,6 +416,16 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
         ],
       ),
     );
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) return '--';
+    final local = value.toLocal();
+    final date =
+        '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+    final time =
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}:${local.second.toString().padLeft(2, '0')}';
+    return '$date $time';
   }
 
   Widget _buildEmpty() {

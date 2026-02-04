@@ -39,7 +39,6 @@ class VisitImpl implements VisitRepository {
           final visit = VisitPayload.fromJson(jsonDecode(row['payload']));
 
           final response = await apiService.addLocation(visit);
-          debugPrint('Sync response for visit id $id: ${response['success']}');
 
           if (response['success'] != true) {
             throw Exception('Failed to sync visit with id $id');

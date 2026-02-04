@@ -12,7 +12,7 @@ class VisitViewModel extends StateNotifier<AsyncValue<void>> {
 
     try {
       await repo.saveVisitOffline(visit);
-      await repo.syncOfflineVisits();
+      await sync();
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
