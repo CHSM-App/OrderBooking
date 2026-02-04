@@ -4,6 +4,8 @@ import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
+import 'dart:math';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
@@ -34,13 +36,18 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     );
 
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
+      ref
+          .read(employeeVisitViewModelProvider.notifier)
+          .fetchEmployeeVisits(widget.empId);
     });
 
     _controller.forward();
@@ -55,21 +62,17 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   Future<void> _editEmployee() async {
     final state = ref.read(employeeloginViewModelProvider);
     final List<EmployeeLogin>? list = state.employeeDetails?.value;
-    
+
     if (list == null || list.isEmpty) return;
-    
-    final employee = list.first;   
+
+    final employee = list.first;
 
     final result = await Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => AddEmployeeForm(
-      isEdit: true,
-      employee: employee,
-    ),
-  ),
-);
-
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEmployeeForm(isEdit: true, employee: employee),
+      ),
+    );
 
     // Refresh employee details if updated
     if (result == true) {
@@ -129,10 +132,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
     if (state.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.error!),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,15 +150,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final state = ref.watch(employeeloginViewModelProvider);
 
     if (state.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (state.error != null) {
-      return Scaffold(
-        body: Center(child: Text(state.error!)),
-      );
+      return Scaffold(body: Center(child: Text(state.error!)));
     }
 
     final List<EmployeeLogin>? list = state.employeeDetails?.value;
@@ -170,6 +166,15 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 0;
+    final avgDistanceText = _calculateAvgDistance(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
+    final avgShopTimeText = _calculateAvgShopTime(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
+    final avgShopsPerDayText = _calculateAvgShopsPerDay(
+      ref.watch(employeeVisitViewModelProvider).visits?.value,
+    );
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -179,7 +184,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: const Color(0xFFF57C00),
-         iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: false,
         titleSpacing: 0,
         elevation: 0,
@@ -305,9 +310,13 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                                 const SizedBox(height: 10),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isActive ? Colors.green : Colors.redAccent,
+                                    color: isActive
+                                        ? Colors.green
+                                        : Colors.redAccent,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -331,11 +340,18 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                 // 🧾 BASIC INFO
                 _sectionTitle("Basic Information", Icons.info_outline),
                 _infoCard([
-                  _infoRow(Icons.phone, "Mobile No.", employee.empMobile ?? "N/A"),
+                  _infoRow(
+                    Icons.phone,
+                    "Mobile No.",
+                    employee.empMobile ?? "N/A",
+                  ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
-                  _infoRow(Icons.calendar_today, "Joining Date",
-                      employee.joiningDate ?? "N/A"),
+                  _infoRow(
+                    Icons.calendar_today,
+                    "Joining Date",
+                    employee.joiningDate ?? "N/A",
+                  ),
                 ]),
 
                 const SizedBox(height: 24),
@@ -423,21 +439,21 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     children: [
                       _AnimatedStatCard(
                         title: "Avg Time / Shop",
-                        value: "10 min",
+                        value: avgShopTimeText,
                         icon: Icons.timer_outlined,
                         color: Colors.orange,
                         delay: 0,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Distance / Day",
-                        value: "100km",
+                        value: avgDistanceText,
                         icon: Icons.route_outlined,
                         color: Colors.purple,
                         delay: 100,
                       ),
                       _AnimatedStatCard(
                         title: "Avg Shops / Day",
-                        value: "5",
+                        value: avgShopsPerDayText,
                         icon: Icons.store_outlined,
                         color: Colors.teal,
                         delay: 200,
@@ -463,8 +479,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.receipt_long_rounded,
-                              color: Color(0xFF2196F3), size: 24),
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            color: Color(0xFF2196F3),
+                            size: 24,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             "Recent Orders",
@@ -493,21 +512,27 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                         child: DropdownButton<String>(
                           value: selectedFilter,
                           underline: const SizedBox(),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 20),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                          ),
                           style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2196F3)),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2196F3),
+                          ),
                           items: filters
-                              .map((f) => DropdownMenuItem(
-                                    value: f,
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text(f),
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                  ))
+                                    child: Text(f),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             setState(() => selectedFilter = value!);
@@ -548,64 +573,197 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   // ================= HELPER WIDGETS =================
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF2196F3)),
-            const SizedBox(width: 8),
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          ],
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+    child: Row(
+      children: [
+        Icon(icon, color: const Color(0xFF2196F3)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _infoCard(List<Widget> children) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-        child: Column(children: children),
-      );
+      ],
+    ),
+    child: Column(children: children),
+  );
 
   Widget _infoRow(IconData icon, String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: const Color(0xFF2196F3)),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  const SizedBox(height: 2),
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2196F3).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: const Color(0xFF2196F3)),
         ),
-      );
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  String _calculateAvgDistance(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0 km";
+
+    final byDay = <String, List<EmployeeVisit>>{};
+    for (final v in visits) {
+      final ts = v.punchIn ?? v.punchOut;
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay.putIfAbsent(key, () => []).add(v);
+    }
+
+    if (byDay.isEmpty) return "0 km";
+
+    double totalKm = 0.0;
+    for (final dayVisits in byDay.values) {
+      dayVisits.sort(_compareVisitsByPunchIn);
+      for (var i = 1; i < dayVisits.length; i++) {
+        final prev = dayVisits[i - 1];
+        final curr = dayVisits[i];
+        totalKm += _haversineKm(
+          prev.latitude,
+          prev.longitude,
+          curr.latitude,
+          curr.longitude,
+        );
+      }
+    }
+
+    final avg = totalKm / byDay.length;
+    return _formatDistance(avg);
+  }
+
+  int _compareVisitsByPunchIn(EmployeeVisit a, EmployeeVisit b) {
+    final aDate = a.punchIn ?? a.punchOut;
+    final bDate = b.punchIn ?? b.punchOut;
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return 1;
+    if (bDate == null) return -1;
+    return aDate.compareTo(bDate);
+  }
+
+  DateTime _toIst(DateTime dt) {
+    return dt.toUtc().add(const Duration(hours: 5, minutes: 30));
+  }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = _degToRad(lat2 - lat1);
+    final dLon = _degToRad(lon2 - lon1);
+
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degToRad(lat1)) *
+            cos(_degToRad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180.0);
+
+  String _formatDistance(double km) {
+    if (km < 1) {
+      final meters = (km * 1000).round();
+      return '${meters} m';
+    }
+    return '${km.toStringAsFixed(2)} km';
+  }
+
+  String _calculateAvgShopTime(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0 min";
+
+    final durations = <Duration>[];
+    for (final v in visits) {
+      if (v.punchIn != null && v.punchOut != null) {
+        final start = _toIst(v.punchIn!);
+        final end = _toIst(v.punchOut!);
+        if (end.isAfter(start)) {
+          durations.add(end.difference(start));
+        }
+      }
+    }
+
+    if (durations.isEmpty) return "0 min";
+
+    final totalSeconds = durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
+    final avgSeconds = totalSeconds ~/ durations.length;
+    final avgDuration = Duration(seconds: avgSeconds);
+    return _formatDuration(avgDuration);
+  }
+
+  String _calculateAvgShopsPerDay(List<EmployeeVisit>? visits) {
+    if (visits == null || visits.isEmpty) return "0";
+
+    final byDay = <String, Set<int>>{};
+    for (final v in visits) {
+      final ts = v.punchIn ?? v.punchOut;
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay.putIfAbsent(key, () => <int>{}).add(v.shopId);
+    }
+
+    if (byDay.isEmpty) return "0";
+
+    final totalShops = byDay.values.fold<int>(
+      0,
+      (sum, set) => sum + set.length,
+    );
+    final avg = totalShops / byDay.length;
+    return avg.toStringAsFixed(1);
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes} min';
+  }
 }
 
 // ============================================
@@ -640,19 +798,19 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        duration: const Duration(milliseconds: 500), vsync: this);
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
 
-    _scaleAnimation =
-        Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    ));
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
@@ -678,9 +836,10 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4))
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -695,19 +854,25 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
                 child: Icon(widget.icon, color: widget.color, size: 24),
               ),
               const Spacer(),
-              Text(widget.value,
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: widget.color)),
+              Text(
+                widget.value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: widget.color,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(widget.title,
-                  style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                widget.title,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
@@ -746,17 +911,19 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        duration: const Duration(milliseconds: 500), vsync: this);
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero)
-            .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.3, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
@@ -782,9 +949,10 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2))
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Material(
@@ -804,41 +972,55 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.shopping_bag_rounded,
-                          color: Colors.white, size: 24),
+                      child: const Icon(
+                        Icons.shopping_bag_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Order #${widget.orderNumber}",
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87)),
+                          Text(
+                            "Order #${widget.orderNumber}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.blue[50],
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text(widget.filter,
-                                    style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF2196F3),
-                                        fontWeight: FontWeight.w600)),
+                                child: Text(
+                                  widget.filter,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF2196F3),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              Text("₹${widget.amount}",
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.w600)),
+                              Text(
+                                "₹${widget.amount}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -850,9 +1032,12 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.grey[100],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 14, color: Colors.grey),
-                    )
+                      child: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
               ),

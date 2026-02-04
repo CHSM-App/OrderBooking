@@ -5,16 +5,17 @@ import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/employee_screen/shops_page.dart';
 import 'package:uuid/uuid.dart';
 
 class OrderFormScreen extends ConsumerStatefulWidget {
   final ShopDetails shop;
+  final VisitPayload visit;
 
-  const OrderFormScreen({
-    Key? key,
-    required this.shop
-  }) : super(key: key);
+  const OrderFormScreen({Key? key, required this.shop, required this.visit})
+    : super(key: key);
 
   @override
   ConsumerState<OrderFormScreen> createState() => _OrderFormScreenState();
@@ -25,6 +26,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   Product? _selectedProduct;
   ProductSubType? _selectedSubType;
   final TextEditingController _quantityController = TextEditingController();
+  late VisitPayload _visit;
 
   // Order items - temporary list to build the order
   final List<_TempOrderItem> _orderItems = [];
@@ -32,11 +34,24 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   @override
   void initState() {
     super.initState();
+    _visit = widget.visit;
     // Fetch products
     Future.microtask(() {
       ref.read(productViewModelProvider.notifier).fetchProductList(1);
     });
   }
+
+  String formatForApi(DateTime dt) {
+  String two(int n) => n.toString().padLeft(2, '0');
+
+  return '${dt.year}-'
+         '${two(dt.month)}-'
+         '${two(dt.day)} '
+         '${two(dt.hour)}:'
+         '${two(dt.minute)}:'
+         '${two(dt.second)}';
+}
+
 
   String _formatUnit(double? availableUnit, String? measuringUnit) {
     if (availableUnit == null || measuringUnit == null) return '';
@@ -100,17 +115,19 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         );
       } else {
         // Add new item
-        _orderItems.add(_TempOrderItem(
-          productId: _selectedProduct!.productId!,
-          productName: _selectedProduct!.productName!,
-          subItemId: _selectedSubType!.subItemId!,
-          unit: _formatUnit(
-            _selectedSubType!.availableUnit,
-            _selectedSubType!.measuringUnit,
+        _orderItems.add(
+          _TempOrderItem(
+            productId: _selectedProduct!.productId!,
+            productName: _selectedProduct!.productName!,
+            subItemId: _selectedSubType!.subItemId!,
+            unit: _formatUnit(
+              _selectedSubType!.availableUnit,
+              _selectedSubType!.measuringUnit,
+            ),
+            price: _selectedSubType!.price!,
+            quantity: quantity,
           ),
-          price: _selectedSubType!.price!,
-          quantity: quantity,
-        ));
+        );
       }
 
       // Reset form
@@ -148,16 +165,32 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
     // Create Order object
     final Order order = Order(
-      localOrderId:  const Uuid().v4(),
+      localOrderId: const Uuid().v4(),
       shopNamep: widget.shop.shopName,
       employeeId: ref.read(adminloginViewModelProvider).userId,
-      shopId: widget.shop.shopId??0,
+      shopId: widget.shop.shopId ?? 0,
       orderDate: DateTime.now().toIso8601String(),
       items: orderItems,
     );
 
     ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
-   
+    
+    setState(() {
+      _visit = VisitPayload(
+        localId: _visit.localId,
+        shopId: _visit.shopId,
+        employeeId: _visit.employeeId,
+        lat: _visit.lat,
+        lng: _visit.lng,
+        accuracy: _visit.accuracy,
+        capturedAt: _visit.capturedAt,
+        punchIn: formatForApi(_visit.capturedAt),
+        punchOut: formatForApi(DateTime.now().toLocal()),
+      );
+    });
+
+    ref.read(visitViewModelProvider.notifier).addVisit(_visit);
+
     // Show success dialog
     showDialog(
       context: context,
@@ -172,7 +205,10 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
-              Navigator.pop(context, order); // Go back with Order object
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const ShopListPage()),
+                (route) => false,
+              );
             },
             child: const Text('OK'),
           ),
@@ -185,22 +221,22 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   String _prettyPrintJson(Map<String, dynamic> json, {int indent = 0}) {
     final buffer = StringBuffer();
     final spacing = '  ' * indent;
-    
+
     buffer.writeln('{');
     final entries = json.entries.toList();
     for (int i = 0; i < entries.length; i++) {
       final entry = entries[i];
       final isLast = i == entries.length - 1;
-      
+
       buffer.write('$spacing  "${entry.key}": ');
-      
+
       if (entry.value is List) {
         buffer.writeln('[');
         final list = entry.value as List;
         for (int j = 0; j < list.length; j++) {
           final item = list[j];
           final isLastItem = j == list.length - 1;
-          
+
           if (item is Map<String, dynamic>) {
             buffer.write('$spacing    ');
             buffer.write(_prettyPrintJson(item, indent: indent + 2).trim());
@@ -217,7 +253,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       buffer.writeln();
     }
     buffer.write('$spacing}');
-    
+
     return buffer.toString();
   }
 
@@ -227,10 +263,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -269,10 +302,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Create Order'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Create Order'), elevation: 0),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.productList!.when(
@@ -316,9 +346,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.green[50],
-        border: Border(
-          bottom: BorderSide(color: Colors.green[100]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.green[100]!)),
       ),
       child: Row(
         children: [
@@ -328,11 +356,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               color: Colors.green,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.store,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: const Icon(Icons.store, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -340,7 +364,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.shop.shopName??"",
+                  widget.shop.shopName ?? "",
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -348,11 +372,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.shop.address??"",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  widget.shop.address ?? "",
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -388,10 +409,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               SizedBox(width: 8),
               Text(
                 'Add Product',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -420,7 +438,10 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                   child: Text('Choose a product'),
                 ),
                 value: _selectedProduct,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 items: products.map((product) {
                   return DropdownMenuItem(
                     value: product,
@@ -583,9 +604,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                     TextField(
                       controller: _quantityController,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         hintText: '0',
                         border: OutlineInputBorder(
@@ -672,10 +691,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                   SizedBox(width: 8),
                   Text(
                     'Order Items',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -799,10 +815,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                 children: [
                   Text(
                     'Total Amount',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -821,7 +834,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               onPressed: _submitOrder,
               icon: const Icon(Icons.check_circle, color: Colors.white),
               label: const Text(
-                'Submit Order',
+                'Submit and Punch Out',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -853,27 +866,17 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
             const SizedBox(height: 16),
             const Text(
               'Failed to load products',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(

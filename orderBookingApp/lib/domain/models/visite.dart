@@ -6,14 +6,14 @@ part 'visite.g.dart';
 class VisitPayload {
   /// Local-only unique ID for offline sync
   final String localId;
-
   final int shopId;
   final double lat;
   final double lng;
   final double accuracy;
   final DateTime capturedAt;
-  final DateTime visitedAt;
+  final String punchIn;
   final int? employeeId;
+  final String? punchOut;
 
   VisitPayload({
     required this.localId,
@@ -23,7 +23,8 @@ class VisitPayload {
     required this.lng,
     required this.accuracy,
     required this.capturedAt,
-    required this.visitedAt,
+    required this.punchIn,
+    this.punchOut,
   });
 
   /// Payload sent to backend
@@ -33,8 +34,9 @@ class VisitPayload {
         'lng': lng,
         'accuracy': accuracy,
         'capturedAt': capturedAt.toIso8601String(),
-        'visitedAt': visitedAt.toIso8601String(),
+        'punchIn': punchIn,
         'employeeId': employeeId,
+        'punchOut': punchOut,
       };
 
   /// Full JSON including localId (for SQLite)
@@ -51,8 +53,9 @@ class VisitPayload {
       lng: (json['lng'] as num).toDouble(),
       accuracy: (json['accuracy'] as num).toDouble(),
       capturedAt: DateTime.parse(json['capturedAt']),
-      visitedAt: DateTime.parse(json['visitedAt']),
+      punchIn: json['punchIn'],
       employeeId: json['employeeId'],
+      punchOut: json['punchOut'] ,
     );
   }
 }

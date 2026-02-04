@@ -341,19 +341,15 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         lng: position.longitude,
         accuracy: position.accuracy,
         capturedAt: DateTime.now(),
-        visitedAt: DateTime.now(),
+        punchIn: DateTime.now().toLocal().toIso8601String(),
         employeeId: ref.read(adminloginViewModelProvider).userId,
       );
-
-      // Add visit
-      ref.read(visitViewModelProvider.notifier).addVisit(visit);
-
       // Navigate to visit screen
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ShopVisitScreen(shop: shop),
+            builder: (_) => ShopVisitScreen(shop: shop, visit: visit),
           ),
         );
       }
