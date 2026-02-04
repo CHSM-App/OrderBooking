@@ -17,14 +17,9 @@ class _AdminEmployeesPageState
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
-  /// ✅ AVATAR COLORS (FIXED)
+  /// ✅ AVATAR COLORS
   final List<Color> avatarColors = [
     const Color(0xFF0A3D62),
-    // const Color(0xFF1E3799),
-    // const Color(0xFF38ADA9),
-    // const Color(0xFFF79F1F),
-    // const Color(0xFFB71540),
-    // const Color(0xFF6A89CC),
   ];
 
   @override
@@ -51,22 +46,24 @@ class _AdminEmployeesPageState
 
     /// API → UI MAP
     final employees = state.employeeList?.when(
-      data: (list) => list
-          .map(
-            (e) => {
-              "id": e.empId,
-              "name": e.empName ?? "N/A",
-              "mobile": e.empMobile ?? "N/A",
-              "email": e.empEmail ?? "N/A",
-              "address": e.empAddress ?? "N/A",
-              "region": e.empAddress ?? "N/A",
-              "status": e.activeStatus == 0 ? "Active" : "Inactive",
-            },
-          )
-          .toList(),
-      loading: () => <Map<String, dynamic>>[],
-      error: (_, __) => <Map<String, dynamic>>[],
-    ) ?? [];
+          data: (list) => list
+              .map(
+                (e) => {
+                  "id": e.empId,
+                  "name": e.empName ?? "",
+                  "mobile": e.empMobile ?? "",
+                  "email": e.empEmail ?? "",
+                  "address": e.empAddress ?? "",
+                  "region": e.empAddress ?? "",
+                  "status":
+                      e.activeStatus == 1 ? "Active" : "Inactive",
+                },
+              )
+              .toList(),
+          loading: () => <Map<String, dynamic>>[],
+          error: (_, __) => <Map<String, dynamic>>[],
+        ) ??
+        [];
 
     /// 🔍 SEARCH FILTER
     final filteredEmployees = employees.where((e) {
@@ -114,8 +111,7 @@ class _AdminEmployeesPageState
                         onChanged: (v) =>
                             setState(() => _searchQuery = v),
                         decoration: InputDecoration(
-                          hintText:
-                              "Search name, mobile, region or status",
+                          hintText: "Search name, mobile",
                           prefixIcon: const Icon(Icons.search),
                           filled: true,
                           fillColor: Colors.white,
@@ -155,8 +151,8 @@ class _AdminEmployeesPageState
                     /// 👨‍💼 EMPLOYEE LIST
                     Expanded(
                       child: ListView.builder(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16),
                         itemCount: filteredEmployees.length,
                         itemBuilder: (context, index) {
                           final emp = filteredEmployees[index];
@@ -169,13 +165,13 @@ class _AdminEmployeesPageState
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       EmployeeDetailsPage(
-                                    empId: emp["id"],
+                                    empId: emp["id"], companyId: {},
                                   ),
                                 ),
                               );
                             },
-                            child: _employeeCard(
-                                context, emp, index), // ✅ FIXED
+                            child:
+                                _employeeCard(context, emp, index),
                           );
                         },
                       ),
@@ -225,10 +221,29 @@ class _AdminEmployeesPageState
   Widget _employeeCard(
     BuildContext context,
     Map<String, dynamic> employee,
-    int index, // ✅ FIXED
+    int index,
   ) {
     final isActive = employee["status"] == "Active";
     final initials = _getInitials(employee["name"]?.toString() ?? "");
+
+    /// ✅ SAFE INITIALS (NO RANGE ERROR)
+    String initials = "NA";
+    final name = employee["name"].toString().trim();
+
+    if (name.isNotEmpty) {
+      final parts = name
+          .split(RegExp(r'\s+'))
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      if (parts.isNotEmpty) {
+        initials = parts
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase();
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -267,6 +282,7 @@ class _AdminEmployeesPageState
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -279,14 +295,14 @@ class _AdminEmployeesPageState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    employee["name"],
+                    name.isEmpty ? "N/A" : name,
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    employee["region"],
+                    employee["region"].toString(),
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ],
@@ -329,3 +345,4 @@ class _AdminEmployeesPageState
     return initials.isEmpty ? '?' : initials;
   }
 }
+

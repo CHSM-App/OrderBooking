@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-
 import 'admin_addEmployee.dart';
 import 'admin_addProduct.dart';
 import 'admin_regionDetails.dart';
@@ -22,7 +21,7 @@ class AdminHomePage extends ConsumerStatefulWidget {
 class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   // Example dynamic values (replace these with your providers)
   int pendingOrders = 0;
-  int activeEmployees = 0;
+  // int activeEmployees = 0;
   int totalProducts = 0;
   String totalRevenue = "₹0";
 
@@ -30,20 +29,53 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   void initState() {
     super.initState();
     _loadDashboardData();
+
+    Future.microtask(() {
+      ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+    });
+
+    Future.microtask(() {
+    final adminId = ref.read(adminloginViewModelProvider).userId;
+
+    if (adminId != 0) {
+      ref.read(productViewModelProvider.notifier)
+          .fetchProductList(adminId);
+    }
+  });
   }
+
 
   Future<void> _loadDashboardData() async {
     // Replace with your provider/fetch logic
-    setState(() {
+      setState(() {
       pendingOrders = 24; // e.g., ref.read(pendingOrdersProvider)
-      activeEmployees = 12;
-      totalProducts = 156;
+      // activeEmployees = 12;
+      // totalProducts = 156;
       totalRevenue = "₹45K";
     });
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final employeeState = ref.watch(employeeloginViewModelProvider);
+    final productState = ref.watch(productViewModelProvider);
+
+  final activeEmployeesCount = employeeState.employeeList?.when(
+    loading: () => 0,
+    error: (_, __) => 0,
+    data: (employees) {
+      return employees.where((e) => e.activeStatus == 1).length;     
+    },
+  );
+
+  final totalProductCount = productState.productList?.when(
+  loading: () => 0,
+  error: (_, __) => 0,
+  data: (products) => products.length,
+);
+
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -99,10 +131,11 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                   trend: "",
                   onTap: () => widget.onNavigate(2, ordersTab: 0),
                 ),
-                // 🔸 Active Employees
+
+                //Active employees count
                 _modernDashboardCard(
                   title: "Active Employees",
-                  value: activeEmployees.toString(),
+                  value: activeEmployeesCount.toString(),
                   icon: Icons.people_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF00897B), Color(0xFF26A69A)],
@@ -112,10 +145,11 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                   trend: "",
                   onTap: () => widget.onNavigate(3),
                 ),
+
                 // 🔸 Products
                 _modernDashboardCard(
                   title: "Products",
-                  value: totalProducts.toString(),
+                  value: totalProductCount.toString(),
                   icon: Icons.inventory_2_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF5E35B1), Color(0xFF7E57C2)],

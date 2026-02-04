@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
@@ -10,7 +11,9 @@ import 'dart:math';
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
-  const EmployeeDetailsPage({super.key, required this.empId});
+ 
+
+  const EmployeeDetailsPage({super.key, required this.empId, required Map<String, dynamic> companyId});
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
@@ -82,72 +85,103 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
   }
 
-  Future<void> _deleteEmployee() async {
-    // Show confirmation dialog
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text('Delete Employee'),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to delete this employee? This action cannot be undone.',
-          style: TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Delete'),
-          ),
+ 
+
+Future<void> _deleteEmployee() async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Row(
+        children: [
+          Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+          SizedBox(width: 12),
+          Text('Delete Employee'),
         ],
       ),
-    );
+      content: const Text(
+        'Are you sure you want to delete this employee? This action cannot be undone.',
+        style: TextStyle(fontSize: 15),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
 
-    if (confirm != true) return;
+  if (confirm != true) return;
 
-    // Call delete API
-    // await ref
-    //     .read(employeeloginViewModelProvider.notifier)
-    //     .deleteEmployee(widget.empId);
+  try {
+    debugPrint("Deleting employee id: ${widget.empId}");
 
-    final state = ref.read(employeeloginViewModelProvider);
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .deleteEmployee(widget.empId);
+
+    // ✅ AWAIT the refresh so the list updates BEFORE popping
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList();
 
     if (!mounted) return;
 
-    if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Employee deleted successfully"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context, true); // Return to previous screen
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Employee deleted successfully"),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // ✅ Small delay so the snackbar is visible before navigating
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+
+    Navigator.pop(context, true);
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
+
+String formatJoiningDate(String? isoDate) {
+  if (isoDate == null || isoDate.isEmpty) return "N/A";
+
+  final date = DateTime.parse(isoDate).toLocal();
+  return "${date.day.toString().padLeft(2, '0')}-"
+         "${date.month.toString().padLeft(2, '0')}-"
+          "${date.year.toString().padLeft(2, '0')}";       
+}
+
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
+
+    final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
+
+
 
     if (state.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -175,6 +209,21 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
       ref.watch(employeeVisitViewModelProvider).visits?.value,
     );
+
+
+
+
+
+  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+  List<Order> employeeOrders = [];
+
+ordersAsync?.whenData((orders) {
+  employeeOrders = orders
+      ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
+});
+
+
+
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -345,6 +394,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Mobile No.",
                     employee.empMobile ?? "N/A",
                   ),
+                  _infoRow(
+                    Icons.phone,
+                    "Mobile No.",
+                    employee.empMobile ?? "N/A",
+                  ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   _infoRow(
@@ -471,6 +525,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
                 const SizedBox(height: 24),
 
+
+
+            
+
+
                 // 📦 RECENT ORDERS
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -546,20 +605,27 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                 const SizedBox(height: 12),
 
                 // Dummy recent orders
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: 5,
-                  itemBuilder: (_, index) {
-                    return _AnimatedOrderCard(
-                      orderNumber: index + 1,
-                      amount: (index + 1) * 1200,
-                      filter: selectedFilter,
-                      delay: index * 100,
-                    );
-                  },
-                ),
+               ordersAsync == null || employeeOrders.isEmpty
+         ? const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text("No orders found for this employee"),
+      )
+    : ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: employeeOrders.length,
+        itemBuilder: (_, index) {
+          final order = employeeOrders[index];
+          return _AnimatedOrderCard(
+            orderNumber: employeeOrders.length - index, // latest = top
+            amount: order.totalPrice.toInt(), 
+            filter: selectedFilter,
+            delay: index * 100,
+          );
+        },
+      ),
+
 
                 const SizedBox(height: 24),
               ],
@@ -570,7 +636,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     );
   }
 
-  // ================= HELPER WIDGETS =================
+  // ================= HELPER WIDGETS ================= 
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),

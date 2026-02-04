@@ -9,12 +9,16 @@ class ordersState {
   final String? errorMessage;
   final bool isSuccess;
   final AsyncValue<List<Order>>? orders;
+  final String? companyId;
+  final int? empId;
 
   const ordersState({
     required this.isLoading,
     required this.isSuccess,
     this.errorMessage,
     this.orders,
+     this.companyId,
+     this.empId
   });
 
   ordersState copyWith({
@@ -63,7 +67,28 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     await usecase.syncServerOrdersToLocal(empID);
   }
 
-  Future<void> getAllOrders() async {
+  //get Offline orders of that employee
+    Future<void> getAllOrders() async {
+      state = state.copyWith(
+        isLoading: true,
+        errorMessage: null,
+        isSuccess: false,
+      );
+
+      try {
+      final result =  await usecase.getAllOrders();
+        state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
+      } catch (e) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: e.toString(),
+          isSuccess: false,
+        );
+      }
+    }
+
+  //Get all orders by companyId
+  Future<void> getOrderList(String companyId) async {
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,
@@ -71,7 +96,27 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     );
 
     try {
-     final result =  await usecase.getAllOrders();
+     final result =  await usecase.getOrderList(companyId);
+       state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        isSuccess: false,
+      );
+    }
+  }
+
+  //get all order for an employee(remote)
+   Future<void> getEmployeeOrders(int empId) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      isSuccess: false,
+    );
+
+    try {
+     final result =  await usecase.getEmployeeOrders(empId);
        state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
     } catch (e) {
       state = state.copyWith(

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
+import 'package:order_booking_app/screens/employee_screen/order_printPdf.dart';
+
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 class OrderDetailsPage extends StatelessWidget {
   final Order order;
@@ -38,6 +43,8 @@ class OrderDetailsPage extends StatelessWidget {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,18 +53,22 @@ class OrderDetailsPage extends StatelessWidget {
         title: Text('Order #$orderNumber'),
         elevation: 0,
         actions: [
+          
           IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // TODO: Add share functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.print),
-            onPressed: () {
-              // TODO: Add print functionality
-            },
-          ),
+  icon: const Icon(Icons.print),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderPrintPreviewPage(
+          order: order,
+          orderNumber: orderNumber,
+        ),
+      ),
+    );
+  },
+),
+
         ],
       ),
       body: SingleChildScrollView(
@@ -164,10 +175,16 @@ class OrderDetailsPage extends StatelessWidget {
           // const SizedBox(height: 12),
           // _buildInfoRow(Icons.person_outline, 'Employee ID', order.employeeId.toString()),
           const SizedBox(height: 12),
+            _buildInfoRow(Icons.store_outlined, 'Employee Name', order.empName ?? 'Not found'),
+          const SizedBox(height: 12),
           _buildInfoRow(Icons.store_outlined, 'Shop', order.shopNamep ?? 'Unknown Shop'),
           const SizedBox(height: 12),
+          _buildInfoRow(Icons.location_on_outlined, 'Address', order.address?? 'Unknown'),
+          const SizedBox(height: 12),
           _buildInfoRow(Icons.shopping_bag_outlined, 'Total Items', order.items.length.toString()),
-        ],
+          const SizedBox(height: 12),
+          
+        ],  
       ),
     );
   }
@@ -316,7 +333,7 @@ class OrderDetailsPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '₹${item.totalPrice.toStringAsFixed(2)}',
+                    '₹${(item.totalPrice).toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -414,7 +431,7 @@ class OrderDetailsPage extends StatelessWidget {
                           ],
                         ),
                         Text(
-                          '₹${item.price.toStringAsFixed(2)}',
+                          '₹${(item.price).toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -464,8 +481,8 @@ class OrderDetailsPage extends StatelessWidget {
                 ),
               ),
               Text(
-                '₹${order.totalPrice.toStringAsFixed(2)}',
-                style: const TextStyle(
+                '₹${(order.totalPrice).toStringAsFixed(2)}',
+                style: const TextStyle(   
                   fontSize: 14,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

@@ -52,7 +52,7 @@ class _AdminDashboardScreenState
         return const AdminCatalogPage();
 
      case 2:
-  return AdminOrdersPage();
+  return OrdersListPage();
 
 
       case 3:

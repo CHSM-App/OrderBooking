@@ -7,4 +7,8 @@ abstract class OrdersRepository {
   Future<void> syncOfflineOrders();
   Future<List<Order>> getAllOrders();
   Future<void> syncServerOrdersToLocal(int empId);
+
+  Future<List<Order>> getOrderList(String companyId);
+
+  Future<List<Order>> getEmployeeOrders(int empId);
 }

@@ -32,6 +32,8 @@ class EmployeeloginState {
 
 class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   final EmployeeloginUsecase usecase;
+
+  var companyId;
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
 
   // EXISTING: Add Employee
@@ -75,6 +77,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
+  
   Future<void> fetchEmployeeInfo(String mobileNo) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -83,23 +86,43 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
         isLoading: false,
         employeeDetails: AsyncValue.data(employeedetails),
       );
-
-        print(employeedetails.toString());
-    
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
+  //   Future<void> deleteEmployee(int empId) async {
+  //   state = state.copyWith(isLoading: true, error: null);
+
+  //   try {
+  //     await usecase.deleteEmployee(empId);
+
+  //     // ✅ WAIT for refresh
+  //     await getEmployeeList();
+
+  //     state = state.copyWith(isLoading: false);
+  //   } catch (e) {
+  //     state = state.copyWith(
+  //       isLoading: false,
+  //       error: e.toString(),
+  //     );
+  //   }
+  // }
+
   Future<void> deleteEmployee(int empId) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
       await usecase.deleteEmployee(empId);
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after adding
-      getEmployeeList();
+
+      // ✅ Clear stale employee details so nothing tries to re-fetch the deleted ID
+      state = state.copyWith(employeeDetails: null);
+
+      // ✅ Refresh the list (this already sets isLoading: false internally)
+      await getEmployeeList();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }
+
