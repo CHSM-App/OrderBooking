@@ -8,20 +8,29 @@ class ProductUsecase {
 
   ProductUsecase(this.productRepository);
 
-  /// Add / Update Product
-  Future<ProductResponse> addOrUpdateProduct(
-      Product product) {
+  /// Add or update a product (offline + online)
+  Future<ProductResponse> addOrUpdateProduct(Product product) {
     return productRepository.addOrUpdateProduct(product);
   }
-  Future<List<Product>>fetchProductList(int adminId){
-    return productRepository.fetchProductList(adminId);
+
+  /// Sync all unsynced products with server
+  Future<void> syncProducts() {
+    return productRepository.syncOfflineProducts();
   }
 
-  Future<ProductDetailsResponse> fetchProductDetails( int productId, int adminId,) {
+  /// Get all products (local + fetch remote if possible)
+  Future<List<Product>> getAllProducts(int adminId) {
+    return productRepository.getAllProducts(adminId);
+  }
+
+  /// Get product details by ID
+  Future<ProductDetailsResponse> fetchProductDetails(int productId, int adminId) {
     return productRepository.fetchProductDetails(productId, adminId);
   }
-    /// DELETE subtype
+
+  /// Delete a product subtype
   Future<ProductResponse> deleteProductSubType(int subItemId) {
     return productRepository.deleteProductSubType(subItemId);
   }
+  
 }

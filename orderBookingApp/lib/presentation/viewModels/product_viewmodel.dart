@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
@@ -41,70 +43,11 @@ class ProductViewModel extends StateNotifier<ProductState> {
 
   ProductViewModel(this.usecase) : super(const ProductState());
 
-  /// Add / Update Product
+  /// Add or Update Product (offline + online)
   Future<void> addOrUpdateProduct(Product product) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final response = await usecase.addOrUpdateProduct(product);
-      state = state.copyWith(
-        isLoading: false,
-        addUpdateResponse: AsyncValue.data(response),
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        addUpdateResponse: AsyncValue.error(e, StackTrace.current),
-      );
-    }
-  }
-
-  
-
-  Future<void> fetchProductList(int adminId) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final productlist = await usecase.fetchProductList(adminId);
-      state = state.copyWith(
-        isLoading: false,
-        productList: AsyncValue.data(productlist),
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-  
-
-  /// ✅ NEW: Fetch Product Details (Edit Screen)
-  Future<void> fetchProductDetails(int productId, int adminId) async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      productDetails: const AsyncValue.loading(),
-    );
-
-    try {
-      final details = await usecase.fetchProductDetails(productId, adminId);
-
-      state = state.copyWith(
-        isLoading: false,
-        productDetails: AsyncValue.data(details),
-      );
-    } catch (e, st) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        productDetails: AsyncValue.error(e, st),
-      );
-    }
-  }
-
-  /// ✅ NEW: Delete Subtype
-  Future<void> deleteProductSubType(int subItemId) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final response = await usecase.deleteProductSubType(subItemId);
-
       state = state.copyWith(
         isLoading: false,
         addUpdateResponse: AsyncValue.data(response),
@@ -118,8 +61,79 @@ class ProductViewModel extends StateNotifier<ProductState> {
     }
   }
 
-  /// Optional reset
+  /// Fetch Product List
+  Future<void> fetchProductList(int adminId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final products = await usecase.getAllProducts(adminId);
+      state = state.copyWith(
+        isLoading: false,
+        productList: AsyncValue.data(products),
+      );
+    } catch (e, st) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        productList: AsyncValue.error(e, st),
+      );
+    }
+  }
+
+  /// Fetch Product Details by ID
+  Future<void> fetchProductDetails(int productId, int adminId) async {
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      productDetails: const AsyncValue.loading(),
+    );
+
+    try {
+      final details = await usecase.fetchProductDetails(productId, adminId);
+      state = state.copyWith(
+        isLoading: false,
+        productDetails: AsyncValue.data(details),
+      );
+    } catch (e, st) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        productDetails: AsyncValue.error(e, st),
+      );
+    }
+  }
+
+  /// Delete a Product Subtype
+  Future<void> deleteProductSubType(int subItemId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await usecase.deleteProductSubType(subItemId);
+      state = state.copyWith(
+        isLoading: false,
+        addUpdateResponse: AsyncValue.data(response),
+      );
+    } catch (e, st) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        addUpdateResponse: AsyncValue.error(e, st),
+      );
+    }
+  }
+
+  /// Clear Product Details (Optional)
   void clearProductDetails() {
-    state = state.copyWith(productDetails: const AsyncValue.data(null));
+    state = state.copyWith(
+      productDetails: const AsyncValue.data(null),
+    );
+  }
+
+  /// Sync Unsynced Products
+  Future<void> syncProducts() async {
+    await usecase.syncProducts();
+    // Optionally refresh product list after sync
+    if (state.productList?.value?.isNotEmpty ?? false) {
+      final adminId = state.productList!.value!.first.adminId ?? 0;
+      await fetchProductList(adminId);
+    }
   }
 }

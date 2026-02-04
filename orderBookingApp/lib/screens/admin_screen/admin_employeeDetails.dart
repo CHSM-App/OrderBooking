@@ -7,10 +7,16 @@ import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'dart:math';
+import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
+  const EmployeeDetailsPage({
+    super.key,
+    required this.empId,
+    required Map<String, dynamic> companyId,
+  });
   const EmployeeDetailsPage({
     super.key,
     required this.empId,
@@ -386,6 +392,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                   ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
+                  // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
+                  _infoRow(
+                    Icons.calendar_today,
+                    "Joining Date",
+                    formatJoiningDate(employee.joiningDate),
+                  ),
                   _infoRow(
                     Icons.calendar_today,
                     "Joining Date",
@@ -584,7 +596,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
                 const SizedBox(height: 12),
 
-                // Dummy recent orders
+                // recent orders list
                 ordersAsync == null || employeeOrders.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.all(16),
@@ -598,6 +610,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                         itemBuilder: (_, index) {
                           final order = employeeOrders[index];
                           return _AnimatedOrderCard(
+                            order: order,
                             orderNumber:
                                 employeeOrders.length - index, // latest = top
                             amount: order.totalPrice.toInt(),
@@ -960,8 +973,10 @@ class _AnimatedOrderCard extends StatefulWidget {
   final int amount;
   final String filter;
   final int delay;
+  final Order order;
 
   const _AnimatedOrderCard({
+    required this.order,
     required this.orderNumber,
     required this.amount,
     required this.filter,
@@ -1030,7 +1045,17 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OrderDetailsPage(
+                      orderNumber: widget.orderNumber,
+                      order: widget.order,
+                    ),
+                  ),
+                );
+              },
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -1048,12 +1073,21 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.white,
                         size: 24,
                       ),
+                     
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            "Order#${widget.orderNumber}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
                           Text(
                             "Order #${widget.orderNumber}",
                             style: const TextStyle(
