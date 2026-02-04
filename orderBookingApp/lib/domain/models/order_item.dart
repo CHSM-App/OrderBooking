@@ -25,8 +25,12 @@ class OrderItem {
   @JsonKey(name: 'total_price')
   final double totalPrice;
 
+  @JsonKey(name: 'measuring_unit')
+  final String? measuringUnit;
+
   OrderItem({
     this.productName,
+    this.measuringUnit,
     required this.productId,
     required this.subItemId,
     required this.productUnit,

@@ -31,7 +31,8 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
     _loadDashboardData();
 
     Future.microtask(() {
-      ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+      ref.read(employeeloginViewModelProvider.notifier)
+      .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
     });
 
     Future.microtask(() {

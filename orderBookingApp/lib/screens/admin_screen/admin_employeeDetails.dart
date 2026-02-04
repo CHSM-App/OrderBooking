@@ -138,7 +138,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           .deleteEmployee(widget.empId);
 
       // ✅ AWAIT the refresh so the list updates BEFORE popping
-      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
 
       if (!mounted) return;
 
@@ -394,11 +394,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Joining Date",
                     formatJoiningDate(employee.joiningDate),
                   ),
-                  _infoRow(
-                    Icons.calendar_today,
-                    "Joining Date",
-                    employee.joiningDate ?? "N/A",
-                  ),
+                
                 ]),
 
                 const SizedBox(height: 24),
