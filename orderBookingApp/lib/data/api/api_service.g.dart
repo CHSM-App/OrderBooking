@@ -408,7 +408,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<ShopDetails>> getShopList() async {
+  Future<List<ShopDetails>> getShopList(String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -417,7 +417,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/shopList',
+            'users/shopList/${companyId}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -698,7 +698,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<dynamic> addProduct(Order product) async {
+  Future<dynamic> addOrder(Order product) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};

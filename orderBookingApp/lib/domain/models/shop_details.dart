@@ -42,6 +42,9 @@ class ShopDetails {
   @JsonKey(name: 'updatedAt')
   final DateTime? updatedAt;
 
+  @JsonKey(name: 'company_id')
+  final String companyId;
+
   ShopDetails({
     this.localId,
     this.shopId,
@@ -56,6 +59,7 @@ class ShopDetails {
     this.longitude,
     this.isSynced = false,
     this.updatedAt,
+    required this.companyId,
   });
 
   /// FROM API JSON
@@ -82,7 +86,7 @@ class ShopDetails {
     DateTime? updatedAt,
   }) {
     return ShopDetails(
-      localId: localId ?? this.localId,
+      localId: localId ?? this.localId, 
       shopId: shopId ?? this.shopId,
       shopName: shopName ?? this.shopName,
       ownerName: ownerName ?? this.ownerName,
@@ -95,6 +99,7 @@ class ShopDetails {
       longitude: longitude ?? this.longitude,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
+      companyId: companyId,
     );
   }
 }

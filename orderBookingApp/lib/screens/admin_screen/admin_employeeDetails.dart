@@ -17,6 +17,11 @@ class EmployeeDetailsPage extends ConsumerStatefulWidget {
     required this.empId,
     required Map<String, dynamic> companyId,
   });
+  const EmployeeDetailsPage({
+    super.key,
+    required this.empId,
+    required Map<String, dynamic> companyId,
+  });
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
@@ -54,6 +59,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ref
           .read(employeeVisitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getEmployeeOrders(widget.empId);
     });
 
     _controller.forward();
@@ -201,13 +209,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
       ref.watch(employeeVisitViewModelProvider).visits?.value,
     );
+    final avgOrdersPerDayText = _calculateAvgOrdersPerDay(
+      ref.watch(ordersViewModelProvider).orders?.value,
+    );
 
-
-
-
-
-  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
-  List<Order> employeeOrders = [];
+    final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+    List<Order> employeeOrders = [];
 
     ordersAsync?.whenData((orders) {
       employeeOrders = orders
@@ -383,7 +390,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     "Mobile No.",
                     employee.empMobile ?? "N/A",
                   ),
-              
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
@@ -501,7 +507,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                       ),
                       _AnimatedStatCard(
                         title: "Avg Orders / Day",
-                        value: "8",
+                        value: avgOrdersPerDayText,
                         icon: Icons.shopping_cart_outlined,
                         color: Colors.blue,
                         delay: 300,
@@ -812,6 +818,31 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       return '${hours}h ${minutes}m';
     }
     return '${minutes} min';
+  }
+
+  String _calculateAvgOrdersPerDay(List<Order>? orders) {
+    if (orders == null || orders.isEmpty) return "0";
+
+    final byDay = <String, int>{};
+    for (final o in orders) {
+      final ts = _parseOrderDate(o.orderDate);
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay[key] = (byDay[key] ?? 0) + 1;
+    }
+
+    if (byDay.isEmpty) return "0";
+
+    final totalOrders = byDay.values.fold<int>(0, (sum, count) => sum + count);
+    final avg = totalOrders / byDay.length;
+    return avg.toStringAsFixed(1);
+  }
+
+  DateTime? _parseOrderDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
   }
 }
 

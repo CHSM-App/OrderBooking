@@ -7,7 +7,7 @@ class ShopUsecase {
 
   ShopUsecase(this.shoprepository);
 
-  Future<void> execute(ShopDetails shopDetails) {
+  Future<void> addShop(ShopDetails shopDetails) {
     return shoprepository.addShop(shopDetails);
   }
 
@@ -15,7 +15,7 @@ class ShopUsecase {
     return shoprepository.getShopList( );
   }
 
-  Future<void> sync() {
-    return shoprepository.sync();
+  Future<void> sync(String company_id){
+    return shoprepository.sync(company_id);
   }
 }

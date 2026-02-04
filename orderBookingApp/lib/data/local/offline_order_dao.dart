@@ -15,6 +15,7 @@ class OfflineOrderDao {
       'order_date': order.orderDate,
       'total_price': order.totalPrice,
       'status': 'pending',
+      'company_id': order.companyId,
       'created_at': DateTime.now().toIso8601String(),
     });
 
