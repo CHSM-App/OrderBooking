@@ -15,9 +15,8 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 4, // 👈 bumped version
+      version: 5, // incremented version
       onCreate: (db, _) async {
-        // Runs only on fresh install
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
         await _createRegionTable(db);
@@ -27,13 +26,14 @@ class AppDatabase {
         await _createOfflineOrdersItemsTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Runs for existing users
-        if (oldVersion < 2) {
-          await _createShopsTable(db);
+        if (oldVersion < 2) await _createShopsTable(db);
+        if (oldVersion < 3) await _createRegionTable(db);
+        if (oldVersion < 4) {
+          await _createProductsTable(db);
+          await _createProductSubtypesTable(db);
         }
-        if (oldVersion < 3) {
-          await _createRegionTable(db);
-        }
+        // Add this to ensure offline_visits exists on upgrade
+        if (oldVersion < 5) await _createOfflineVisitsTable(db);
       },
     );
   }
@@ -86,29 +86,42 @@ class AppDatabase {
   }
 
   static Future<void> _createProductsTable(Database db) async {
-    await db.execute('''
+  await db.execute('''
     CREATE TABLE IF NOT EXISTS products (
-      product_id INTEGER PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      local_id TEXT UNIQUE,
+      product_id INTEGER UNIQUE,  -- 🔥 IMPORTANT
       product_name TEXT,
       product_type TEXT,
       created_by INTEGER,
       admin_id INTEGER,
       company_id TEXT,
+      product_unit TEXT,
+      total_price REAL,
+      shop_id INTEGER,
+      is_synced INTEGER DEFAULT 0,
       updated_at TEXT
     )
   ''');
-  }
+}
+
 
   static Future<void> _createProductSubtypesTable(Database db) async {
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS product_subtypes (
-      sub_item_id INTEGER PRIMARY KEY,
-      product_id INTEGER,
-      measuring_unit TEXT,
-      available_unit REAL,
-      price REAL
-    )
-  ''');
+      CREATE TABLE IF NOT EXISTS product_subtypes (
+        sub_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        local_id TEXT UNIQUE,
+        product_local_id TEXT,
+        server_product_id INTEGER,
+        server_sub_item_id INTEGER,
+        measuring_unit TEXT,
+        available_unit REAL,
+        price REAL,
+        total REAL,
+        is_synced INTEGER DEFAULT 0,
+        updated_at TEXT
+      )
+    ''');
   }
 
   static Future<void> _createOfflineOrdersTable(Database db) async {

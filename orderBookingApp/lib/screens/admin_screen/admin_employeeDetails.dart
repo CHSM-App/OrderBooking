@@ -1046,11 +1046,7 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.white,
                         size: 24,
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                     
                     ),
                     const SizedBox(width: 16),
                     Expanded(
