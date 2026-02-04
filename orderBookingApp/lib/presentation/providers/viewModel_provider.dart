@@ -76,3 +76,19 @@ final ordersViewModelProvider =
   final usecase = ref.watch(ordersUsecaseProvider);
   return ordersStateNotifier(usecase);
 });
+
+// final orderViewModelProvider =
+//     StateNotifierProvider.family<ordersStateNotifier, ordersState, int>(
+//   (ref, empId) =>
+//       ordersStateNotifier(ref.read(ordersUsecaseProvider))
+//         ..getEmployeeOrders(empId),
+// );
+
+final EmployeeOrderViewModelProvider =
+    StateNotifierProvider.family<
+        ordersStateNotifier,
+        ordersState,
+        int>((ref, empId) {
+  final usecase = ref.watch(ordersUsecaseProvider);
+  return ordersStateNotifier(usecase)..getEmployeeOrders(empId);
+});

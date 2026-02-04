@@ -142,11 +142,12 @@ Future<void> syncServerOrdersToLocal(int employeeId) async {
   }
 }
 
-
-
-
   
-  Future<List<Order>> getOrderList(){
-     return _apiService.getOrderList();
+  Future<List<Order>> getOrderList(String companyId){
+     return _apiService.getOrderList(companyId);
+  }
+
+  Future<List<Order>> getEmployeeOrders(int empId){
+     return _apiService.getOrders(empId);
   }
 }

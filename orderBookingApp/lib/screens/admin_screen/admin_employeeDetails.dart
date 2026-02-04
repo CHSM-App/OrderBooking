@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
+
+ 
 
   const EmployeeDetailsPage({super.key, required this.empId, required Map<String, dynamic> companyId});
 
@@ -40,6 +43,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ref
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
+
+    //   ref
+    //       .read(ordersViewModelProvider.notifier)
+    //       .getEmployeeOrders(widget.empId);  
     });
 
     _controller.forward();
@@ -172,6 +179,10 @@ String formatJoiningDate(String? isoDate) {
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
 
+    final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
+
+
+
     if (state.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -193,6 +204,21 @@ String formatJoiningDate(String? isoDate) {
 
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 0;
+
+
+
+
+
+  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+  List<Order> employeeOrders = [];
+
+ordersAsync?.whenData((orders) {
+  employeeOrders = orders
+      ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
+});
+
+
+
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -411,6 +437,11 @@ String formatJoiningDate(String? isoDate) {
 
                 const SizedBox(height: 24),
 
+
+
+            
+
+
                 // 📦 RECENT ORDERS
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -477,20 +508,27 @@ String formatJoiningDate(String? isoDate) {
                 const SizedBox(height: 12),
 
                 // Dummy recent orders
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: 5,
-                  itemBuilder: (_, index) {
-                    return _AnimatedOrderCard(
-                      orderNumber: index + 1,
-                      amount: (index + 1) * 1200,
-                      filter: selectedFilter,
-                      delay: index * 100,
-                    );
-                  },
-                ),
+               ordersAsync == null || employeeOrders.isEmpty
+         ? const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text("No orders found for this employee"),
+      )
+    : ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: employeeOrders.length,
+        itemBuilder: (_, index) {
+          final order = employeeOrders[index];
+          return _AnimatedOrderCard(
+            orderNumber: employeeOrders.length - index, // latest = top
+            amount: order.totalPrice.toInt(), 
+            filter: selectedFilter,
+            delay: index * 100,
+          );
+        },
+      ),
+
 
                 const SizedBox(height: 24),
               ],
@@ -501,7 +539,7 @@ String formatJoiningDate(String? isoDate) {
     );
   }
 
-  // ================= HELPER WIDGETS =================
+  // ================= HELPER WIDGETS ================= 
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),

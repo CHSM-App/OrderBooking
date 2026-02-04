@@ -97,7 +97,7 @@ abstract class ApiService {
   );
 
   @GET("users/getOrders/{emp_id}")
-  Future<List<Order>> getOrders(@Path("emp_id") int empId);
+  Future<List<Order>>getOrders(@Path("emp_id") int empId);
 
   //DELETE API
 @DELETE("index/deleteProductSubType/{sub_item_id}")
@@ -114,6 +114,6 @@ Future<dynamic> addProduct(
 
 
 @GET("users/getAllOrders/{company_id}")
-  Future<List<Order>> getOrderList();
+  Future<List<Order>> getOrderList(@Path("company_id") String companyId);
 
 }

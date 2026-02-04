@@ -11,9 +11,7 @@ class OrderUsecase {
     return ordersRepository.addProduct(order);
   }
 
-   Future<List<Order>> getOrderList() {
-     return ordersRepository.getOrderList();
-   }
+ 
   Future<void> syncOfflineOrders() {
     return ordersRepository.syncOfflineOrders();
   }
@@ -24,6 +22,14 @@ class OrderUsecase {
 
   Future<void> syncServerOrdersToLocal(int empId){
     return ordersRepository.syncServerOrdersToLocal(empId);
+  }
+
+    Future<List<Order>> getOrderList(String companyId) {
+     return ordersRepository.getOrderList(companyId);
+   }
+
+  Future<List<Order>> getEmployeeOrders(int empId) async {
+    return ordersRepository.getEmployeeOrders(empId);
   }
 
 }
