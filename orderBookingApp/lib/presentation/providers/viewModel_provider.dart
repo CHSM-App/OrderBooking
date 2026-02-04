@@ -13,6 +13,7 @@ import 'package:order_booking_app/presentation/viewModels/region.dart';
 
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
+import 'package:order_booking_app/presentation/viewModels/employee_visit_viewmodel.dart';
 
 
 
@@ -62,6 +63,12 @@ final visitViewModelProvider =
     StateNotifierProvider<VisitViewModel, AsyncValue<void>>((ref) {
   final usecase = ref.watch(visitUseCaseProvider);
   return VisitViewModel(usecase);
+});
+
+final employeeVisitViewModelProvider =
+    StateNotifierProvider<EmployeeVisitViewModel, EmployeeVisitState>((ref) {
+  final usecase = ref.watch(visitUseCaseProvider);
+  return EmployeeVisitViewModel(usecase);
 });
 
 final regionofflineViewModelProvider =

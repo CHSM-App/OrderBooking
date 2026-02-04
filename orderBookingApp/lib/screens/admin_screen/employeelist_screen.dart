@@ -224,6 +224,7 @@ class _AdminEmployeesPageState
     int index,
   ) {
     final isActive = employee["status"] == "Active";
+    final initials = _getInitials(employee["name"]?.toString() ?? "");
 
     /// ✅ SAFE INITIALS (NO RANGE ERROR)
     String initials = "NA";
@@ -333,6 +334,15 @@ class _AdminEmployeesPageState
         ),
       ),
     );
+  }
+
+  String _getInitials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+    final parts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    if (parts.isEmpty) return '?';
+    final initials = parts.map((p) => p[0]).take(2).join();
+    return initials.isEmpty ? '?' : initials;
   }
 }
 
