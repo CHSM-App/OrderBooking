@@ -12,7 +12,12 @@ import 'catalog_page.dart';
 import 'profile_page.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
-  const MainNavigationScreen({Key? key}) : super(key: key);
+  final int initialIndex;
+
+  const MainNavigationScreen({
+    Key? key,
+    this.initialIndex = 0,
+  }) : super(key: key);
 
   @override
   ConsumerState<MainNavigationScreen> createState() =>
@@ -20,7 +25,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -35,15 +40,16 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
 
-    // ✅ Load login data from storage
-    Future.microtask(() {
-      ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
-      
-      // Load check-in status after login data is loaded
+    // ✅ Load login data from storage then fetch today's check-in status
+    Future.microtask(() async {
+      await ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
       final userId = ref.read(adminloginViewModelProvider).userId;
-      ref.read(checkInViewModelProvider.notifier).loadTodayStatus(userId);
-        });
+      if (userId != 0) {
+        await ref.read(checkInViewModelProvider.notifier).loadTodayStatus(userId);
+      }
+    });
   }
 
   void _toggleCheckIn() async {

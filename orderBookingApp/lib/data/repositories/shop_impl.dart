@@ -13,7 +13,6 @@ class ShopImpl implements ShopRepository {
 
   @override
   Future<dynamic> addShop(ShopDetails shopDetails) async {
-    debugPrint("adding shop: ${shopDetails.localId}");
     await local.insert(shopDetails);
   }
 
@@ -38,10 +37,9 @@ class ShopImpl implements ShopRepository {
   }
 
   /// ⬇️ Pull server shops
-  Future<void> syncServerToLocal() async {
-    debugPrint("Into lood for shop");
+  Future<void> syncServerToLocal(String company_id) async {
     try {
-      final serverShops = await apiService.getShopList();
+      final serverShops = await apiService.getShopList(company_id);
 
       for (final shop in serverShops) {
         final exists = await local.existsByServerId(shop.shopId!);
@@ -61,10 +59,8 @@ class ShopImpl implements ShopRepository {
     }
   }
 
-  Future<void> sync() async {
-    debugPrint("Starting local sync");
+  Future<void> sync(String company_id) async {
     await syncLocalToServer();
-    debugPrint("Starting remote sync");
-    await syncServerToLocal();
+    await syncServerToLocal(company_id);
   }
 }

@@ -224,10 +224,10 @@ class _AdminEmployeesPageState
     int index,
   ) {
     final isActive = employee["status"] == "Active";
-    final initials = _getInitials(employee["name"]?.toString() ?? "");
+    String initials = _getInitials(employee["name"]?.toString() ?? "");
 
     /// ✅ SAFE INITIALS (NO RANGE ERROR)
-    String initials = "NA";
+     initials = "NA";
     final name = employee["name"].toString().trim();
 
     if (name.isNotEmpty) {

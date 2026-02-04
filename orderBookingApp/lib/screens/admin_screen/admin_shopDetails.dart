@@ -30,7 +30,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
     
     // Fetch shop list on initialization
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shopViewModelProvider.notifier).getShopList();
+      ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
     });
   }
 
@@ -121,7 +121,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                ref.read(shopViewModelProvider.notifier).getShopList();
+                ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF57C00),
@@ -234,7 +234,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                ref.read(shopViewModelProvider.notifier).getShopList();
+                ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF57C00),

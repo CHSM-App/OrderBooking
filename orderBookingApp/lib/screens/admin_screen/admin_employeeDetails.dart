@@ -11,9 +11,11 @@ import 'dart:math';
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
- 
-
-  const EmployeeDetailsPage({super.key, required this.empId, required Map<String, dynamic> companyId});
+  const EmployeeDetailsPage({
+    super.key,
+    required this.empId,
+    required Map<String, dynamic> companyId,
+  });
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
@@ -51,6 +53,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ref
           .read(employeeVisitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getEmployeeOrders(widget.empId);
     });
 
     _controller.forward();
@@ -85,103 +90,92 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
   }
 
- 
-
-Future<void> _deleteEmployee() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Row(
-        children: [
-          Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-          SizedBox(width: 12),
-          Text('Delete Employee'),
+  Future<void> _deleteEmployee() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Text('Delete Employee'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to delete this employee? This action cannot be undone.',
+          style: TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Delete'),
+          ),
         ],
       ),
-      content: const Text(
-        'Are you sure you want to delete this employee? This action cannot be undone.',
-        style: TextStyle(fontSize: 15),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  try {
-    debugPrint("Deleting employee id: ${widget.empId}");
-
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .deleteEmployee(widget.empId);
-
-    // ✅ AWAIT the refresh so the list updates BEFORE popping
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList();
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Employee deleted successfully"),
-        backgroundColor: Colors.green,
-      ),
     );
 
-    // ✅ Small delay so the snackbar is visible before navigating
-    await Future.delayed(const Duration(milliseconds: 500));
+    if (confirm != true) return;
 
-    if (!mounted) return;
+    try {
+      debugPrint("Deleting employee id: ${widget.empId}");
 
-    Navigator.pop(context, true);
-  } catch (e) {
-    if (!mounted) return;
+      await ref
+          .read(employeeloginViewModelProvider.notifier)
+          .deleteEmployee(widget.empId);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString()),
-        backgroundColor: Colors.red,
-      ),
-    );
+      // ✅ AWAIT the refresh so the list updates BEFORE popping
+      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Employee deleted successfully"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // ✅ Small delay so the snackbar is visible before navigating
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
   }
-}
 
+  String formatJoiningDate(String? isoDate) {
+    if (isoDate == null || isoDate.isEmpty) return "N/A";
 
-String formatJoiningDate(String? isoDate) {
-  if (isoDate == null || isoDate.isEmpty) return "N/A";
-
-  final date = DateTime.parse(isoDate).toLocal();
-  return "${date.day.toString().padLeft(2, '0')}-"
-         "${date.month.toString().padLeft(2, '0')}-"
-          "${date.year.toString().padLeft(2, '0')}";       
-}
-
+    final date = DateTime.parse(isoDate).toLocal();
+    return "${date.day.toString().padLeft(2, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.year.toString().padLeft(2, '0')}";
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
 
     final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
-
-
 
     if (state.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -209,21 +203,17 @@ String formatJoiningDate(String? isoDate) {
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
       ref.watch(employeeVisitViewModelProvider).visits?.value,
     );
+    final avgOrdersPerDayText = _calculateAvgOrdersPerDay(
+      ref.watch(ordersViewModelProvider).orders?.value,
+    );
 
+    final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
+    List<Order> employeeOrders = [];
 
-
-
-
-  final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
-  List<Order> employeeOrders = [];
-
-ordersAsync?.whenData((orders) {
-  employeeOrders = orders
-      ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
-});
-
-
-
+    ordersAsync?.whenData((orders) {
+      employeeOrders = orders
+        ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
+    });
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -394,11 +384,6 @@ ordersAsync?.whenData((orders) {
                     "Mobile No.",
                     employee.empMobile ?? "N/A",
                   ),
-                  _infoRow(
-                    Icons.phone,
-                    "Mobile No.",
-                    employee.empMobile ?? "N/A",
-                  ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
                   _infoRow(
@@ -514,7 +499,7 @@ ordersAsync?.whenData((orders) {
                       ),
                       _AnimatedStatCard(
                         title: "Avg Orders / Day",
-                        value: "8",
+                        value: avgOrdersPerDayText,
                         icon: Icons.shopping_cart_outlined,
                         color: Colors.blue,
                         delay: 300,
@@ -524,11 +509,6 @@ ordersAsync?.whenData((orders) {
                 ),
 
                 const SizedBox(height: 24),
-
-
-
-            
-
 
                 // 📦 RECENT ORDERS
                 Padding(
@@ -605,27 +585,27 @@ ordersAsync?.whenData((orders) {
                 const SizedBox(height: 12),
 
                 // Dummy recent orders
-               ordersAsync == null || employeeOrders.isEmpty
-         ? const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text("No orders found for this employee"),
-      )
-    : ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: employeeOrders.length,
-        itemBuilder: (_, index) {
-          final order = employeeOrders[index];
-          return _AnimatedOrderCard(
-            orderNumber: employeeOrders.length - index, // latest = top
-            amount: order.totalPrice.toInt(), 
-            filter: selectedFilter,
-            delay: index * 100,
-          );
-        },
-      ),
-
+                ordersAsync == null || employeeOrders.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text("No orders found for this employee"),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: employeeOrders.length,
+                        itemBuilder: (_, index) {
+                          final order = employeeOrders[index];
+                          return _AnimatedOrderCard(
+                            orderNumber:
+                                employeeOrders.length - index, // latest = top
+                            amount: order.totalPrice.toInt(),
+                            filter: selectedFilter,
+                            delay: index * 100,
+                          );
+                        },
+                      ),
 
                 const SizedBox(height: 24),
               ],
@@ -636,7 +616,7 @@ ordersAsync?.whenData((orders) {
     );
   }
 
-  // ================= HELPER WIDGETS ================= 
+  // ================= HELPER WIDGETS =================
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -829,6 +809,31 @@ ordersAsync?.whenData((orders) {
       return '${hours}h ${minutes}m';
     }
     return '${minutes} min';
+  }
+
+  String _calculateAvgOrdersPerDay(List<Order>? orders) {
+    if (orders == null || orders.isEmpty) return "0";
+
+    final byDay = <String, int>{};
+    for (final o in orders) {
+      final ts = _parseOrderDate(o.orderDate);
+      if (ts == null) continue;
+      final ist = _toIst(ts);
+      final key =
+          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
+      byDay[key] = (byDay[key] ?? 0) + 1;
+    }
+
+    if (byDay.isEmpty) return "0";
+
+    final totalOrders = byDay.values.fold<int>(0, (sum, count) => sum + count);
+    final avg = totalOrders / byDay.length;
+    return avg.toStringAsFixed(1);
+  }
+
+  DateTime? _parseOrderDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
   }
 }
 

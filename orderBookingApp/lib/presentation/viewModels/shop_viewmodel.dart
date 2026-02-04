@@ -32,8 +32,8 @@ class ShopViewModel extends StateNotifier<ShopState> {
   Future<void> addShop(ShopDetails shopDetails) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await usecase.execute(shopDetails);
-      await sync();
+      await usecase.addShop(shopDetails);
+      await sync(shopDetails.companyId);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -41,20 +41,22 @@ class ShopViewModel extends StateNotifier<ShopState> {
   }
 
   //GET SHOP LIST
-  Future<void> getShopList() async {
+  Future<void> getShopList(String companyId) async {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
       final shop = await usecase.getShopList();
-      await sync();
+      if (companyId.isNotEmpty) {
+        await sync(companyId);
+      }
       state = state.copyWith(isLoading: false, shopList: AsyncValue.data(shop));
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<void> sync() async {
-    await usecase.sync();
+  Future<void> sync(String companyId) async {
+    await usecase.sync(companyId);
   }
 }
 

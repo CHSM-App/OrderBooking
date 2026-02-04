@@ -22,6 +22,7 @@ class ShopDao {
         'latitude': shop.latitude,
         'longitude': shop.longitude,
         'is_synced': shop.isSynced ? 1 : 0,
+        'company_id' : shop.companyId,
         'updated_at': shop.updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.ignore,
@@ -83,6 +84,7 @@ class ShopDao {
       latitude: row['latitude'],
       longitude: row['longitude'],
       isSynced: row['is_synced'] == 1,
+      companyId: row['company_id'],
       updatedAt: DateTime.parse(row['updated_at']),
     );
   }

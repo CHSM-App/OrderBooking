@@ -43,7 +43,6 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     : super(ordersState(isLoading: false, isSuccess: false));
 
   Future<void> addOrderLineItem(Order order) async {
-    debugPrint("In the viwModal");
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,

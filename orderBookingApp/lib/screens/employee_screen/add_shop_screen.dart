@@ -34,6 +34,7 @@ void _saveShop() async {
     mobileNo: _phoneController.text,
     shopId: 0,
     updatedAt: DateTime.now(),
+    companyId: ref.read(adminloginViewModelProvider).companyId??""
   );
 
   await ref.read(shopViewModelProvider.notifier).addShop(shop);
@@ -55,7 +56,7 @@ void _saveShop() async {
     );
   }
 
-  await ref.read(shopViewModelProvider.notifier).getShopList();
+  await ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
 }
 
   @override

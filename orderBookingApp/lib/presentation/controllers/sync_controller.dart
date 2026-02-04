@@ -21,7 +21,7 @@ final syncControllerProvider = Provider<void>((ref) {
 
                
         ref.read(regionofflineViewModelProvider.notifier).sync();
-        ref.read(shopViewModelProvider.notifier).sync();
+        ref.read(shopViewModelProvider.notifier).sync(ref.read(adminloginViewModelProvider).companyId??"");
         ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
       }
     },

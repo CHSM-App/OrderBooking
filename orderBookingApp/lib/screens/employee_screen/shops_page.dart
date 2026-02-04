@@ -27,7 +27,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     super.initState();
     // Fetch shop list when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shopViewModelProvider.notifier).getShopList();
+      ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
     });
     
     // Listen to search changes
@@ -471,7 +471,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
             
             // Refresh the list if a shop was added
             if (result == true && mounted) {
-              ref.read(shopViewModelProvider.notifier).getShopList();
+              ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
             }
           },
           backgroundColor: Colors.transparent,
@@ -497,7 +497,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     // Wrap everything in RefreshIndicator for pull-to-refresh
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(shopViewModelProvider.notifier).getShopList();
+        await ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
       },
       color: AppTheme.accentColor,
       backgroundColor: AppTheme.primaryColor,
@@ -551,7 +551,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () {
-                    ref.read(shopViewModelProvider.notifier).getShopList();
+                    ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
@@ -653,7 +653,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        ref.read(shopViewModelProvider.notifier).getShopList();
+                        ref.read(shopViewModelProvider.notifier).getShopList(ref.read(adminloginViewModelProvider).companyId??"");
                       },
                       child: const Text('Retry'),
                     ),

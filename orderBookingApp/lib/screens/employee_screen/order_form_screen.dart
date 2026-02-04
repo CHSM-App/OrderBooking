@@ -7,7 +7,7 @@ import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/employee_screen/shops_page.dart';
+import 'package:order_booking_app/screens/employee_screen/main_navigation_screen.dart';
 import 'package:uuid/uuid.dart';
 
 class OrderFormScreen extends ConsumerStatefulWidget {
@@ -171,10 +171,11 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       shopId: widget.shop.shopId ?? 0,
       orderDate: DateTime.now().toIso8601String(),
       items: orderItems,
+      companyId: ref.read(adminloginViewModelProvider).companyId,
     );
 
     ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
-    
+
     setState(() {
       _visit = VisitPayload(
         localId: _visit.localId,
@@ -206,7 +207,11 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
             onPressed: () {
               Navigator.pop(context); // Close dialog
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const ShopListPage()),
+                MaterialPageRoute(
+                  builder: (_) => const MainNavigationScreen(
+                    initialIndex: 1,
+                  ),
+                ),
                 (route) => false,
               );
             },

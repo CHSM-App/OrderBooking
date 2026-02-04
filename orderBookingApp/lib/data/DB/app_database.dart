@@ -66,6 +66,7 @@ class AppDatabase {
         created_by INTEGER,
         latitude REAL,
         longitude REAL,
+        company_id TEXT,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT
       )
@@ -122,6 +123,7 @@ class AppDatabase {
         shop_name TEXT,
         order_date TEXT,
         total_price REAL,
+        company_id TEXT,
         status TEXT,                
         retry_count INTEGER DEFAULT 0,
         created_at TEXT

@@ -16,9 +16,6 @@ class EmployeeloginUsecase {
     return employeeloginRepository.fetchEmployeeDetails(empId);
   }
 
-      Future<List<EmployeeLogin>>fetchEmployeeInfo(String mobileNo){
-    return employeeloginRepository.fetchEmployeeInfo(mobileNo);
-  }
  
   Future<void> updateEmployee(EmployeeLogin employeeLogin) async {}
 

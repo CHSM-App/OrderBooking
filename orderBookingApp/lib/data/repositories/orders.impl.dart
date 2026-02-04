@@ -13,7 +13,6 @@ class OrdersRepositoryImpl implements OrdersRepository {
   @override
   Future<void> addProduct(Order order) async {
     try {
-      print("in the repository, Syncing offline");
       // await _apiService.addProduct(order);
       await offlineOrderDao.insertOrder(order);
       await syncOfflineOrders();
@@ -47,12 +46,13 @@ class OrdersRepositoryImpl implements OrdersRepository {
           employeeId: o['employee_id'],
           shopId: o['shop_id'],
           orderDate: o['order_date'],
+          companyId: o['company_id'],
           items: items,
           totalPrice: o['total_price'],
         );
 
         // 🔥 Send to server
-        final response = await _apiService.addProduct(order);
+        final response = await _apiService.addOrder(order);
 
         final serverOrderId = response['order_id'] as int;
 

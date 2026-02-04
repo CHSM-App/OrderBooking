@@ -72,8 +72,8 @@ abstract class ApiService {
     @Path("mobile_no") String mobileNo,
   );  
 
-  @GET("users/shopList")
-  Future<List<ShopDetails>> getShopList();
+  @GET("users/shopList/{company_id}")
+  Future<List<ShopDetails>> getShopList(@Path("company_id") String companyId);
 
   @GET("users/regionList")
   Future<List<Region>> fetchRegionList();
@@ -113,7 +113,7 @@ abstract class ApiService {
   Future<EmployeeLogin> deleteEmployee(@Path("emp_id") int empId);
 
 @POST("insert/addOrder")
-Future<dynamic> addProduct(
+Future<dynamic> addOrder(
   @Body() Order product);
 
 
@@ -121,3 +121,5 @@ Future<dynamic> addProduct(
   Future<List<Order>> getOrderList(@Path("company_id") String companyId);
 
 }
+
+
