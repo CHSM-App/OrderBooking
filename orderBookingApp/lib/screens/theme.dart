@@ -1,57 +1,111 @@
 import 'package:flutter/material.dart';
+
 class AppTheme {
-  // Core Colors
-  static const Color primaryColor = Color(0xFFFFF9C4); // Light Yellow
-  static const Color secondaryColor = Color(0xFFFFF59D); // Soft Yellow
-  static const Color accentColor = Color(0xFFFFEE58); // Bright Yellow
+
+  
+  // Primary Colors 
+ static const Color primaryColor = Color(0xFFFFB74D); // Soft Premium Orange
+ static const Color primaryDark  = Color(0xFFFFA726); // Warm Orange
+ static const Color primaryLight = Color(0xFFFFE0B2); // Very Light Peach
+//Secondary Colors 
+static const Color secondaryColor = Color(0xFFFFD54F); // Soft Gold
+static const Color secondaryLight = Color(0xFFFFF6D5); // Creamy Yellow
+static const Color secondaryDark  = Color(0xFFFFC107); // Balanced Amber
+
+  // Accent Colors
+static const Color accentColor   = Color(0xFFFF8A50); // Soft Deep Orange
+static const Color accentYellow  = Color(0xFFFFC96B); // Light Golden
+static const Color accentPeach   = Color(0xFFFFE5C7); // Pastel Peach
 
   // Background & Surface
-  static const Color backgroundColor = Color(0xFFFFFFFE); // Pure White
-  static const Color cardBackground = Color(0xFFFAFAFA); // Off White
+  static const Color backgroundColor  = Color(0xFFFFFDF9); // Very Light Warm White
+static const Color lightBackground  = Color(0xFFFFF4E6); // Soft Cream
+static const Color orangeBackground = Color(0xFFFFF1DB); // Tinted Orange bg
+
+  static const Color cardBackground = Color(0xFFFFFFFF); // Pure White
   static const Color surfaceColor = Color(0xFFFFFFFF); // White
 
+  
   // Text Colors
-  static const Color textPrimary = Color(0xFF424242); // Dark Gray
-  static const Color textSecondary = Color(0xFF757575); // Medium Gray
-  static const Color textLight = Color(0xFFBDBDBD); // Light Gray
-
+  static const Color textPrimary = Color(0xFF2C1810); // Dark Brown
+  static const Color textSecondary = Color(0xFF6B4423); // Medium Brown
+  static const Color textLight = Color(0xFF9E9E9E); // Gray
+  static const Color textWhite = Color(0xFFFFFFFF); // White
+  static const Color textOrange = Color(0xFFFF9933); // Orange Text
+  
   // Status Colors
-  static const Color successColor = Color(0xFF81C784); // Light Green
-  static const Color errorColor = Color(0xFFE57373); // Light Red
-  static const Color warningColor = Color(0xFFFFD54F); // Light Amber
-  static const Color infoColor = Color(0xFF64B5F6); // Light Blue
+  static const Color successColor = Color(0xFF4CAF50); // Green
+  static const Color errorColor = Color(0xFFE53935); // Red
+  static const Color warningColor = Color(0xFFFF9800); // Orange
+  static const Color infoColor = Color(0xFF2196F3); // Blue
+  
+  // Special Colors
+  static const Color ratingColor = Color(0xFFFFC107); // Amber
+  static const Color discountColor = Color(0xFFE53935); // Red
 
-// Gradients
-static const LinearGradient primaryGradient = LinearGradient(
-  colors: [Color(0xFFFFF9C4), Color(0xFFFFF59D)],
+  // ========================
+  // VIBRANT GRADIENTS
+  // ========================
+  static const LinearGradient primaryGradient = LinearGradient(
+  colors: [
+ Color.fromARGB(255, 255, 194, 10),
+    Color(0xFFFFB74D),
+  ],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
 
 static const LinearGradient secondaryGradient = LinearGradient(
-  colors: [Color(0xFFFFF59D), Color(0xFFFFEE58)],
+  colors: [
+    Color(0xFFFFF3CD),
+    Color(0xFFFFD54F),
+  ],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
 
-static const LinearGradient successGradient = LinearGradient(
-  colors: [Color(0xFF81C784), Color(0xFFA5D6A7)],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
-static const LinearGradient errorGradient = LinearGradient(
-  colors: [Color(0xFFE57373), Color(0xFFEF9A9A)],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
-static const LinearGradient warningGradient = LinearGradient(
-  colors: [Color(0xFFFFD54F), Color(0xFFFFE082)],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
-
+  
+  static const LinearGradient accentGradient = LinearGradient(
+    colors: [Color(0xFFFF6B35), Color(0xFFFF8800)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient warmGradient = LinearGradient(
+    colors: [Color(0xFFFFAD5C), Color(0xFFFFCC80)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient sunsetGradient = LinearGradient(
+    colors: [Color(0xFFFF6B35), Color(0xFFFF9933), Color(0xFFFFD700)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [Color(0xFFFFD700), Color(0xFFFFE55C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient errorGradient = LinearGradient(
+    colors: [Color(0xFFE53935), Color(0xFFEF5350)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient warningGradient = LinearGradient(
+    colors: [Color(0xFFFF9800), Color(0xFFFFAD5C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   // ========================
   // LIGHT THEME
@@ -60,54 +114,75 @@ static const LinearGradient warningGradient = LinearGradient(
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: backgroundColor,
-
+    
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       secondary: secondaryColor,
       tertiary: accentColor,
       surface: surfaceColor,
       error: errorColor,
-      onPrimary: textPrimary,
-      onSecondary: textPrimary,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
       onSurface: textPrimary,
       onError: Colors.white,
+      surfaceContainerHighest: lightBackground,
     ),
 
-    // AppBar
+    // AppBar Theme
     appBarTheme: const AppBarTheme(
       elevation: 0,
-      centerTitle: true,
-      backgroundColor: Colors.white,
+      centerTitle: false,
+      backgroundColor: Colors.transparent,
       foregroundColor: textPrimary,
       titleTextStyle: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
         fontFamily: 'Poppins',
         color: textPrimary,
+        letterSpacing: -0.5,
       ),
-      iconTheme: IconThemeData(color: textPrimary),
+      iconTheme: IconThemeData(color: textPrimary, size: 24),
     ),
 
-    // Card Theme (margin removed)
-  cardTheme: CardThemeData(
-  elevation: 1,
-  color: cardBackground,
-  shadowColor: Colors.black12,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(16),
-  ),
-),
+    // Card Theme
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: cardBackground,
+      shadowColor: primaryColor.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      margin: EdgeInsets.zero,
+    ),
 
-
-    // Buttons
+    // Elevated Button
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
-        foregroundColor: textPrimary,
-        elevation: 1,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        textStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Poppins',
+          letterSpacing: 0.5,
+        ),
+      ),
+    ),
+
+    // Outlined Button
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor, width: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
         textStyle: const TextStyle(
           fontSize: 16,
@@ -116,79 +191,119 @@ static const LinearGradient warningGradient = LinearGradient(
         ),
       ),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: textPrimary,
-        side: const BorderSide(color: textLight, width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+
+    // Text Button
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primaryColor,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        textStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Poppins',
         ),
       ),
     ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: textPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    ),
 
-    // Input Fields
+    // Input Decoration
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: const Color(0xFFFFF8F0),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: primaryColor.withOpacity(0.2), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: accentColor, width: 2),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: primaryColor, width: 2.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: errorColor),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: errorColor, width: 1),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      hintStyle: const TextStyle(color: textLight),
-      labelStyle: const TextStyle(color: textSecondary),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: errorColor, width: 2.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      hintStyle: TextStyle(
+        color: textLight,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+      ),
+      labelStyle: const TextStyle(
+        color: textSecondary,
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+      ),
     ),
 
-    // Bottom Navigation
+    // Bottom Navigation Bar
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Colors.white,
-      selectedItemColor: accentColor,
+      selectedItemColor: primaryColor,
       unselectedItemColor: textLight,
       showUnselectedLabels: true,
       type: BottomNavigationBarType.fixed,
-      elevation: 4,
+      elevation: 8,
+      selectedLabelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        fontFamily: 'Poppins',
+      ),
+      unselectedLabelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Poppins',
+      ),
     ),
 
-    // Icons
+    // Icon Theme
     iconTheme: const IconThemeData(
       color: textPrimary,
       size: 24,
     ),
 
-    // Text
+    // Text Theme
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 32,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w900,
         color: textPrimary,
         fontFamily: 'Poppins',
+        letterSpacing: -1,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+        fontFamily: 'Poppins',
+        letterSpacing: -0.5,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+        fontFamily: 'Poppins',
+        letterSpacing: -0.5,
       ),
       headlineMedium: TextStyle(
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: textPrimary,
         fontFamily: 'Poppins',
       ),
       titleLarge: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+        fontFamily: 'Poppins',
+      ),
+      titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: textPrimary,
@@ -196,34 +311,61 @@ static const LinearGradient warningGradient = LinearGradient(
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
+        fontWeight: FontWeight.w400,
         color: textPrimary,
         fontFamily: 'Poppins',
+        height: 1.5,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
+        fontWeight: FontWeight.w400,
         color: textSecondary,
         fontFamily: 'Poppins',
+        height: 1.5,
       ),
       bodySmall: TextStyle(
         fontSize: 12,
+        fontWeight: FontWeight.w400,
         color: textLight,
         fontFamily: 'Poppins',
       ),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+        fontFamily: 'Poppins',
+        letterSpacing: 0.5,
+      ),
     ),
 
+    // Divider Theme
     dividerTheme: DividerThemeData(
-      color: Colors.grey.shade200,
+      color: primaryColor.withOpacity(0.15),
       thickness: 1,
-      space: 16,
+      space: 24,
     ),
 
+    // Chip Theme
     chipTheme: ChipThemeData(
-      backgroundColor: primaryColor.withOpacity(0.3),
+      backgroundColor: lightBackground,
       selectedColor: primaryColor,
-      labelStyle: const TextStyle(color: textPrimary),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelStyle: const TextStyle(
+        color: textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+
+    // FloatingActionButton Theme
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: primaryColor,
+      foregroundColor: Colors.white,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
   );
@@ -238,6 +380,8 @@ class GradientButton extends StatelessWidget {
   final Gradient? gradient;
   final double? width;
   final double? height;
+  final IconData? icon;
+  final bool isLoading;
 
   const GradientButton({
     Key? key,
@@ -246,6 +390,8 @@ class GradientButton extends StatelessWidget {
     this.gradient,
     this.width,
     this.height,
+    this.icon,
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -255,29 +401,48 @@ class GradientButton extends StatelessWidget {
       height: height ?? 56,
       decoration: BoxDecoration(
         gradient: gradient ?? AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+            color: AppTheme.primaryColor.withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(16),
           child: Center(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: Colors.white, size: 22),
+                        const SizedBox(width: 10),
+                      ],
+                      Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -286,131 +451,269 @@ class GradientButton extends StatelessWidget {
 }
 
 // ========================
-// PRODUCT CARD WIDGET
+// MODERN PRODUCT CARD
 // ========================
 class ProductCard extends StatelessWidget {
   final String imageUrl;
   final String title;
   final String price;
+  final String? originalPrice;
   final String? discount;
+  final double? rating;
   final VoidCallback onTap;
   final VoidCallback? onAddToCart;
+  final VoidCallback? onFavorite;
+  final bool isFavorite;
 
   const ProductCard({
     Key? key,
     required this.imageUrl,
     required this.title,
     required this.price,
+    this.originalPrice,
     this.discount,
+    this.rating,
     required this.onTap,
     this.onAddToCart,
+    this.onFavorite,
+    this.isFavorite = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Card(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image Section
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.network(
-                      imageUrl,
-                      height: 140,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 140,
-                          color: Colors.grey[100],
-                          child: Icon(Icons.image, size: 50, color: Colors.grey[400]),
-                        );
-                      },
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.12),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Section
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: Image.network(
+                    imageUrl,
+                    height: 170,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 170,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryColor.withOpacity(0.1),
+                              AppTheme.primaryLight.withOpacity(0.1),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 60,
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                
+                // Discount Badge
+                if (discount != null)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.errorGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.errorColor.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        discount!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
-                  if (discount != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
+                
+                // Favorite Button
+                if (onFavorite != null)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: InkWell(
+                      onTap: onFavorite,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppTheme.errorColor,
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          discount!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? AppTheme.errorColor : AppTheme.textSecondary,
+                          size: 20,
                         ),
                       ),
                     ),
-                ],
-              ),
-              // Details Section
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+            
+            // Details Section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                      height: 1.3,
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          price,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                          ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Rating
+                  if (rating != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.ratingColor.withOpacity(0.2),
+                            AppTheme.ratingColor.withOpacity(0.1),
+                          ],
                         ),
-                        if (onAddToCart != null)
-                          InkWell(
-                            onTap: onAddToCart,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.add_shopping_cart,
-                                color: AppTheme.textPrimary,
-                                size: 18,
-                              ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded, color: AppTheme.ratingColor, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating!.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${(rating! * 100).toInt()})',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  
+                  // Price Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Price
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            price,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.primaryColor,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          if (originalPrice != null)
+                            Text(
+                              originalPrice!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textLight,
+                                decoration: TextDecoration.lineThrough,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                      
+                      // Add to Cart Button
+                      if (onAddToCart != null)
+                        InkWell(
+                          onTap: onAddToCart,
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.primaryGradient,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryColor.withOpacity(0.35),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.add_shopping_cart_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -418,13 +721,14 @@ class ProductCard extends StatelessWidget {
 }
 
 // ========================
-// CATEGORY CHIP WIDGET
+// MODERN CATEGORY CHIP
 // ========================
 class CategoryChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final Gradient? selectedGradient;
 
   const CategoryChip({
     Key? key,
@@ -432,24 +736,32 @@ class CategoryChip extends StatelessWidget {
     required this.icon,
     required this.isSelected,
     required this.onTap,
+    this.selectedGradient,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          gradient: isSelected ? AppTheme.primaryGradient : null,
-          color: isSelected ? null : Colors.grey[100],
-          borderRadius: BorderRadius.circular(25),
+          gradient: isSelected ? (selectedGradient ?? AppTheme.primaryGradient) : null,
+          color: isSelected ? null : AppTheme.lightBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? null : Border.all(
+            color: AppTheme.primaryColor.withOpacity(0.2), 
+            width: 1.5,
+          ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.grey.shade300,
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : null,
@@ -460,18 +772,153 @@ class CategoryChip extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+              color: isSelected ? Colors.white : AppTheme.primaryColor,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? Colors.white : AppTheme.textPrimary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 14,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ========================
+// SEARCH BAR WIDGET
+// ========================
+class ModernSearchBar extends StatelessWidget {
+  final String hintText;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onFilterTap;
+
+  const ModernSearchBar({
+    Key? key,
+    this.hintText = 'Search products...',
+    this.onTap,
+    this.onChanged,
+    this.onFilterTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.2), 
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search_rounded, color: AppTheme.primaryColor, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              onTap: onTap,
+              onChanged: onChanged,
+              decoration: InputDecoration(
+                hintText: hintText,
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintStyle: const TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+          if (onFilterTap != null) ...[
+            const SizedBox(width: 12),
+            InkWell(
+              onTap: onFilterTap,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ========================
+// STATUS BADGE WIDGET
+// ========================
+class StatusBadge extends StatelessWidget {
+  final String text;
+  final Color color;
+  final IconData? icon;
+
+  const StatusBadge({
+    Key? key,
+    required this.text,
+    required this.color,
+    this.icon,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
