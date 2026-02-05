@@ -27,6 +27,9 @@ class Region {
   @JsonKey(name: 'created_by')
   final int? createdBy;
 
+   @JsonKey(name: 'company_id')
+  final String? companyId;
+
   @JsonKey(ignore: true)
   final String? syncStatus;
   Region({
@@ -37,6 +40,7 @@ class Region {
     this.district,
     this.state,
     this.createdBy,
+    this.companyId,
        this.syncStatus,
   });
 
@@ -62,6 +66,7 @@ class Region {
     district: json['district'] as String?,
     state: json['state'] as String?,
     createdBy: json['created_by'] as int?,
+    companyId: json['company_id'] as String?,
   );
 }
 

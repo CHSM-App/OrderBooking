@@ -437,7 +437,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<Region>> fetchRegionList() async {
+  Future<List<Region>> fetchRegionList(String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -446,7 +446,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/regionList',
+            'users/regionList/${companyId}',
             queryParameters: queryParameters,
             data: _data,
           )

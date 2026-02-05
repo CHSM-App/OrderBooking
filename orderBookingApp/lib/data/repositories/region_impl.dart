@@ -15,7 +15,7 @@ class RegionImpl implements RegionRepository {
   }
  
   @override
-  Future<List<Region>> getRegionList() {
-    return apiService.fetchRegionList();
+  Future<List<Region>> getRegionList(String companyId) {
+    return apiService.fetchRegionList(companyId);
   }
 }

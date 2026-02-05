@@ -102,6 +102,7 @@ final regionRepositorofflineProvider = Provider<RegionRepooffline>((ref) {
   return RegionImplOffline(
     local: local,
     apiService: api,
+    
   );
 });
 

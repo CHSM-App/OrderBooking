@@ -8,11 +8,7 @@ class AddEmployeeForm extends ConsumerStatefulWidget {
   final bool isEdit;
   final EmployeeLogin? employee;
 
-  const AddEmployeeForm({
-    super.key,
-    this.isEdit = false,
-    this.employee,
-  });
+  const AddEmployeeForm({super.key, this.isEdit = false, this.employee});
 
   @override
   ConsumerState<AddEmployeeForm> createState() => _AddEmployeeFormState();
@@ -26,7 +22,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
   late TextEditingController mobileController;
   late TextEditingController emailController;
   late TextEditingController addressController;
-  late TextEditingController regionController;
+
+  int? selectedRegionId;
 
   String name = '';
   String mobile = '';
@@ -42,35 +39,63 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
   void initState() {
     super.initState();
 
-    nameController =
-        TextEditingController(text: widget.employee?.empName ?? '');
-    mobileController =
-        TextEditingController(text: widget.employee?.empMobile ?? '');
-    emailController =
-        TextEditingController(text: widget.employee?.empEmail ?? '');
-    addressController =
-        TextEditingController(text: widget.employee?.empAddress ?? '');
-    regionController =
-        TextEditingController(text: widget.employee?.regionId?.toString() ?? '');
+    selectedRegionId = widget.employee?.regionId;
+
+    nameController = TextEditingController(
+      text: widget.employee?.empName ?? '',
+    );
+    mobileController = TextEditingController(
+      text: widget.employee?.empMobile ?? '',
+    );
+    emailController = TextEditingController(
+      text: widget.employee?.empEmail ?? '',
+    );
+    addressController = TextEditingController(
+      text: widget.employee?.empAddress ?? '',
+    );
+    // regionController =
+    //     TextEditingController(text: widget.employee?.regionId?.toString() ?? '');
+
+    selectedRegionId = widget.employee?.regionId;
+
+    // Future.microtask(() {
+    //   ref
+    //       .read(regionViewModelProvider.notifier)
+    //       .getRegionList(
+    //         ref.read(adminloginViewModelProvider).companyId ?? '',
+    //       ); // companyId
+    // });
+
+
+    Future.microtask(() {
+    final companyId =
+        ref.read(adminloginViewModelProvider).companyId;
+
+    if (companyId != null && companyId.isNotEmpty) {
+      ref
+          .read(regionViewModelProvider.notifier)
+          .getRegionList(companyId);
+    } else {
+      debugPrint("❌ companyId is null – region API not called");
+    }
+  });
 
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
 
-    _fadeAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -81,7 +106,6 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     mobileController.dispose();
     emailController.dispose();
     addressController.dispose();
-    regionController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -98,7 +122,11 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
             empMobile: mobile,
             empEmail: email,
             empAddress: address,
-            regionId: region ?? widget.employee!.regionId,
+            companyId: ref.read(adminloginViewModelProvider).companyId,
+            adminId: ref.read(adminloginViewModelProvider).userId,
+            // regionId: region ?? widget.employee!.regionId,
+            regionId: selectedRegionId!,
+
             roleId: widget.employee!.roleId,
           )
         : EmployeeLogin(
@@ -106,7 +134,9 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
             empMobile: mobile,
             empEmail: email,
             empAddress: address,
-            regionId: region ?? 1,
+            regionId: selectedRegionId!,
+            companyId: ref.read(adminloginViewModelProvider).companyId,
+            adminId: ref.read(adminloginViewModelProvider).userId,
             roleId: 2,
           );
 
@@ -114,18 +144,24 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
         .read(employeeloginViewModelProvider.notifier)
         .addEmployee(employeeToSave);
 
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
+
     final state = ref.read(employeeloginViewModelProvider);
 
     if (state.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
+        SnackBar(content: Text(state.error!), backgroundColor: Colors.blue),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.isEdit
-              ? "Employee updated successfully"
-              : "Employee added successfully"),
+          content: Text(
+            widget.isEdit
+                ? "Employee updated successfully"
+                : "Employee added successfully",
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -142,7 +178,10 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
         title: Text(
           widget.isEdit ? "Edit Employee" : "Add New Employee",
           style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 20, color: Colors.white),
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Colors.white,
+          ),
         ),
         backgroundColor: const Color(0xFFF57C00),
         centerTitle: false,
@@ -201,12 +240,66 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                       maxLines: 3,
                       onSaved: (v) => address = v!,
                     ),
-                    _field(
-                      label: "Region",
-                      controller: regionController,
-                      icon: Icons.location_on_outlined,
-                      onSaved: (v) => region = int.tryParse(v ?? ''),
+
+                    // _field(
+                    //   label: "Region",
+                    //   controller: regionController,
+                    //   icon: Icons.location_on_outlined,
+                    //   onSaved: (v) => region = int.tryParse(v ?? ''),
+                    // ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final regionState = ref.watch(
+                            regionViewModelProvider,
+                          );
+
+                          return regionState.regionList.when(
+                            loading: () => const Center(
+                              child: SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                            error: (e, _) =>
+                                const Text("Failed to load regions"),
+                            data: (regions) {
+                              return DropdownButtonFormField<int>(
+                                value: selectedRegionId,
+                                decoration: InputDecoration(
+                                  labelText: "Region",
+                                  prefixIcon: const Icon(
+                                    Icons.location_on_outlined,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                items: regions.map((r) {
+                                  return DropdownMenuItem<int>(
+                                    value: r.regionId,
+                                    child: Text(r.regionName ?? ''),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedRegionId = value;
+                                  });
+                                },
+                                validator: (value) => value == null
+                                    ? "Please select region"
+                                    : null,
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
+
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
@@ -216,14 +309,16 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF57C00),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: Text(
                           widget.isEdit ? "Update Employee" : "Add Employee",
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -261,9 +356,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           counterText: counterText, // ✅ hide counter
         ),
       ),

@@ -39,7 +39,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
     });
 
     Future.microtask(() {
-      ref.read(regionofflineViewModelProvider.notifier).fetchRegions();
+      ref.read(regionofflineViewModelProvider.notifier).fetchRegions(ref.read(adminloginViewModelProvider).companyId?? '');
       _controller.forward();
     });
   }
@@ -90,7 +90,7 @@ class _RegionListPageState extends ConsumerState<RegionListPage>
                 context,
                 MaterialPageRoute(builder: (_) => const AddRegionPage()),
               );
-              ref.read(regionofflineViewModelProvider.notifier).fetchRegions();
+              ref.read(regionofflineViewModelProvider.notifier).fetchRegions(ref.read(adminloginViewModelProvider).companyId?? '');
             },
           ),
         ),

@@ -13,6 +13,7 @@ Region _$RegionFromJson(Map<String, dynamic> json) => Region(
   district: json['district'] as String?,
   state: json['state'] as String?,
   createdBy: (json['created_by'] as num?)?.toInt(),
+  companyId: json['company_id'] as String?,
 );
 
 Map<String, dynamic> _$RegionToJson(Region instance) => <String, dynamic>{
@@ -22,4 +23,5 @@ Map<String, dynamic> _$RegionToJson(Region instance) => <String, dynamic>{
   'district': instance.district,
   'state': instance.state,
   'created_by': instance.createdBy,
+  'company_id': instance.companyId,
 };

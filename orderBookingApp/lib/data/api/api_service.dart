@@ -75,8 +75,8 @@ abstract class ApiService {
   @GET("users/shopList/{company_id}")
   Future<List<ShopDetails>> getShopList(@Path("company_id") String companyId);
 
-  @GET("users/regionList")
-  Future<List<Region>> fetchRegionList();
+  @GET("users/regionList/{company_id}")
+  Future<List<Region>> fetchRegionList(@Path("company_id") String companyId);
 
   @GET("users/current/{emp_id}")
   Future<List<CheckInStatusRequest>> fetchTodayAttendance(

@@ -11,6 +11,8 @@ class RegionImplOffline implements RegionRepooffline {
 
   bool _isSyncing = false;
   RegionImplOffline({required this.local, required this.apiService});
+  
+ 
 
   /// Save region offline for later sync
   @override
@@ -60,13 +62,14 @@ class RegionImplOffline implements RegionRepooffline {
 
 //FETCH LIST
 
-  Future<List<Region>> fetchRegions() async {
+  Future<List<Region>> fetchRegions(companyId) async {
     // 1️⃣ Sync offline first
     await syncOfflineRegions();
     List<Region> mergedList = [];
     // 2️⃣ Fetch server regions
     try {
-      final serverData = await apiService.fetchRegionList();
+      
+      final serverData = await apiService.fetchRegionList(companyId);
       List<Region> serverRegions;
       // ServerData type check
       if (serverData.isNotEmpty) {

@@ -10,8 +10,8 @@ class AddRegionUsecase {
     return regionRepository.addRegion(region);
   }
 
-  Future<List<Region>> getRegionList() {
-    return regionRepository.getRegionList();
+  Future<List<Region>> getRegionList(String companyId) {
+    return regionRepository.getRegionList(companyId);
   }
 
 }
