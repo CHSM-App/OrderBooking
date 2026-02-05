@@ -7,7 +7,7 @@ import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/product.dart';
-import 'package:order_booking_app/domain/models/product_details_response.dart';
+// import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
@@ -88,14 +88,8 @@ abstract class ApiService {
   Future<List<LoginInfo>> CheckPhone(@Query("mobile_no") String mobileNo);
 
   //Products
-  @GET("users/productList/{admin_id}")
-  Future<List<Product>> fetchProductList(@Path("admin_id") int adminId);
-
-  @GET("users/productDetails/{product_id}/{admin_id}")
-  Future<ProductDetailsResponse> fetchProductDetails(
-    @Path("product_id") int productId,
-    @Path("admin_id") int adminId,
-  );
+  @GET("users/productList/{company_id}")
+  Future<List<Product>> fetchProductList(@Path("company_id") String companyId);
 
   @GET("users/getOrders/{emp_id}")
   Future<List<Order>>getOrders(@Path("emp_id") int empId);

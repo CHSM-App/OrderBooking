@@ -1,66 +1,45 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/product_dao.dart';
 import 'package:order_booking_app/domain/models/product.dart';
-import 'package:order_booking_app/domain/models/product_details_response.dart';
-import 'package:order_booking_app/domain/models/product_response.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';
 import 'package:uuid/uuid.dart';
 
 class ProductImpl implements ProductRepository {
-  final ApiService apiService;
+  final ApiService api;
   final ProductDao local;
 
-  ProductImpl(this.apiService, this.local);
-Future<ProductResponse> addOrUpdateProduct(Product product) async {
-  // 1️⃣ Always save offline first
-  final offlineProduct = product.copyWith(
-    localId: product.localId ?? const Uuid().v4(),
-    isSynced: false,
-    updatedAt: DateTime.now(),
-  );
+  ProductImpl(this.api, this.local);
 
-  await local.insertProducts([offlineProduct], markSynced: false);
-
-  // 2️⃣ Check connectivity
-  final connectivityResult = await Connectivity().checkConnectivity();
-  final isOnline = connectivityResult != ConnectivityResult.none;
-
-  if (!isOnline) {
-    return ProductResponse(
-      success: true,
-      message: 'Saved offline, will sync later',
-    );
-  }
-
-  // 3️⃣ Try online
-  try {
-    final response = await apiService.addOrUpdateProduct(product);
-    if (response.success && response.productId != null && offlineProduct.localId != null) {
-      await local.updateProductId(offlineProduct.localId!, response.productId!);
-    }
-    return response;
-  } catch (e) {
-    // 4️⃣ If online fails, return offline success
-    print('Online sync failed: $e');
-    return ProductResponse(
-      success: true,
-      message: 'Saved offline, will sync later',
-    );
-  }
-}
-
-
-  /// Sync all offline products to server
   @override
-  Future<void> syncOfflineProducts() async {
+  Future<void> addOrUpdateProductOffline(Product product) async {
+    final offlineProduct = product.copyWith(
+      localId: product.localId ?? const Uuid().v4(),
+      isSynced: false,
+      updatedAt: DateTime.now(),
+    );
+
+    await local.insertProducts([offlineProduct], markSynced: false);
+  }
+
+  @override
+  Future<List<Product>> getAllProducts(String companyId) async {
+    await syncLocalToRemote();
+    await syncRemoteToLocal(companyId);
+    await syncDeletedSubProducts();
+    return local.getAllProducts();
+  }
+
+  @override
+  Future<void> syncLocalToRemote() async {
     final unsyncedProducts = await local.getUnsyncedProducts();
 
     for (final product in unsyncedProducts) {
       try {
-        if (product.subtypes == null || product.subtypes!.isEmpty) continue;
+        if (product.subtypes == null || product.subtypes!.isEmpty) {
+          continue;
+        }
 
-        final response = await apiService.addOrUpdateProduct(product);
+        final response = await api.addOrUpdateProduct(product);
 
         if (response.success &&
             response.productId != null &&
@@ -68,69 +47,65 @@ Future<ProductResponse> addOrUpdateProduct(Product product) async {
           await local.updateProductId(product.localId!, response.productId!);
         }
       } catch (e) {
-        print('Sync failed for ${product.productName}: $e');
+        print('Local → Remote sync failed: ${product.productName}');
       }
     }
   }
 
-  /// Get all products (remote first, fallback local)
   @override
-  Future<List<Product>> getAllProducts(int adminId) async {
+  Future<void> syncRemoteToLocal(String companyId) async {
     try {
-      final remoteProducts = await apiService.fetchProductList(adminId);
-      if (remoteProducts.isNotEmpty) {
-        await local.insertProducts(remoteProducts, markSynced: true);
-      }
-    } catch (_) {
-      // fallback local
-    }
-    return local.getAllProducts();
-  }
+      final remoteProducts = await api.fetchProductList(companyId);
 
-  /// Fetch product details
-  @override
-  Future<ProductDetailsResponse> fetchProductDetails(
-      int productId, int adminId) async {
-    final localProduct = await local.getProductById(productId);
-    if (localProduct != null) {
-      return ProductDetailsResponse(
-        product: localProduct,
-        subitems: localProduct.subtypes ?? [],
-      );
-    }
+      if (remoteProducts.isEmpty) return;
 
-    final details = await apiService.fetchProductDetails(productId, adminId);
-    await local.insertProducts([details.product], markSynced: true);
-    return details;
-  }
-
-  /// Delete product subtype
-  @override
-  Future<ProductResponse> deleteProductSubType(int subItemId) async {
-    final products = await local.getAllProducts();
-    String? subLocalId;
-
-    for (final product in products) {
-      for (final sub in product.subtypes ?? []) {
-        if (sub.subItemId == subItemId) {
-          subLocalId = sub.localId;
-          break;
-        }
-      }
-      if (subLocalId != null) break;
-    }
-
-    if (subLocalId != null) {
-      await local.deleteProductSubType(subLocalId);
-    }
-
-    try {
-      return await apiService.deleteProductSubType(subItemId);
+      await local.insertProducts(remoteProducts, markSynced: true);
     } catch (e) {
-      return ProductResponse(
-        success: false,
-        message: 'Deleted locally, failed to delete remotely.',
-      );
+      print('Remote → Local sync failed');
     }
+  }
+
+  /// User-triggered delete
+  Future<void> deleteSubProduct(String localSubId) async {
+    // 1️⃣ Local first (instant UI update)
+    await local.markSubProductDeleted(localSubId);
+
+    await syncDeletedSubProducts();
+
+    // await local.debugPrintOfflineSubProduct();
+  }
+
+  Future<void> syncDeletedSubProducts() async {
+    final pendingDeletes = await local.getPendingSubProductDeletes();
+
+    for (final row in pendingDeletes) {
+      final localId = row['local_id'] as String?;
+      final serverSubItemId = row['sub_item_id'] as int?;
+
+      if (localId == null) continue;
+
+      // Case 1: never synced to server
+      if (serverSubItemId == null) {
+        await local.hardDeleteSubProduct(localId);
+        continue;
+      }
+
+      try {
+        final result = await api.deleteProductSubType(serverSubItemId);
+        if (!result.success) {
+          throw Exception("Deleting from server Failed");
+        }
+        await local.hardDeleteSubProduct(localId);
+      } catch (e) {
+        await local.incrementSubProductDeleteRetry(localId);
+      }
+    }
+  }
+
+  Future<void> sync(String companyId) async {
+    await syncLocalToRemote();
+    await syncRemoteToLocal(companyId);
+    await syncDeletedSubProducts();
+    getAllProducts(companyId);
   }
 }

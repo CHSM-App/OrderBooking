@@ -148,6 +148,8 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
   }
 
   Future<void> clearLogin() async {
+
+    await usecase.logOut();
   state = const AdminloginState(
     isLoading: false,
     error: null,

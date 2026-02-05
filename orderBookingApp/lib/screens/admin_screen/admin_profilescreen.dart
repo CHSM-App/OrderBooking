@@ -317,6 +317,41 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
     );
   }
 void _showLogoutDialog(BuildContext context) {
+  final isConnected = ref.read(networkStateProvider).isConnected;
+  if (!isConnected) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text(
+          'You are offline, logout may cause data loss, still want to logout?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(tokenProvider.notifier).clearTokens();
+              ref.read(adminloginViewModelProvider.notifier).clearLogin();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text(
+              'Yes',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
   showDialog(
     context: context,
     builder: (context) => AlertDialog(

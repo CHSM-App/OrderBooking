@@ -74,7 +74,6 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   Widget build(BuildContext context) {
       ref.listen(adminloginViewModelProvider, (prev, next) {
     final companyId = next.companyId;
-    final adminId = next.userId;
 
     if (companyId != null && companyId.isNotEmpty) {
       ref
@@ -84,13 +83,13 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
       ref
           .read(ordersViewModelProvider.notifier)
           .getOrderList(companyId);
+
+
+           ref
+          .read(productViewModelProvider.notifier)
+          .fetchProductList(companyId);
     }
 
-    if (adminId != 0) {
-      ref
-          .read(productViewModelProvider.notifier)
-          .fetchProductList(adminId);
-    }
   });
 
 
@@ -397,7 +396,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const RegionListPage()),
+                    MaterialPageRoute(builder: (_) => const RegionDetailsPage()),
                   );
                 },
               ),

@@ -1,401 +1,294 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/domain/models/region.dart';
-import 'admin_addRegion.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_addRegion.dart';
 
-class RegionListPage extends ConsumerStatefulWidget {
-  const RegionListPage({Key? key}) : super(key: key);
+class RegionDetailsPage extends ConsumerStatefulWidget {
+  const RegionDetailsPage({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<RegionListPage> createState() => _RegionListPageState();
+  ConsumerState<RegionDetailsPage> createState() => _RegionDetailsPageState();
 }
 
-class _RegionListPageState extends ConsumerState<RegionListPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  String _searchQuery = "";
-  bool _showFab = true;
-
+class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    // Listen to scroll for FAB animation
-    _scrollController.addListener(() {
-      if (_scrollController.offset > 100 && _showFab) {
-        setState(() => _showFab = false);
-      } else if (_scrollController.offset <= 100 && !_showFab) {
-        setState(() => _showFab = true);
+    // Fetch regions on page load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final companyId = ref.read(adminloginViewModelProvider).companyId;
+      if (companyId != null && companyId.isNotEmpty) {
+        ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
       }
     });
-
-    Future.microtask(() {
-      ref.read(regionofflineViewModelProvider.notifier).fetchRegions(ref.read(adminloginViewModelProvider).companyId?? '');
-      _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(regionofflineViewModelProvider);
-
+    // final regionState = ref.watch(regionViewModelProvider);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         elevation: 0,
-        toolbarHeight: 70,
-        backgroundColor: const Color(0xFFFF6F00),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: false,
-        titleSpacing: 0,
+        backgroundColor: Colors.white,
         title: const Text(
-          "Regions",
+          'Regions',
           style: TextStyle(
+            color: Color(0xFF2D3748),
+            fontSize: 20,
             fontWeight: FontWeight.w600,
-            fontSize: 24,
-            color: Colors.white,
           ),
         ),
+        iconTheme: const IconThemeData(color: Color(0xFF2D3748)),
+       
       ),
-      floatingActionButton: AnimatedScale(
-        scale: _showFab ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: ScaleTransition(
-          scale: CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-          child: FloatingActionButton(
-            backgroundColor: const Color(0xFFFF6F00),
-            foregroundColor: Colors.white,
-            elevation: 8,
-            child: const Icon(Icons.add_rounded, size: 22),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AddRegionPage()),
-              );
-              ref.read(regionofflineViewModelProvider.notifier).fetchRegions(ref.read(adminloginViewModelProvider).companyId?? '');
-            },
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          /// 🔍 ANIMATED SEARCH BAR
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - value)),
-                child: Opacity(
-                  opacity: value,
-                  child: child,
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() => _searchQuery = value.toLowerCase());
-                },
-                decoration: InputDecoration(
-                  hintText: "Search region, district, state or pincode",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
+      body: _buildBody(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Navigate to Add Region Page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddRegionPage(),
             ),
-          ),
-
-          /// 📦 REGION LIST
-          Expanded(child: _buildBody(state)),
-        ],
-      ),
-    );
-  }Widget _buildBody(AsyncValue<List<Region>> state) {
-  return state.when(
-    loading: () => const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6F00)),
-      ),
-    ),
-    error: (e, st) => Center(child: Text(e.toString())),
-    data: (regions) {
-      final filteredRegions = regions.where((region) {
-        return (region.regionName ?? "").toLowerCase().contains(_searchQuery) ||
-               (region.district ?? "").toLowerCase().contains(_searchQuery) ||
-               (region.state ?? "").toLowerCase().contains(_searchQuery) ||
-               (region.pincode ?? "").toString().contains(_searchQuery);
-      }).toList();
-
-      if (filteredRegions.isEmpty) {
-        return const Center(
-          child: Text(
-            "No matching regions found",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        );
-      }
-
-      return ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-        itemCount: filteredRegions.length,
-        itemBuilder: (context, index) {
-          final region = filteredRegions[index];
-          return _AnimatedRegionCard(
-            region: region,
-            index: index,
-            controller: _controller,
           );
         },
+        backgroundColor: const Color(0xFF4A5568),
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: const Text(
+          'Add Region',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    final regionState = ref.watch(regionofflineViewModelProvider);
+    final regionList = regionState.regionList;
+    
+    // Show loading indicator
+    if (regionState.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF4A5568),
+        ),
       );
-    },
-  );
-}
     }
-class _AnimatedRegionCard extends StatefulWidget {
-  final Region region;
-  final int index;
-  final AnimationController controller;
 
-  const _AnimatedRegionCard({
-    required this.region,
-    required this.index,
-    required this.controller,
-  });
+    // Show error state
+    if (regionState.error != null) {
+      return _buildErrorState(regionState.error!);
+    }
 
-  @override
-  State<_AnimatedRegionCard> createState() => _AnimatedRegionCardState();
-}
-
-class _AnimatedRegionCardState extends State<_AnimatedRegionCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _hoverController;
-  bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _hoverController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  @override
-  void dispose() {
-    _hoverController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: widget.controller,
-        curve: Interval(
-          widget.index * 0.05,
-          1,
-          curve: Curves.easeOut,
+    // Handle AsyncValue states
+    return regionList?.when(
+      data: (regions) => regions.isEmpty
+          ? _buildEmptyState()
+          : _buildRegionList(regions),
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF4A5568),
         ),
       ),
-    );
+      error: (error, stack) => _buildErrorState(error.toString()),
+    ) ?? _buildEmptyState();
+  }
 
-    final scaleAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _hoverController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 400 + (widget.index * 50)),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, 30 * (1 - value)),
-          child: Opacity(
-            opacity: value,
-            child: child,
-          ),
-        );
+  Widget _buildRegionList(List<Region> regions) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        final companyId = ref.read(adminloginViewModelProvider).companyId;
+        if (companyId != null && companyId.isNotEmpty) {
+          await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
+        }
       },
-      child: FadeTransition(
-        opacity: widget.controller,
-        child: SlideTransition(
-          position: slideAnimation,
-          child: ScaleTransition(
-            scale: scaleAnimation,
-            child: GestureDetector(
-              onTapDown: (_) {
-                _hoverController.forward();
-                setState(() => _isHovered = true);
-              },
-              onTapUp: (_) {
-                _hoverController.reverse();
-                setState(() => _isHovered = false);
-              },
-              onTapCancel: () {
-                _hoverController.reverse();
-                setState(() => _isHovered = false);
-              },
-              child: _RegionCard(
-                region: widget.region,
-                isHovered: _isHovered,
-              ),
-            ),
-          ),
-        ),
+      color: const Color(0xFF4A5568),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: regions.length,
+        itemBuilder: (context, index) {
+          return _buildRegionCard(regions[index]);
+        },
       ),
     );
   }
-}
 
-class _RegionCard extends StatelessWidget {
-  final Region region;
-  final bool isHovered;
-
-  const _RegionCard({
-    required this.region,
-    this.isHovered = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.only(bottom: 10), // Reduced from 16 to 10
+  Widget _buildRegionCard(Region region) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHovered
-              ? const Color(0xFFFF6F00).withOpacity(0.5)
-              : const Color(0xFFFF6F00).withOpacity(0.2),
-          width: isHovered ? 2 : 1,
+          color: Colors.grey[300]!,
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF6F00).withOpacity(isHovered ? 0.25 : 0.15),
-            blurRadius: isHovered ? 16 : 12,
-            offset: Offset(0, isHovered ? 6 : 4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Region Name and Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  region.regionName ?? 'Unknown Region',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF5B6CF5), // Rich blue color like in image
+                  ),
+                ),
+              ),
+              if (region.syncStatus != null)
+                _buildSyncStatusBadge(region.syncStatus!),
+            ],
+          ),
+          const SizedBox(height: 6),
+          
+          // Pincode and Location in one line
+          Text(
+            '${region.pincode ?? 'N/A'} • ${region.district ?? 'N/A'}, ${region.state ?? 'N/A'}',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 60,
-              width: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isHovered
-                      ? [const Color(0xFFFF8F00), const Color(0xFFFF6F00)]
-                      : [const Color(0xFFFF6F00), const Color(0xFFFF8F00)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: isHovered
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFF6F00).withOpacity(0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: const Icon(
-                Icons.location_on_rounded,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    region.regionName ?? "",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "${region.district}, ${region.state}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF616161),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "PIN: ${region.pincode}",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFFFF6F00),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isHovered)
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 200),
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      color: Color(0xFFFF6F00),
-                      size: 20,
-                    ),
-                  );
-                },
-              ),
-          ],
+    );
+  }
+
+  Widget _buildSyncStatusBadge(String status) {
+    final isSync = status.toLowerCase() == 'synced';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSync
+              ? const Color(0xFF5B6CF5) // Blue like "Shipped"
+              : const Color(0xFFFF8A65), // Orange like "Accepted"
+          width: 1.5,
         ),
+      ),
+      child: Text(
+        isSync ? 'Synced' : 'Pending',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: isSync
+              ? const Color(0xFF5B6CF5)
+              : const Color(0xFFFF8A65),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.location_off_rounded,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Regions Found',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add your first region to get started',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 64,
+            color: Colors.red[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Something went wrong',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              final companyId = ref.read(adminloginViewModelProvider).companyId;
+              if (companyId != null && companyId.isNotEmpty) {
+                ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
+              }
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A5568),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

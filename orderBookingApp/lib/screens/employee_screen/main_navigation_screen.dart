@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
@@ -26,6 +27,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   late int _currentIndex;
+  bool _hasRequestedCheckinStatus = false;
 
   final List<Widget> _pages = const [
     HomePage(),

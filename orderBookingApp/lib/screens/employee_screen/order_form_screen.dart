@@ -37,7 +37,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     _visit = widget.visit;
     // Fetch products
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(1);
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
     });
   }
 
@@ -886,7 +886,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(productViewModelProvider.notifier).fetchProductList(1);
+                ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),

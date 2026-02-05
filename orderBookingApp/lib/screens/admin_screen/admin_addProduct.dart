@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/presentation/viewModels/product_viewmodel.dart';
+import 'package:uuid/uuid.dart';
 
 class AddProductPage extends ConsumerStatefulWidget {
-  final int? productId; // null = add, not null = edit
   final int adminId;
+  final Product? initialProduct;
 
-  const AddProductPage({super.key, this.productId, required this.adminId});
+  const AddProductPage({
+    super.key,
+    required this.adminId,
+    this.initialProduct,
+  });
 
   @override
   ConsumerState<AddProductPage> createState() => _AddProductPageState();
@@ -43,11 +47,15 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
   final List<String> units = ["Kilogram", "Liter", "Piece", "Packet"];
 
-  List<Map<String, dynamic>> addedItems = [];
+  List<ProductSubType> addedItems = [];
   bool _hasInitializedData = false; // To avoid overwriting user input
   @override
   void initState() {
     super.initState();
+    debugPrint(
+      'AddProductPage opened. '
+      'productId: ${widget.initialProduct?.productId}',
+    );
 
     productNameController = TextEditingController();
 
@@ -70,25 +78,9 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
     _animationController.forward();
 
-    // Delayed fetch to avoid modifying provider during build
-    if (widget.productId != null) {
-      Future.microtask(() {
-        ref
-            .read(productViewModelProvider.notifier)
-            .fetchProductDetails(widget.productId!, widget.adminId);
-      });
-    }
-  }
-
-  @override 
-  void didUpdateWidget(covariant AddProductPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.productId != oldWidget.productId && widget.productId != null) {
-      // Fetch new product when productId changes
-      ref
-          .read(productViewModelProvider.notifier)
-          .fetchProductDetails(widget.productId!, widget.adminId);
+    // If product is already available from list, initialize directly
+    if (widget.initialProduct != null) {
+      _initFromProduct(widget.initialProduct!);
     }
   }
 
@@ -113,16 +105,16 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     }
 
     setState(() {
-      addedItems.add({
-        "subItemId": null,
-        "productName": productName,
-        "productType": productType ?? '',
-        "createdBy": ref.read(adminloginViewModelProvider).userId??0,
-        "measuringUnit": measuringUnit ?? '',
-        "availableUnit": unitController.text,
-        "price": priceController.text,
-        "companyId": "C0001",
-      });
+      final subtype = ProductSubType(
+        localId: Uuid().v4(),
+        subItemId: null,
+        measuringUnit:  measuringUnit ?? '',
+        availableUnit: double.tryParse(unitController.text) ?? 0,
+        price: double.tryParse(priceController.text),
+        
+      );
+    
+      addedItems.add(subtype);
       unitController.clear();
       priceController.clear();
     });
@@ -143,24 +135,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
     _formKey.currentState!.save();
 
-    List<ProductSubType> subItems = addedItems
-        .map(
-          (item) => ProductSubType(
-            subItemId: item['subItemId'],
-            measuringUnit: item['measuringUnit']!,
-            availableUnit: double.tryParse(item['availableUnit']!) ?? 0,
-            price: double.tryParse(item['price']!) ?? 0,
-          ),
-        )
-        .toList();
-
     final product = Product(
-      productId: widget.productId,
+      productId: widget.initialProduct?.productId,
       productName: productName,
       productType: productType!,
-      createdBy: ref.read(adminloginViewModelProvider).userId??0,
-      subtypes: subItems,
-      companyId: "C0001",
+      createdBy: ref.read(adminloginViewModelProvider).userId,
+      subtypes: addedItems,
+      companyId: ref.read(adminloginViewModelProvider).companyId ?? '',
     );
 
     try {
@@ -168,10 +149,12 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
           .read(productViewModelProvider.notifier)
           .addOrUpdateProduct(product);
 
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            widget.productId != null
+          content: Text( 
+            widget.initialProduct != null
                 ? "Product updated successfully!"
                 : "Product added successfully!",
           ),
@@ -192,47 +175,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
   @override
   Widget build(BuildContext context) {
-    final productState = ref.watch(productViewModelProvider);
-
-    // Safe listener to update UI
-    ref.listen<ProductState>(productViewModelProvider, (previous, next) {
-      final details = next.productDetails.value;
-      if (details != null && !_hasInitializedData) {
-        _hasInitializedData = true;
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-
-          setState(() {
-            productName = details.product.productName ?? '';
-            productNameController.text = productName;
-            productType = details.product.productType;
-            addedItems = details.subitems
-                .map(
-                  (s) => {
-                    "subItemId": s.subItemId,
-                    "productName": details.product.productName ?? '',
-                    "productType": details.product.productType ?? '',
-                    "createdBy": details.product.createdBy.toString(),
-                    "companyId": details.product.companyId ?? '',
-                    "measuringUnit": s.measuringUnit,
-                    "availableUnit": s.availableUnit.toString(),
-                    "price": s.price.toString(),
-                  },
-                )
-                .toList();
-          });
-        });
-      }
-    });
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
         foregroundColor: Colors.white,
         title: Text(
-          widget.productId != null ? "Edit Product" : "Add New Product",
+          widget.initialProduct != null ? "Edit Product" : "Add New Product",
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
@@ -300,7 +249,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
             ),
             const SizedBox(height: 8),
             Text(
-              widget.productId != null
+              widget.initialProduct != null
                   ? "Edit Product Information"
                   : "Product Information",
               style: const TextStyle(
@@ -526,18 +475,19 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ListTile(
-                  title: Text(
-                    "${item['productName']} (${item['productType']})",
-                  ),
+                  // title: Text(
+                  //   // "${} (${item['productType']})",
+                  // ),
                   subtitle: Text(
-                    "Unit: ${item['availableUnit']} ${item['measuringUnit']} • Price: ₹${item['price']}",
+                    "Unit: ${item.availableUnit} ${item.measuringUnit} • Price: ₹${item.price}",
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () async {
-                      final subItemId = item['subItemId'];
+                      // final subItemlocalId = item['local_id'];
+                      final subItemlocalId = item.localId;
 
-                      if (subItemId != null) {
+                      if (subItemlocalId !=null) {
                         // Confirm deletion
                         final confirm = await showDialog<bool>(
                           context: context,
@@ -563,7 +513,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
                         // Call API to delete
                         try {
-                          await productVM.deleteProductSubType(subItemId);
+                          await productVM.deleteProductSubType(subItemlocalId);
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -638,6 +588,36 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     );
   }
 
+  void _initFromProduct(Product product) {
+    if (_hasInitializedData) return;
+    _hasInitializedData = true;
+
+    setState(() {
+      productName = product.productName ?? '';
+      productNameController.text = productName;
+      productType = product.productType;
+      addedItems = _normalizeSubtypes(product.subtypes);
+    });
+  }
+
+  List<ProductSubType> _normalizeSubtypes(List? raw) {
+    if (raw == null) return [];
+
+    return raw
+        .map((item) {
+          if (item is ProductSubType) return item;
+          if (item is Map<String, dynamic>) {
+            return ProductSubType.fromJson(item);
+          }
+          if (item is Map<String, Object?>) {
+            return ProductSubType.fromJson(Map<String, dynamic>.from(item));
+          }
+          return null;
+        })
+        .whereType<ProductSubType>()
+        .toList();
+  }
+ 
   Widget _buildAnimatedField({required int delay, required Widget child}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),

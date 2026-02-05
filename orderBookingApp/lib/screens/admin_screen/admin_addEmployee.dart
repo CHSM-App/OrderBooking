@@ -73,8 +73,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
 
     if (companyId != null && companyId.isNotEmpty) {
       ref
-          .read(regionViewModelProvider.notifier)
-          .getRegionList(companyId);
+          .read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
     } else {
       debugPrint("❌ companyId is null – region API not called");
     }
@@ -252,7 +251,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                       child: Consumer(
                         builder: (context, ref, _) {
                           final regionState = ref.watch(
-                            regionViewModelProvider,
+                            regionofflineViewModelProvider,
                           );
 
                           return regionState.regionList.when(

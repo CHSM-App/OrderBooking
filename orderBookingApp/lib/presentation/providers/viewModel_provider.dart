@@ -6,21 +6,16 @@ import 'package:order_booking_app/presentation/viewModels/checkin_viewmodel.dart
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/employee_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/network_model.dart';
-import 'package:order_booking_app/presentation/viewModels/addRegion_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/product_viewmodel.dart';
-import 'package:order_booking_app/presentation/viewModels/region.dart';
+import 'package:order_booking_app/presentation/viewModels/region_viewmodel.dart';
 
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
-import 'package:order_booking_app/presentation/viewModels/employee_visit_viewmodel.dart';
-
-
 
 final networkStateProvider =
     StateNotifierProvider<EnhancedNetworkStateNotifier, NetworkState>(
         (ref) => EnhancedNetworkStateNotifier());
-
 
 
 final employeeloginViewModelProvider =
@@ -35,11 +30,6 @@ final adminloginViewModelProvider =
   return AdminloginViewModel(usecase);
 });
 
-final regionViewModelProvider =
-    StateNotifierProvider<RegionViewModel, RegionState>((ref) {
-  final usecase = ref.watch(regionUsecaseProvider);
-  return RegionViewModel(usecase);
-});
 
 final shopViewModelProvider =
     StateNotifierProvider<ShopViewModel, ShopState>((ref) {
@@ -60,19 +50,14 @@ final productViewModelProvider =
 });
 
 final visitViewModelProvider =
-    StateNotifierProvider<VisitViewModel, AsyncValue<void>>((ref) {
+    StateNotifierProvider<VisitViewModel, EmployeeVisitState>((ref) {
   final usecase = ref.watch(visitUseCaseProvider);
   return VisitViewModel(usecase);
 });
 
-final employeeVisitViewModelProvider =
-    StateNotifierProvider<EmployeeVisitViewModel, EmployeeVisitState>((ref) {
-  final usecase = ref.watch(visitUseCaseProvider);
-  return EmployeeVisitViewModel(usecase);
-});
 
 final regionofflineViewModelProvider =
-    StateNotifierProvider<RegionofflineViewModel, AsyncValue<List<Region>>>((ref) {
+    StateNotifierProvider<RegionofflineViewModel, RegionState>((ref) {
   final usecase = ref.watch(regionUseCaseofflineProvider);
   return RegionofflineViewModel(usecase);
 });
@@ -83,13 +68,6 @@ final ordersViewModelProvider =
   final usecase = ref.watch(ordersUsecaseProvider);
   return ordersStateNotifier(usecase);
 });
-
-// final orderViewModelProvider =
-//     StateNotifierProvider.family<ordersStateNotifier, ordersState, int>(
-//   (ref, empId) =>
-//       ordersStateNotifier(ref.read(ordersUsecaseProvider))
-//         ..getEmployeeOrders(empId),
-// );
 
 final EmployeeOrderViewModelProvider =
     StateNotifierProvider.family<

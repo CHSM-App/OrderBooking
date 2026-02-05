@@ -74,7 +74,7 @@
       
 
       if (adminId != 0) {
-        ref.read(productViewModelProvider.notifier).fetchProductList(adminId);
+        ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
       }
     
   }

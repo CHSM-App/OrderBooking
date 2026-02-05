@@ -1,6 +1,7 @@
  
 import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 
@@ -9,8 +10,9 @@ import 'package:order_booking_app/domain/repository/login_repo.dart';
 
 class AdminloginImpl implements AdminloginRepository {
   final ApiService apiService;
+  final LogoutDao logout;
 
-  AdminloginImpl(this.apiService);
+  AdminloginImpl(this.apiService, this.logout);
 
   @override
   Future<dynamic> addAdminDetails(AdminLogin adminLogin) {
@@ -38,5 +40,10 @@ class AdminloginImpl implements AdminloginRepository {
         await TokenStorage.saveValue('company_id', response[0].companyId.toString());
     }
     return response;
+  }
+
+
+  Future<void> logoutUser() async {
+    await logout.logout();
   }
 }

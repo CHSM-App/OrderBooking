@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 5, // incremented version
+      version: 2, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -26,14 +26,21 @@ class AppDatabase {
         await _createOfflineOrdersItemsTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) await _createShopsTable(db);
-        if (oldVersion < 3) await _createRegionTable(db);
-        if (oldVersion < 4) {
-          await _createProductsTable(db);
-          await _createProductSubtypesTable(db);
+        /// VERSION 2 Changes
+        if (oldVersion < 2) {
+          // Example: Adding new column
+          // await db.execute(
+          //   "ALTER TABLE shops ADD COLUMN gst_number TEXT"
+          // );
+
+          //  Example: Creating new table
+          // await db.execute('''
+          //   CREATE TABLE IF NOT EXISTS new_table (
+          //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+          //     name TEXT
+          //   )
+          // ''');
         }
-        // Add this to ensure offline_visits exists on upgrade
-        if (oldVersion < 5) await _createOfflineVisitsTable(db);
       },
     );
   }
@@ -73,21 +80,25 @@ class AppDatabase {
     ''');
   }
 
-  static Future<void> _createRegionTable(Database db) async {
-    await db.execute('''
-          CREATE TABLE offline_regions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            local_id TEXT UNIQUE,
-            payload TEXT NOT NULL,
-            status TEXT NOT NULL,
-            retry_count INTEGER DEFAULT 0,
-            captured_at TEXT NOT NULL
-          )
-        ''');
-  }
+
+static Future<void> _createRegionTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS offline_regions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      local_id TEXT UNIQUE,
+      server_id INTEGER,
+      payload TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      retry_count INTEGER DEFAULT 0,
+      is_deleted INTEGER DEFAULT 0,
+      captured_at TEXT NOT NULL,
+      updated_at TEXT
+    )
+  ''');
+}
 
   static Future<void> _createProductsTable(Database db) async {
-  await db.execute('''
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       local_id TEXT UNIQUE,
@@ -104,8 +115,7 @@ class AppDatabase {
       updated_at TEXT
     )
   ''');
-}
-
+  }
 
   static Future<void> _createProductSubtypesTable(Database db) async {
     await db.execute('''
@@ -120,7 +130,9 @@ class AppDatabase {
         price REAL,
         total REAL,
         is_synced INTEGER DEFAULT 0,
-        updated_at TEXT
+        updated_at TEXT,
+        is_deleted INTEGER DEFAULT 0,
+        delete_retry INTEGER DEFAULT 0
       )
     ''');
   }
@@ -140,7 +152,8 @@ class AppDatabase {
         status TEXT,                
         retry_count INTEGER DEFAULT 0,
         created_at TEXT
-      );
+
+      
 
     )
   ''');
@@ -158,10 +171,27 @@ class AppDatabase {
         price REAL,
         quantity INTEGER,
         total_price REAL
-      );
-
-
+      
     )
   ''');
   }
+
+  static Future<void> clearAllTables() async {
+  final db = await database;
+
+  await db.transaction((txn) async {
+
+    // 👇 Add every table here
+    await txn.delete('products');
+    await txn.delete('product_subtypes');
+    await txn.delete('offline_orders');
+    await txn.delete('offline_order_items');
+    await txn.delete('offline_visits');
+    await txn.delete('shops');
+    await txn.delete('offline_regions');
+
+  });
+}
+
+
 }

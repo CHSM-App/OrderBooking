@@ -527,7 +527,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<Product>> fetchProductList(int adminId) async {
+  Future<List<Product>> fetchProductList(String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -536,7 +536,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/productList/${adminId}',
+            'users/productList/${companyId}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -548,36 +548,6 @@ class _ApiService implements ApiService {
       _value = _result.data!
           .map((dynamic i) => Product.fromJson(i as Map<String, dynamic>))
           .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
-  }
-
-  @override
-  Future<ProductDetailsResponse> fetchProductDetails(
-    int productId,
-    int adminId,
-  ) async {
-    final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
-    final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<ProductDetailsResponse>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            'users/productDetails/${productId}/${adminId}',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
-    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late ProductDetailsResponse _value;
-    try {
-      _value = ProductDetailsResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/presentation/viewModels/employee_visit_viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
 
 class EmployeeVisitsMapPage extends ConsumerStatefulWidget {
   final int empId;
@@ -35,14 +35,14 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     super.initState();
     Future.microtask(() {
       ref
-          .read(employeeVisitViewModelProvider.notifier)
+          .read(visitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(employeeVisitViewModelProvider);
+    final state = ref.watch(visitViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -293,7 +293,7 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
   Marker _buildMarker(EmployeeVisit visit, int sequence) {
     final isStart = sequence == 1;
     final isEnd = sequence > 1 && sequence == (ref
-            .read(employeeVisitViewModelProvider)
+            .read(visitViewModelProvider)
             .visits
             ?.value
             ?.length ??
@@ -472,7 +472,7 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
             ElevatedButton.icon(
               onPressed: () {
                 ref
-                    .read(employeeVisitViewModelProvider.notifier)
+                    .read(visitViewModelProvider.notifier)
                     .fetchEmployeeVisits(widget.empId);
               },
               icon: const Icon(Icons.refresh),
