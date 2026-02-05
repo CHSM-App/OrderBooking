@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
@@ -35,7 +36,7 @@ class EmployeeloginState {
 class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   final EmployeeloginUsecase usecase;
 
-  var companyId;
+  
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
 
   // EXISTING: Add Employee
@@ -45,7 +46,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       await usecase.addEmployee(employeeLogin);
       state = state.copyWith(isLoading: false);
       // Refresh employee list after adding
-      getEmployeeList(companyId);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -53,6 +53,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
   // EXISTING: Get Employee List
   Future<void> getEmployeeList(String companyId) async {
+    debugPrint("inside the employlist");
     state = state.copyWith(isLoading: true, error: null);
     try {
       final employees = await usecase.getEmployeeList(companyId);
@@ -104,7 +105,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(employeeDetails: null);
 
       // ✅ Refresh the list (this already sets isLoading: false internally)
-      await getEmployeeList(companyId);
+      
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

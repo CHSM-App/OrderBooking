@@ -5,9 +5,9 @@ import 'package:order_booking_app/domain/usecase/region.dart';
 class RegionState {
   final bool isLoading;
   final String? error;
-  final AsyncValue<List<Region>>? regionList;
+  final AsyncValue<List<Region>> regionList;
 
-  const RegionState({
+  RegionState({
     this.isLoading = false,
     this.error,
     this.regionList = const AsyncValue.loading(),
@@ -20,7 +20,7 @@ class RegionState {
   }) {
     return RegionState(
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error,
       regionList: regionList ?? this.regionList,
     );
   }
@@ -29,7 +29,7 @@ class RegionState {
 class RegionofflineViewModel extends StateNotifier<RegionState> {
   final RegionUsecaseoffline repo;
 
-  RegionofflineViewModel(this.repo) : super(const RegionState());
+  RegionofflineViewModel(this.repo) : super(RegionState());
 
   /// Fetch merged offline + server regions
   Future<void> fetchRegions(String companyID) async {

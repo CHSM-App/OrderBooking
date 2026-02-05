@@ -10,6 +10,8 @@ class RegionImplOffline implements RegionRepooffline {
 
   bool _isSyncing = false;
   RegionImplOffline({required this.local, required this.apiService});
+  
+ 
 
   /// Save region offline for later sync
 @override

@@ -129,6 +129,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       state = state.copyWith(
         isLoading: false,
         adminDetails: AsyncValue.data(admindetails),
+        
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

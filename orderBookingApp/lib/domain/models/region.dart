@@ -28,6 +28,8 @@ class Region {
   @JsonKey(name: 'created_by')
   final int? createdBy;
 
+
+
   @JsonKey(ignore: true)
   final String? syncStatus;
   Region({

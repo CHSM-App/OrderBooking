@@ -18,7 +18,6 @@ class EmployeeDetailsPage extends ConsumerStatefulWidget {
     required Map<String, dynamic> companyId,
   });
 
-
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
       _EmployeeDetailsPageState();
@@ -30,8 +29,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  String selectedFilter = "Day";
-  final List<String> filters = ["Day", "Month", "Year"];
+  String selectedFilter = "All";
+  DateTimeRange? _customRange;
+
+  final List<String> filters = ["All", "Today", "Month", "Year", "Custom"];
 
   @override
   void initState() {
@@ -131,14 +132,16 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     if (confirm != true) return;
 
     try {
-      debugPrint("Deleting employee id: ${widget.empId}");
-
       await ref
           .read(employeeloginViewModelProvider.notifier)
           .deleteEmployee(widget.empId);
 
       // ✅ AWAIT the refresh so the list updates BEFORE popping
-      await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
+      await ref
+          .read(employeeloginViewModelProvider.notifier)
+          .getEmployeeList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+          );
 
       if (!mounted) return;
 
@@ -172,6 +175,50 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
         "${date.month.toString().padLeft(2, '0')}-"
         "${date.year.toString().padLeft(2, '0')}";
   }
+ 
+
+  //filter orders
+ bool _passesOrderFilter(Order order) {
+  final date = _parseOrderDate(order.orderDate);
+  if (date == null) return false;
+
+  final now = DateTime.now();
+
+  switch (selectedFilter) {
+    case "All":
+      return true;
+
+    case "Today":
+      return !date.isBefore(_startOfDay(now)) &&
+             !date.isAfter(_endOfDay(now));
+
+    case "Month":
+      return date.year == now.year &&
+             date.month == now.month;
+
+    case "Year":
+      return date.year == now.year;
+
+    case "Custom":
+      if (_customRange == null) return true;
+      return !date.isBefore(_startOfDay(_customRange!.start)) &&
+             !date.isAfter(_endOfDay(_customRange!.end));
+
+    default:
+      return true;
+  }
+}
+
+
+
+
+DateTime _startOfDay(DateTime d) =>
+    DateTime(d.year, d.month, d.day);
+
+DateTime _endOfDay(DateTime d) =>
+    DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +242,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     }
 
     final EmployeeLogin employee = list.first;
-    final bool isActive = employee.activeStatus == 0;
+    final bool isActive = employee.activeStatus == 1;
     final avgDistanceText = _calculateAvgDistance(
       ref.watch(visitViewModelProvider).visits?.value,
     );
@@ -209,13 +256,77 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ref.watch(ordersViewModelProvider).orders?.value,
     );
 
-    final ordersAsync = ordersState.orders; // AsyncValue<List<Order>>
-    List<Order> employeeOrders = [];
+    // final ordersAsync = ordersState.orders; 
+    // List<Order> employeeOrders = [];
 
-    ordersAsync?.whenData((orders) {
-      employeeOrders = orders
-        ..sort((a, b) => b.orderDate.compareTo(a.orderDate)); // latest first
-    });
+    
+    // ordersAsync?.whenData((orders) {
+    //   employeeOrders =
+    //       orders
+    //           .where(_passesOrderFilter) // 🔥 FILTER APPLIED
+    //           .toList()
+    //         ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+    // });
+
+  final ordersAsync = ordersState.orders;
+
+Widget ordersWidget() {
+  if (ordersAsync == null) {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Text("No orders found for this employee"),
+    );
+  }
+
+  return ordersAsync.when(
+    loading: () => const Padding(
+      padding: EdgeInsets.all(16),
+      child: CircularProgressIndicator(),
+    ),
+    error: (e, _) => Padding(
+      padding: const EdgeInsets.all(16),
+      child: Text(e.toString()),
+    ),
+    data: (orders) {
+      // ✅ FILTER HERE — EVERY BUILD
+      final filteredOrders = orders
+    .where(_passesOrderFilter)
+    .toList()
+  ..sort(
+    (a, b) =>
+        _parseOrderDate(b.orderDate)!
+            .compareTo(_parseOrderDate(a.orderDate)!),
+  );
+
+      if (filteredOrders.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text("No orders found for this filter"),
+        );
+      }
+
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: filteredOrders.length,
+        itemBuilder: (_, index) {
+          final order = filteredOrders[index];
+          return _AnimatedOrderCard(
+            order: order,
+            orderNumber: filteredOrders.length - index,
+            amount: order.totalPrice.toInt(),
+            filter: selectedFilter,
+            delay: index * 100,
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -340,7 +451,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        employee.empAddress ?? "N/A",
+                                        employee.regionName?.toString() ?? '', 
                                         style: const TextStyle(
                                           color: Colors.white70,
                                         ),
@@ -388,13 +499,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                   ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
-                  // _infoRow(Icons.calendar_today, "Joining Date", employee.joiningDate ?? "N/A"),
+                  
                   _infoRow(
                     Icons.calendar_today,
                     "Joining Date",
                     formatJoiningDate(employee.joiningDate),
                   ),
-                
                 ]),
 
                 const SizedBox(height: 24),
@@ -577,8 +687,32 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) {
-                            setState(() => selectedFilter = value!);
+
+                          onChanged: (value) async {
+                            if (value == "Custom") {
+                              final now = DateTime.now();
+
+                              final range = await showDateRangePicker(
+                                context: context,
+                                firstDate: DateTime(now.year - 5),
+                                lastDate: DateTime(now.year + 1),
+                                initialDateRange:
+                                    _customRange ??
+                                    DateTimeRange(start: now, end: now),
+                              );
+
+                              if (range == null) return;
+
+                              setState(() {
+                                selectedFilter = value!;
+                                _customRange = range;
+                              });
+                            } else {
+                              setState(() {
+                                selectedFilter = value!;
+                                _customRange = null;
+                              });
+                            }
                           },
                         ),
                       ),
@@ -588,29 +722,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
                 const SizedBox(height: 12),
 
-                // recent orders list
-                ordersAsync == null || employeeOrders.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text("No orders found for this employee"),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: employeeOrders.length,
-                        itemBuilder: (_, index) {
-                          final order = employeeOrders[index];
-                          return _AnimatedOrderCard(
-                            order: order,
-                            orderNumber:
-                                employeeOrders.length - index, // latest = top
-                            amount: order.totalPrice.toInt(),
-                            filter: selectedFilter,
-                            delay: index * 100,
-                          );
-                        },
-                      ),
+                
+                ordersWidget(),
+
 
                 const SizedBox(height: 24),
               ],
@@ -1065,7 +1179,6 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                         color: Colors.white,
                         size: 24,
                       ),
-                     
                     ),
                     const SizedBox(width: 16),
                     Expanded(

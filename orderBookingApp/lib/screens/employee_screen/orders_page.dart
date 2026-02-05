@@ -16,31 +16,36 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch orders when page loads
     Future.microtask(() {
       ref.read(ordersViewModelProvider.notifier).getAllOrders();
-      
-              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+      ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(
+          ref.read(adminloginViewModelProvider).userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch the orders state
     final ordersState = ref.watch(ordersViewModelProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA), // Modern light background
       appBar: AppBar(
+        backgroundColor: Colors.white,
         elevation: 0,
+        title: const Text(
+          "Orders",
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.black54),
             onPressed: () {
-              // TODO: Add filter functionality
+              // TODO: Implement filter
             },
           ),
-          
         ],
       ),
       body: _buildBody(ordersState),
@@ -48,25 +53,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   Widget _buildBody(ordersState state) {
-    // Handle loading state
     if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
-    // Handle error state
     if (state.errorMessage != null) {
       return _buildErrorState(state.errorMessage!);
     }
 
-    // Handle orders data
     if (state.orders != null) {
       return state.orders!.when(
         data: (orders) {
-          if (orders.isEmpty) {
-            return _buildEmptyState();
-          }
+          if (orders.isEmpty) return _buildEmptyState();
           return _buildOrdersList(context, orders);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -74,7 +72,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       );
     }
 
-    // Default empty state
     return _buildEmptyState();
   }
 
@@ -92,9 +89,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           Text(
             'No Orders Yet',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: Colors.grey[700],
             ),
           ),
           const SizedBox(height: 8),
@@ -109,17 +106,19 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           ElevatedButton.icon(
             onPressed: () {
               ref.read(ordersViewModelProvider.notifier).getAllOrders();
-              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+              ref.read(ordersViewModelProvider.notifier)
+                  .syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.deepPurpleAccent,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              elevation: 3,
             ),
           ),
         ],
@@ -137,7 +136,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.red[300],
+              color: Colors.red[400],
             ),
             const SizedBox(height: 16),
             const Text(
@@ -164,12 +163,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.deepPurpleAccent,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 3,
               ),
             ),
           ],
@@ -180,20 +180,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   Widget _buildOrdersList(BuildContext context, List<Order> orders) {
     return RefreshIndicator(
+      color: Colors.deepPurpleAccent,
       onRefresh: () async {
         await ref.read(ordersViewModelProvider.notifier).getAllOrders();
-        
-              ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+        ref.read(ordersViewModelProvider.notifier)
+            .syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           final order = orders[index];
-          return _OrderCard(
-            order: order,
-            orderNumber: index + 1,
-          );
+          return _OrderCard(order: order, orderNumber: index + 1);
         },
       ),
     );
@@ -216,7 +214,6 @@ class _OrderCard extends StatelessWidget {
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
-      
       return '${months[date.month - 1]} ${date.day}, ${date.year} at ${_formatTime(date)}';
     } catch (e) {
       return isoDate;
@@ -233,11 +230,10 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      shadowColor: Colors.deepPurpleAccent.withOpacity(0.2),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -250,27 +246,27 @@ class _OrderCard extends StatelessWidget {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Order Header
+              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.deepPurpleAccent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
-                          Icons.receipt,
-                          color: Colors.green,
+                          Icons.receipt_long,
+                          color: Colors.deepPurpleAccent,
                           size: 20,
                         ),
                       ),
@@ -283,6 +279,7 @@ class _OrderCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -297,42 +294,30 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
+                  const Icon(Icons.arrow_forward_ios,
+                      size: 16, color: Colors.grey),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               const Divider(height: 1),
               const SizedBox(height: 12),
-
-              // Order Info
+              // Chips
               Row(
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  _buildInfoChip(
-                    Icons.store,
-                    'Shop: ${order.shopNamep ?? 'Unknown'}',
-                    Colors.purple,
-                  ),
+                  _buildInfoChip(Icons.store, 'Shop: ${order.shopNamep ?? 'Unknown'}',
+                      Colors.deepOrange),
                   const SizedBox(width: 8),
                   _buildInfoChip(
-                    Icons.shopping_bag,
-                    '${order.items.length} items',
-                    Colors.blue,
-                  ),
+                      Icons.shopping_bag, '${order.items.length} items', Colors.teal),
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Total Price
+              // Total
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -340,9 +325,7 @@ class _OrderCard extends StatelessWidget {
                     const Text(
                       'Total Amount',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     Text(
                       '₹${order.totalPrice.toStringAsFixed(2)}',
@@ -367,7 +350,7 @@ class _OrderCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

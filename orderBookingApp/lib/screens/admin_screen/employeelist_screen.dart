@@ -8,30 +8,28 @@ class AdminEmployeesPage extends ConsumerStatefulWidget {
   const AdminEmployeesPage({super.key});
 
   @override
-  ConsumerState<AdminEmployeesPage> createState() =>
-      _AdminEmployeesPageState();
+  ConsumerState<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
 }
 
-class _AdminEmployeesPageState
-    extends ConsumerState<AdminEmployeesPage> {
+class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
   /// ✅ AVATAR COLORS
-  final List<Color> avatarColors = [
-    const Color(0xFF0A3D62),
-  ];
+  final List<Color> avatarColors = [const Color(0xFF0A3D62)];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
     });
   }
 
   void _refreshEmployeeList() {
-    ref.read(employeeloginViewModelProvider.notifier)
-    .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
+    ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
   }
 
   @override
@@ -45,7 +43,8 @@ class _AdminEmployeesPageState
     final state = ref.watch(employeeloginViewModelProvider);
 
     /// API → UI MAP
-    final employees = state.employeeList?.when(
+    final employees =
+        state.employeeList?.when(
           data: (list) => list
               .map(
                 (e) => {
@@ -55,8 +54,7 @@ class _AdminEmployeesPageState
                   "email": e.empEmail ?? "",
                   "address": e.empAddress ?? "",
                   "region": e.empAddress ?? "",
-                  "status":
-                      e.activeStatus == 1 ? "Active" : "Inactive",
+                  "status": e.activeStatus == 1 ? "Active" : "Inactive",
                 },
               )
               .toList(),
@@ -76,10 +74,12 @@ class _AdminEmployeesPageState
           e["status"].toLowerCase().contains(q);
     }).toList();
 
-    final activeCount =
-        filteredEmployees.where((e) => e["status"] == "Active").length;
-    final inactiveCount =
-        filteredEmployees.where((e) => e["status"] == "Inactive").length;
+    final activeCount = filteredEmployees
+        .where((e) => e["status"] == "Active")
+        .length;
+    final inactiveCount = filteredEmployees
+        .where((e) => e["status"] == "Inactive")
+        .length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -99,85 +99,79 @@ class _AdminEmployeesPageState
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
-              ? Center(child: Text(state.error!))
-              : Column(
-                  children: [
-                    /// 🔍 SEARCH BAR
-                    Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (v) =>
-                            setState(() => _searchQuery = v),
-                        decoration: InputDecoration(
-                          hintText: "Search name, mobile",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
+          ? Center(child: Text(state.error!))
+          : Column(
+              children: [
+                /// 🔍 SEARCH BAR
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    decoration: InputDecoration(
+                      hintText: "Search name, mobile",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+
+                /// 🔵 ACTIVE / INACTIVE CARDS
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _overviewCard(
+                          title: "Active",
+                          count: activeCount,
+                          icon: Icons.check_circle_rounded,
                         ),
                       ),
-                    ),
-
-                    /// 🔵 ACTIVE / INACTIVE CARDS
-                    Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 6, 16, 6),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _overviewCard(
-                              title: "Active",
-                              count: activeCount,
-                              icon: Icons.check_circle_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _overviewCard(
-                              title: "Inactive",
-                              count: inactiveCount,
-                              icon: Icons.cancel_rounded,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _overviewCard(
+                          title: "Inactive",
+                          count: inactiveCount,
+                          icon: Icons.cancel_rounded,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
 
-                    /// 👨‍💼 EMPLOYEE LIST
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16),
-                        itemCount: filteredEmployees.length,
-                        itemBuilder: (context, index) {
-                          final emp = filteredEmployees[index];
-                          return InkWell(
-                            borderRadius:
-                                BorderRadius.circular(20),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      EmployeeDetailsPage(
-                                    empId: emp["id"], companyId: {},
-                                  ),
-                                ),
-                              );
-                            },
-                            child:
-                                _employeeCard(context, emp, index),
+                /// 👨‍💼 EMPLOYEE LIST
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filteredEmployees.length,
+                    itemBuilder: (context, index) {
+                      final emp = filteredEmployees[index];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EmployeeDetailsPage(
+                                empId: emp["id"],
+                                companyId: {},
+                              ),
+                            ),
                           );
                         },
-                      ),
-                    ),
-                  ],
+                        child: _employeeCard(context, emp, index),
+                      );
+                    },
+                  ),
                 ),
+              ],
+            ),
     );
   }
 
@@ -203,13 +197,11 @@ class _AdminEmployeesPageState
               Text(
                 count.toString(),
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white70),
-              ),
+              Text(title, style: const TextStyle(color: Colors.white70)),
             ],
           ),
         ],
@@ -237,11 +229,7 @@ class _AdminEmployeesPageState
           .toList();
 
       if (parts.isNotEmpty) {
-        initials = parts
-            .map((e) => e[0])
-            .take(2)
-            .join()
-            .toUpperCase();
+        initials = parts.map((e) => e[0]).take(2).join().toUpperCase();
       }
     }
 
@@ -270,8 +258,7 @@ class _AdminEmployeesPageState
                 gradient: LinearGradient(
                   colors: [
                     avatarColors[index % avatarColors.length],
-                    avatarColors[index % avatarColors.length]
-                        .withOpacity(0.7),
+                    avatarColors[index % avatarColors.length].withOpacity(0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -297,8 +284,9 @@ class _AdminEmployeesPageState
                   Text(
                     name.isEmpty ? "N/A" : name,
                     style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -315,16 +303,13 @@ class _AdminEmployeesPageState
                 Icon(
                   Icons.circle,
                   size: 10,
-                  color:
-                      isActive ? Colors.green : Colors.redAccent,
+                  color: isActive ? Colors.green : Colors.redAccent,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   employee["status"],
                   style: TextStyle(
-                    color: isActive
-                        ? Colors.green
-                        : Colors.redAccent,
+                    color: isActive ? Colors.green : Colors.redAccent,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -345,4 +330,3 @@ class _AdminEmployeesPageState
     return initials.isEmpty ? '?' : initials;
   }
 }
-
