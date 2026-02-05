@@ -17,7 +17,9 @@ class ShopImpl implements ShopRepository {
   }
 
   @override
-  Future<List<ShopDetails>> getShopList() {
+  Future<List<ShopDetails>> getShopList(String companyId) async{
+    await syncLocalToServer();
+    await syncServerToLocal(companyId);
     return local.getAll();
   }
 
@@ -59,8 +61,4 @@ class ShopImpl implements ShopRepository {
     }
   }
 
-  Future<void> sync(String company_id) async {
-    await syncLocalToServer();
-    await syncServerToLocal(company_id);
-  }
 }

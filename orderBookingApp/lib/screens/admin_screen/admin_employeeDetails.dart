@@ -53,7 +53,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
       ref
-          .read(employeeVisitViewModelProvider.notifier)
+          .read(visitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
       ref
           .read(ordersViewModelProvider.notifier)
@@ -197,13 +197,13 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 0;
     final avgDistanceText = _calculateAvgDistance(
-      ref.watch(employeeVisitViewModelProvider).visits?.value,
+      ref.watch(visitViewModelProvider).visits?.value,
     );
     final avgShopTimeText = _calculateAvgShopTime(
-      ref.watch(employeeVisitViewModelProvider).visits?.value,
+      ref.watch(visitViewModelProvider).visits?.value,
     );
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
-      ref.watch(employeeVisitViewModelProvider).visits?.value,
+      ref.watch(visitViewModelProvider).visits?.value,
     );
     final avgOrdersPerDayText = _calculateAvgOrdersPerDay(
       ref.watch(ordersViewModelProvider).orders?.value,
@@ -1080,14 +1080,7 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                               color: Colors.black87,
                             ),
                           ),
-                          Text(
-                            "Order #${widget.orderNumber}",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
+                          
                           const SizedBox(height: 6),
                           Row(
                             children: [

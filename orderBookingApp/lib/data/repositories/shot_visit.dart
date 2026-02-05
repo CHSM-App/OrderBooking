@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/repository/shop_visit.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
+import 'package:order_booking_app/presentation/providers/repository_provider.dart';
 
 import '../../domain/models/visite.dart';
 import '../local/offline_visit_dao.dart';
@@ -39,7 +40,7 @@ class VisitImpl implements VisitRepository {
           final visit = VisitPayload.fromJson(jsonDecode(row['payload']));
 
           final response = await apiService.addLocation(visit);
-
+          
           if (response['success'] != true) {
             throw Exception('Failed to sync visit with id $id');
           }

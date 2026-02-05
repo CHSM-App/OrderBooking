@@ -24,7 +24,7 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
     super.initState();
     // Fetch product list on init
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(1);
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
     });
   }
 
@@ -70,7 +70,7 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
 
   // Pull-to-refresh
   Future<void> _refreshProducts() async {
-    await ref.read(productViewModelProvider.notifier).fetchProductList(1);
+    await ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
     _searchController.clear();
     setState(() {
       _filteredProducts = [];

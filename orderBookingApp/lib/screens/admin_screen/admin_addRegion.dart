@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class AddRegionPage extends ConsumerStatefulWidget {
   const AddRegionPage({Key? key}) : super(key: key);
@@ -28,44 +29,12 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
     super.dispose();
   }
 
-  // Future<void> submitForm() async {
-  //   if (!_formKey.currentState!.validate()) return;
-
-  //   final region = Region(
-  //     regionName: regionController.text.trim(),
-  //     pincode: pincodeController.text.trim(),
-  //     district: districtController.text.trim(),
-  //     state: stateController.text.trim(),
-  //     createdBy: 1, // TODO: replace with logged-in admin ID
-  //   );
-
-  //   await ref.read(regionViewModelProvider.notifier).addRegion(region);
-
-  //   final state = ref.read(regionViewModelProvider);
-
-  //   if (state.error != null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(state.error!),
-  //         backgroundColor: Colors.red,
-  //       ),
-  //     );
-  //     return;
-  //   }
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Text("Region added successfully"),
-  //       backgroundColor: Colors.green,
-  //     ),
-  //   );
-
-  //   Navigator.pop(context);
-  // }
 Future<void> submitForm() async {
   if (!_formKey.currentState!.validate()) return;
 
   final region = Region(
+    localId: Uuid().v4(),
+    companyId: ref.read(adminloginViewModelProvider).companyId,
     regionName: regionController.text.trim(),
     pincode: pincodeController.text.trim(),
     district: districtController.text.trim(),
@@ -75,8 +44,8 @@ Future<void> submitForm() async {
 
   final notifier = ref.read(regionofflineViewModelProvider.notifier);
   await notifier.addRegion(region);
-
-  final state = ref.read(regionViewModelProvider);
+  await notifier.fetchRegions(ref.read(adminloginViewModelProvider).companyId??"");
+  final state = ref.read(regionofflineViewModelProvider);
 
   if (state is AsyncError) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +70,7 @@ Future<void> submitForm() async {
 
   @override
   Widget build(BuildContext context) {
-    final regionState = ref.watch(regionViewModelProvider);
+    final regionState = ref.watch(regionofflineViewModelProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],

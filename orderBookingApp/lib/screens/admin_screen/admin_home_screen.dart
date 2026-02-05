@@ -31,8 +31,12 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
     _loadDashboardData();
 
     Future.microtask(() {
-      ref.read(employeeloginViewModelProvider.notifier)
-      .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
+      final companyId = ref.read(adminloginViewModelProvider).companyId;
+      if (companyId == null || companyId.isEmpty) return;
+
+      ref
+          .read(employeeloginViewModelProvider.notifier)
+          .getEmployeeList(companyId);
     });
 
     Future.microtask(() {
@@ -40,7 +44,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
 
     if (adminId != 0) {
       ref.read(productViewModelProvider.notifier)
-          .fetchProductList(adminId);
+          .fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
     }
   });
   }
@@ -329,7 +333,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const RegionListPage(),
+                      builder: (_) => const RegionDetailsPage(),
                     ),
                   );
                 },

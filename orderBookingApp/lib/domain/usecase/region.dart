@@ -9,12 +9,9 @@ class RegionUsecaseoffline {
    Future<void> saveRegionOffline(Region region) {
     return regionRepooffline.saveRegionOffline(region);
   }
-  Future<void> syncOfflineRegions() {
-    return regionRepooffline.syncOfflineRegions();
-  }
     /// Fetch merged regions (offline + server)
-  Future<List<Region>> fetchRegions() {
-    return regionRepooffline.fetchRegions();
+  Future<List<Region>> fetchRegions(String companyId) {
+    return regionRepooffline.fetchRegions(companyId);
   }
 
 }

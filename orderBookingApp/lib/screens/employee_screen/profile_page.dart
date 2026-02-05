@@ -705,6 +705,39 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final isConnected = ref.read(networkStateProvider).isConnected;
+    if (!isConnected) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Logout'),
+          content: const Text(
+            'You are offline, logout may cause data loss, still want to logout?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(tokenProvider.notifier).clearTokens();
+                ref.read(adminloginViewModelProvider.notifier).clearLogin();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

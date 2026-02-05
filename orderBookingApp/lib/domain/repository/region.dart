@@ -6,7 +6,8 @@ abstract class RegionRepooffline {
   Future<void> saveRegionOffline(Region region);
 
   /// Sync all offline regions to API
-  Future<void> syncOfflineRegions();
-  Future<List<Region>> fetchRegions();
+  Future<void> syncOfflineRegions(String companyId);
+  
+  Future<List<Region>> fetchRegions(String companyId);
   
 }
