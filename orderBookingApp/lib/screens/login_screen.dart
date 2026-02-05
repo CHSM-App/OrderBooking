@@ -113,19 +113,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Back Button
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ),
+                // Align(
+                //   alignment: Alignment.topLeft,
+                //   child: Container(
+                //     decoration: BoxDecoration(
+                //       color: Colors.white.withOpacity(0.2),
+                //       borderRadius: BorderRadius.circular(12),
+                //     ),
+                //     child: IconButton(
+                //       icon: const Icon(Icons.arrow_back, color: Colors.white),
+                //       onPressed: () => Navigator.pop(context),
+                //     ),
+                //   ),
+                // ),
                 const SizedBox(height: 24),
 
                 // Animated Circle Icon
