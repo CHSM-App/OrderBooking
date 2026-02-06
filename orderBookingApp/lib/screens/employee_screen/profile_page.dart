@@ -20,34 +20,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
   
   @override
-  void initState() {
-    super.initState();
-    
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-    
-    _animationController.forward();
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
-    });
+void initState() {
+  super.initState();
+
+  _animationController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 800),
+  );
+
+  _fadeAnimation =
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
+
+  _slideAnimation = Tween<Offset>(
+    begin: const Offset(0, 0.1),
+    end: Offset.zero,
+  ).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+  );
+
+  _animationController.forward();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
+
+    if (mobileNo != null && mobileNo.isNotEmpty) {
+      ref
+          .read(employeeloginViewModelProvider.notifier)
+          .fetchEmployeeInfo(mobileNo);
+    }
+  });
+}
+
+  Future<void> _onRefresh() async {
+  final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
+  if (mobileNo != null && mobileNo.isNotEmpty) {
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .fetchEmployeeInfo(mobileNo);
   }
-  
+}
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -55,24 +67,77 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   }
 
   @override
-  Widget build(BuildContext context) {
-    final employeeState = ref.watch(employeeloginViewModelProvider);
-    final isLoading = employeeState.isLoading;
-    final error = employeeState.error;
-    List<EmployeeLogin> list = employeeState.employeeDetails!.value??[];
-    final employeeDetails = list.isNotEmpty ? list.first : null;
+Widget build(BuildContext context) {
+  final employeeState = ref.watch(employeeloginViewModelProvider);
 
+  // 1. Loading
+  if (employeeState.isLoading) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      body: isLoading
-          ? _buildLoadingState()
-          : error != null
-              ? _buildErrorState(error)
-              : employeeDetails != null
-                  ? _buildProfileContent(employeeDetails)
-                  : _buildEmptyState(),
+      body: _buildLoadingState(),
     );
   }
+
+  // 2. Error
+  if (employeeState.error != null) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
+      body: _buildErrorState(employeeState.error!),
+    );
+  }
+
+  // 3. Data null (API call complete but data not set yet)
+  final detailsState = employeeState.employeeDetails;
+  if (detailsState == null) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
+      body: _buildLoadingState(), // 🔥 IMPORTANT
+    );
+  }
+
+  // 4. Empty list
+  final list = detailsState.value ?? [];
+  if (list.isEmpty) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
+      body: _buildEmptyStateWithRefresh(),
+    );
+  }
+
+  // 5. Success
+  return Scaffold(
+    backgroundColor: const Color(0xFFFAFAFA),
+    body: _buildProfileContent(list.first),
+  );
+}
+Widget _buildEmptyStateWithRefresh() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.person_off_rounded, size: 48, color: Colors.grey),
+        const SizedBox(height: 12),
+        const Text(
+          'No data available',
+          style: TextStyle(fontSize: 15, color: Color(0xFF999999)),
+        ),
+        const SizedBox(height: 16),
+        _ModernButton(
+          label: 'Refresh',
+          icon: Icons.refresh_rounded,
+          onPressed: () {
+            ref
+                .read(employeeloginViewModelProvider.notifier)
+                .fetchEmployeeInfo(
+                  ref.read(adminloginViewModelProvider).mobileNo ?? "",
+                );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildLoadingState() {
     return Center(
@@ -182,120 +247,133 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     final imageUrl = employeeDetails.imageUrl;
     final joiningDate = employeeDetails.joiningDate ?? "";
     final isActive = employeeDetails.activeStatus == 1;
-    
+    final region = employeeDetails.regionId?.toString() ?? "N/A";
+final companyName =ref.read(adminloginViewModelProvider).companyName??"";
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Content
-            SliverToBoxAdapter(
+        child:
+        RefreshIndicator(
+  onRefresh: _onRefresh,
+  color: Colors.white,
+  backgroundColor: const Color(0xFF667EEA),
+  displacement: 80,
+  strokeWidth: 3,
+  child: CustomScrollView(
+    physics: const AlwaysScrollableScrollPhysics(
+      parent: BouncingScrollPhysics(),
+    ),
+    slivers: [
+      SliverToBoxAdapter(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+
+          _buildModernProfileHeader(
+  employeeName,
+  employeeId,
+  region ?? "N/A",        // region
+  joiningDate ?? "N/A", 
+   companyName,         // join date
+  imageUrl,                  // image
+  isActive, 
+               // status
+),
+
+
+            // const SizedBox(height: 20),
+
+            // _buildStatsRow(joiningDate, employeeDetails),
+
+            const SizedBox(height: 20),
+
+            _buildModernSection(
+              title: 'Contact',
               child: Column(
                 children: [
-                  const SizedBox(height: 12),
-                  
-                  // Profile Header Card
-                  _buildModernProfileHeader(
-                    employeeName,
-                    employeeId,
-                    imageUrl,
-                    isActive,
+                  _ModernInfoCard(
+                    icon: Icons.phone_rounded,
+                    label: 'Phone',
+                    value: mobileNo ?? "N/A",
+                    color: const Color(0xFF667EEA),
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Stats Cards
-                  _buildStatsRow(joiningDate, employeeDetails),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Contact Section
-                  _buildModernSection(
-                    title: 'Contact',
-                    child: Column(
-                      children: [
-                        _ModernInfoCard(
-                          icon: Icons.phone_rounded,
-                          label: 'Phone',
-                          value: mobileNo??"N/A",
-                          color: const Color(0xFF667EEA),
-                        ),
-                        if (email.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _ModernInfoCard(
-                            icon: Icons.email_rounded,
-                            label: 'Email',
-                            value: email,
-                            color: const Color(0xFFFF6B9D),
-                          ),
-                        ],
-                        if (address.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _ModernInfoCard(
-                            icon: Icons.location_on_rounded,
-                            label: 'Address',
-                            value: address,
-                            color: const Color(0xFFFFA94D),
-                          ),
-                        ],
-                      ],
+                  if (email.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _ModernInfoCard(
+                      icon: Icons.email_rounded,
+                      label: 'Email',
+                      value: email,
+                      color: const Color(0xFFFF6B9D),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Settings Section
-                  _buildModernSection(
-                    title: 'Settings',
-                    child: Column(
-                      children: [
-                        _ModernSettingTile(
-                          icon: Icons.notifications_none_rounded,
-                          title: 'Notifications',
-                          onTap: () {},
-                        ),
-                        _ModernSettingTile(
-                          icon: Icons.language_rounded,
-                          title: 'Language',
-                          onTap: () {},
-                        ),
-                        _ModernSettingTile(
-                          icon: Icons.lock_outline_rounded,
-                          title: 'Security',
-                          onTap: () {},
-                        ),
-                        _ModernSettingTile(
-                          icon: Icons.help_outline_rounded,
-                          title: 'Help Center',
-                          onTap: () {},
-                        ),
-                      ],
+                  ],
+                  if (address.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _ModernInfoCard(
+                      icon: Icons.location_on_rounded,
+                      label: 'Address',
+                      value: address,
+                      color: const Color(0xFFFFA94D),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Logout Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _buildLogoutButton(),
-                  ),
-                  
-                  const SizedBox(height: 32),
+                  ],
                 ],
               ),
             ),
+
+            const SizedBox(height: 20),
+
+            _buildModernSection(
+              title: 'Settings',
+              child: Column(
+                children: [
+                  _ModernSettingTile(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifications',
+                    onTap: () {},
+                  ),
+                  _ModernSettingTile(
+                    icon: Icons.language_rounded,
+                    title: 'Language',
+                    onTap: () {},
+                  ),
+                  _ModernSettingTile(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'Security',
+                    onTap: () {},
+                  ),
+                  _ModernSettingTile(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Help Center',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildLogoutButton(),
+            ),
+
+            const SizedBox(height: 32),
           ],
         ),
       ),
+    ],
+  ),
+)
+
+      ),
     );
   }
-
 Widget _buildModernProfileHeader(
   String employeeName,
   String employeeId,
+  String region,
+  String joinDate,
+  String companyName,
   String? imageUrl,
   bool isActive,
 ) {
@@ -318,29 +396,29 @@ Widget _buildModernProfileHeader(
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar + Status
+              // LEFT : AVATAR
               Stack(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                       ),
                     ),
                     child: CircleAvatar(
-                      radius: 52,
+                      radius: 42,
                       backgroundColor: const Color(0xFFF5F5F5),
                       child: imageUrl != null && imageUrl.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
                                 imageUrl,
-                                width: 104,
-                                height: 104,
+                                width: 84,
+                                height: 84,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) =>
                                     _buildInitialsAvatar(employeeName),
@@ -350,11 +428,11 @@ Widget _buildModernProfileHeader(
                     ),
                   ),
                   Positioned(
-                    right: 6,
-                    bottom: 6,
+                    right: 4,
+                    bottom: 4,
                     child: Container(
-                      width: 14,
-                      height: 14,
+                      width: 12,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: isActive
                             ? const Color(0xFF2ECC71)
@@ -367,40 +445,61 @@ Widget _buildModernProfileHeader(
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(width: 16),
 
-              Text(
-                employeeName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2C2C2C),
-                ),
-              ),
+              // RIGHT : DETAILS
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employeeName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2C2C2C),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
 
-              const SizedBox(height: 8),
+                    Text(
+                      region,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                     const SizedBox(height: 4),
 
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'ID: $employeeId',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569),
-                  ),
+                    Text(
+                      'Company Name: $companyName',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      'Joined: $joinDate',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+
+                  
+                  ],
                 ),
               ),
             ],
           ),
         ),
 
-        // ✏️ EDIT BUTTON (TOP RIGHT)
+        // EDIT BUTTON
         Positioned(
           top: 12,
           right: 12,
@@ -417,7 +516,7 @@ Widget _buildModernProfileHeader(
                     builder: (_) => EditProfilePage(
                       name: employeeName,
                       phone: mobileNo ?? "N/A",
-                      email: "", // pass email if needed
+                      email: "",
                       address: "",
                       onSave: (_) {
                         ref
@@ -443,6 +542,7 @@ Widget _buildModernProfileHeader(
     ),
   );
 }
+
 
   Widget _buildInitialsAvatar(String employeeName) {
     return Container(
