@@ -20,7 +20,7 @@ class ShopImpl implements ShopRepository {
   Future<List<ShopDetails>> getShopList(String companyId) async{
     await syncLocalToServer();
     await syncServerToLocal(companyId);
-    return local.getAll();
+    return await local.getAll();
   }
 
   Future<void> syncLocalToServer() async {
@@ -45,7 +45,6 @@ class ShopImpl implements ShopRepository {
 
       for (final shop in serverShops) {
         final exists = await local.existsByServerId(shop.shopId!);
-        debugPrint("Shop ${shop.shopId} exists locally: $exists");
         if (!exists) {
           await local.insert(
             shop.copyWith(

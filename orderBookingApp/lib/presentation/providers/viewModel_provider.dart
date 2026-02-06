@@ -62,7 +62,6 @@ final regionofflineViewModelProvider =
   return RegionofflineViewModel(usecase);
 });
 
-
 final ordersViewModelProvider =
     StateNotifierProvider<ordersStateNotifier, ordersState>((ref) {
   final usecase = ref.watch(ordersUsecaseProvider);

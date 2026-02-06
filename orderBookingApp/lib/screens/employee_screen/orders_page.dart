@@ -27,9 +27,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     _animationController.forward();
 
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getAllOrders();
-      ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(
-          ref.read(adminloginViewModelProvider).userId);
+      ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
     });
   }
 
@@ -338,9 +336,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getAllOrders();
-                ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(
-                    ref.read(adminloginViewModelProvider).userId);
+                ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
               },
               icon: const Icon(Icons.refresh_rounded, size: 22),
               label: const Text(
@@ -412,7 +408,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
             const SizedBox(height: 28),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getAllOrders();
+                ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
               },
               icon: const Icon(Icons.refresh_rounded, size: 22),
               label: const Text(
@@ -442,9 +438,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
       backgroundColor: Colors.white,
       strokeWidth: 3,
       onRefresh: () async {
-        await ref.read(ordersViewModelProvider.notifier).getAllOrders();
-        ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(
-            ref.read(adminloginViewModelProvider).userId);
+        await ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
       },
       child: LayoutBuilder(
         builder: (context, constraints) {

@@ -20,14 +20,12 @@ final syncControllerProvider = Provider<void>((ref) {
 
           // Call sync methods for all offline data
           await ref.read(visitViewModelProvider.notifier).sync();
-          await ref.read(shopViewModelProvider.notifier).sync(companyId);
-          await ref.read(productViewModelProvider.notifier).syncProducts(companyId);
-          await ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(userId);
-          await ref.read(regionofflineViewModelProvider.notifier).sync(companyId);
+          await ref.read(shopViewModelProvider.notifier).getShopList(companyId);
+          await ref.read(productViewModelProvider.notifier).fetchProductList(companyId);
+          await ref.read(ordersViewModelProvider.notifier).getAllOrders(userId);
+          await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
 
-          print("✅ All offline data synced successfully");
         } catch (e, st) {
-          print("⚠️ Sync failed: $e \n $st");
         }
       }
     },

@@ -20,12 +20,12 @@ class _CatalogPageState extends ConsumerState<CatalogPage> with TickerProviderSt
   
   late AnimationController _headerController;
   late AnimationController _listController;
-  late Animation<double> _headerFade;
-  late Animation<Offset> _headerSlide;
 
   @override
   void initState() {
     super.initState();
+
+        print("inside the initState of the Catalog_page");
     
     _headerController = AnimationController(
       vsync: this,
@@ -37,18 +37,18 @@ class _CatalogPageState extends ConsumerState<CatalogPage> with TickerProviderSt
       duration: const Duration(milliseconds: 800),
     );
     
-    _headerFade = CurvedAnimation(
-      parent: _headerController,
-      curve: Curves.easeOut,
-    );
+    // _headerFade = CurvedAnimation(
+    //   parent: _headerController,
+    //   curve: Curves.easeOut,
+    // );
     
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0, -0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _headerController,
-      curve: Curves.easeOutCubic,
-    ));
+    // _headerSlide = Tween<Offset>(
+    //   begin: const Offset(0, -0.1),
+    //   end: Offset.zero,
+    // ).animate(CurvedAnimation(
+    //   parent: _headerController,
+    //   curve: Curves.easeOutCubic,
+    // ));
     
     _headerController.forward();
     

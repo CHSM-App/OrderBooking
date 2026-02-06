@@ -56,8 +56,4 @@ class RegionofflineViewModel extends StateNotifier<RegionState> {
     }
   }
 
-  /// Manual sync trigger
-  Future<void> sync(String companyID) async {
-    fetchRegions(companyID);
-  }
 }

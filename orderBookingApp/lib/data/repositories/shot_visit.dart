@@ -17,7 +17,6 @@ class VisitImpl implements VisitRepository {
   VisitImpl({required this.local, required this.apiService});
 
   Future<void> saveVisitOffline(VisitPayload visit) async {
-    debugPrint('Saving visit offline: ${visit.toJson()}');
     await local.insert(visit);
   }
 
@@ -47,9 +46,6 @@ class VisitImpl implements VisitRepository {
 
           await local.delete(id);
         } catch (_) {
-          debugPrint(
-            'Error syncing visit with id $id, incrementing retry count',
-          );
           await local.incrementRetry(id);
         }
       }

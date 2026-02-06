@@ -175,6 +175,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     );
 
     ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
+    ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
 
     setState(() {
       _visit = VisitPayload(
