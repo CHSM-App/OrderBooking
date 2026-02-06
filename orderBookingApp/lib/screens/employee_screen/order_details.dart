@@ -50,7 +50,7 @@ class OrderDetailsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Order #$orderNumber'),
+        title: Text('Order Details'),
         elevation: 0,
         actions: [
           
@@ -144,24 +144,6 @@ class OrderDetailsPage extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Completed',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green[700],
-                  ),
                 ),
               ),
             ],

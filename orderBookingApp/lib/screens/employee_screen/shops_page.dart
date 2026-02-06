@@ -73,6 +73,13 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
       }
     });
   }
+Future<void> _onRefresh() async {
+  await ref
+      .read(shopViewModelProvider.notifier)
+      .getShopList(
+        ref.read(adminloginViewModelProvider).companyId ?? "",
+      );
+}
 
   @override
   void dispose() {
@@ -718,50 +725,58 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
           ),
           
           // Main content
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // Modern Header with Stats
-              SliverToBoxAdapter(
-                child: AnimatedBuilder(
-                  animation: _headerAnimationController,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _headerSlideAnimation.value),
-                      child: Opacity(
-                        opacity: _headerFadeAnimation.value,
-                      //  child: _buildModernHeader(shopState),
-                      ),
-                    );
-                  },
-                ),
+      RefreshIndicator(
+  color: Colors.white,
+  backgroundColor: AppTheme.accentColor,
+  displacement: 80,
+  strokeWidth: 3,
+  onRefresh: _onRefresh,
+  child: CustomScrollView(
+    physics: const AlwaysScrollableScrollPhysics(
+      parent: BouncingScrollPhysics(),
+    ),
+    slivers: [
+      // Header
+      SliverToBoxAdapter(
+        child: AnimatedBuilder(
+          animation: _headerAnimationController,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, _headerSlideAnimation.value),
+              child: Opacity(
+                opacity: _headerFadeAnimation.value,
               ),
+            );
+          },
+        ),
+      ),
 
-              // Search Bar
-            SliverToBoxAdapter(
-  child: Column(
-    children: [
-      const SizedBox(height: 12), // <-- small space above
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: _buildModernSearchBar(),
+      // Search bar
+      SliverToBoxAdapter(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: _buildModernSearchBar(),
+            ),
+          ],
+        ),
+      ),
+
+      // Shop list
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: _buildSliverBody(shopState),
+      ),
+
+      const SliverToBoxAdapter(
+        child: SizedBox(height: 100),
       ),
     ],
   ),
 ),
 
-              // Shop List
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: _buildSliverBody(shopState),
-              ),
-
-              // Bottom padding
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          ),
         ],
       ),
       
