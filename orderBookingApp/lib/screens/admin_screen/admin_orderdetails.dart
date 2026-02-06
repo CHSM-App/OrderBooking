@@ -564,28 +564,51 @@ class _OrderCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Order Info
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  _buildInfoChip(
-                    Icons.people_sharp,
-                    'Employee: ${order.empName ?? 'Unknown'}',
-                    Colors.red,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(
-                    Icons.store,
-                    'Shop: ${order.shopNamep ?? 'Unknown'}',
-                    Colors.purple,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(
-                    Icons.shopping_bag,
-                    '${order.items.length} items',
-                    Colors.blue,
-                  ),
-                ],
-              ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.start,
+              //   children: [
+              //     _buildInfoChip(
+              //       Icons.people_sharp,
+              //       'Employee: ${order.empName ?? 'Unknown'}',
+              //       Colors.red,
+              //     ),
+              //     const SizedBox(width: 8),
+              //     _buildInfoChip(
+              //       Icons.store,
+              //       'Shop: ${order.shopNamep ?? 'Unknown'}',
+              //       Colors.purple,
+              //     ),
+              //     const SizedBox(width: 8),
+              //     _buildInfoChip(
+              //       Icons.shopping_bag,
+              //       '${order.items.length} items',
+              //       Colors.blue,
+              //     ),
+              //   ],
+              // ),
+
+              Wrap(
+  spacing: 8,        // horizontal space
+  runSpacing: 8,     // vertical space
+  children: [
+    _buildInfoChip(
+      Icons.people_sharp,
+      'Employee: ${order.empName ?? 'Unknown'}',
+      Colors.red,
+    ),
+    _buildInfoChip(
+      Icons.store,
+      'Shop: ${order.shopNamep ?? 'Unknown'}',
+      Colors.purple,
+    ),
+    _buildInfoChip(
+      Icons.shopping_bag,
+      '${order.items.length} items',
+      Colors.blue,
+    ),
+  ],
+),
+
               const SizedBox(height: 16),
 
               // Total Price
@@ -625,7 +648,9 @@ class _OrderCard extends StatelessWidget {
 
   Widget _buildInfoChip(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      // padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),

@@ -9,10 +9,7 @@ import 'admin_shopDetails.dart';
 class AdminHomePage extends ConsumerStatefulWidget {
   final Function(int, {int ordersTab}) onNavigate;
 
-  const AdminHomePage({
-    super.key,
-    required this.onNavigate,
-  });
+  const AdminHomePage({super.key, required this.onNavigate});
 
   @override
   ConsumerState<AdminHomePage> createState() => _AdminHomePageState();
@@ -20,62 +17,138 @@ class AdminHomePage extends ConsumerStatefulWidget {
 
 class _AdminHomePageState extends ConsumerState<AdminHomePage> {
   // Example dynamic values (replace these with your providers)
-  int pendingOrders = 0;
-  // int activeEmployees = 0;
+  int todaysOrders = 0;
   int totalProducts = 0;
   String totalRevenue = "₹0";
 
   @override
   void initState() {
     super.initState();
-    _loadDashboardData();
+    // Future.microtask(() {
+    //   ref
+    //       .read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '',);
+    // });
 
-    Future.microtask(() {
-      ref.read(employeeloginViewModelProvider.notifier)
-      .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
-    });
+    // Future.microtask(() {
+    //   final adminId = ref.read(adminloginViewModelProvider).userId;
 
-    Future.microtask(() {
-    final adminId = ref.read(adminloginViewModelProvider).userId;
+    // Future.microtask(() {
+    //     ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '',);
+    //   });
 
-    if (adminId != 0) {
-      ref.read(productViewModelProvider.notifier)
-          .fetchProductList(adminId);
-    }
-  });
+    //   if (adminId != 0) {
+    //     ref.read(productViewModelProvider.notifier).fetchProductList(adminId);
+    //   }
+    // });
+
+
+     
   }
 
+ 
 
-  Future<void> _loadDashboardData() async {
-    // Replace with your provider/fetch logic
-      setState(() {
-      pendingOrders = 24; // e.g., ref.read(pendingOrdersProvider)
-      // activeEmployees = 12;
-      // totalProducts = 156;
-      totalRevenue = "₹45K";
-    });
+  bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String formatINR(num value) {
+    final isNegative = value < 0;
+    value = value.abs();
+
+    String str = value.toStringAsFixed(0);
+
+    if (str.length <= 3) {
+      return '${isNegative ? '-' : ''}₹$str';
+    }
+
+    String lastThree = str.substring(str.length - 3);
+    String remaining = str.substring(0, str.length - 3);
+
+    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
+    remaining = remaining.replaceAll(reg, ',');
+
+    return '${isNegative ? '-' : ''}₹$remaining,$lastThree';
   }
 
   @override
   Widget build(BuildContext context) {
+      ref.listen(adminloginViewModelProvider, (prev, next) {
+    final companyId = next.companyId;
+
+    if (companyId != null && companyId.isNotEmpty) {
+      ref
+          .read(employeeloginViewModelProvider.notifier)
+          .getEmployeeList(companyId);
+
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getOrderList(companyId);
+
+
+           ref
+          .read(productViewModelProvider.notifier)
+          .fetchProductList(companyId);
+    }
+
+  });
+
 
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final productState = ref.watch(productViewModelProvider);
+    final orderState = ref.watch(ordersViewModelProvider);
 
-  final activeEmployeesCount = employeeState.employeeList?.when(
-    loading: () => 0,
-    error: (_, __) => 0,
-    data: (employees) {
-      return employees.where((e) => e.activeStatus == 1).length;     
-    },
-  );
+    final activeEmployeesCount = employeeState.employeeList?.when(
+      loading: () => 0,
+      error: (_, __) => 0,
+      data: (employees) {
+        return employees.where((e) => e.activeStatus == 1).length;  
+      },
+    );
 
-  final totalProductCount = productState.productList?.when(
-  loading: () => 0,
-  error: (_, __) => 0,
-  data: (products) => products.length,
-);
+    final totalProductCount = productState.productList?.when(
+      loading: () => 0,
+      error: (_, __) => 0,
+      data: (products) => products.length,
+    );
 
+    final int todaysOrdersCount =
+        orderState.orders?.when(
+          loading: () => 0,
+          error: (_, __) => 0,
+          data: (orders) {
+            final today = DateTime.now();
+
+            return orders.where((order) {
+              final orderDate = DateTime.parse(order.orderDate);
+
+              return isSameDay(orderDate, today);
+            }).length;
+          },
+        ) ??
+        0;
+
+    final double todaysRevenue =
+        orderState.orders?.when(
+          loading: () => 0.0,
+          error: (_, __) => 0.0,
+          data: (orders) {
+            final today = DateTime.now();
+
+            return orders
+                .where((order) {
+                  final orderDate = DateTime.parse(order.orderDate);
+                  return isSameDay(orderDate, today);
+                })
+                .fold<double>(0.0, (sum, order) {
+                  final amount = order.totalPrice;
+                  return sum +
+                      (amount is String
+                          ? double.tryParse(amount as String) ?? 0.0
+                          : amount.toDouble());
+                });
+          },
+        ) ??
+        0.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -105,10 +178,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
             const SizedBox(height: 8),
             Text(
               "Your business at a glance",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             const SizedBox(height: 20),
             GridView.count(
@@ -121,8 +191,8 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
               children: [
                 // 🔸 Pending Orders
                 _modernDashboardCard(
-                  title: "Pending Orders",
-                  value: pendingOrders.toString(),
+                  title: "Today's Orders",
+                  value: todaysOrdersCount.toString(),
                   icon: Icons.pending_actions_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
@@ -162,8 +232,8 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                 ),
                 // 🔸 Total Revenue
                 _modernDashboardCard(
-                  title: "Total Revenue",
-                  value: totalRevenue,
+                  title: "Today's Revenue",
+                  value: formatINR(todaysRevenue),
                   icon: Icons.attach_money_rounded,
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1976D2), Color(0xFF2196F3)],
@@ -280,24 +350,24 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
         const SizedBox(height: 16),
         Row(
           children: [
-          Expanded(
-  child: _quickActionCard(
-    title: "Add Product",
-    icon: Icons.add_box_outlined,
-    color: const Color(0xFFF57C00),
-    onTap: () {
-      // Read the provider value
-      final adminId = ref.read(adminloginViewModelProvider).userId; 
+            Expanded(
+              child: _quickActionCard(
+                title: "Add Product",
+                icon: Icons.add_box_outlined,
+                color: const Color(0xFFF57C00),
+                onTap: () {
+                  // Read the provider value
+                  final adminId = ref.read(adminloginViewModelProvider).userId;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AddProductPage(adminId: adminId),
-        ),
-      );
-    },
-  ),
-),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddProductPage(adminId: adminId),
+                    ),
+                  );
+                },
+              ),
+            ),
 
             const SizedBox(width: 12),
             Expanded(
@@ -308,9 +378,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddEmployeeForm(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
                   );
                 },
               ),
@@ -328,9 +396,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegionListPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const RegionDetailsPage()),
                   );
                 },
               ),
@@ -344,9 +410,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const ShopListPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const ShopListPage()),
                   );
                 },
               ),

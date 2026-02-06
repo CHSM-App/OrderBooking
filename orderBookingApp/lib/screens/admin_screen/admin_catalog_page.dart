@@ -21,7 +21,8 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
     /// fetch product list (admin id = 1)
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
+      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??
+      "");
     });
   }
 
@@ -75,8 +76,9 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   padding: const EdgeInsets.all(16),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    debugPrint("Hello");
-                    return _productCard(context, filtered[index]);
+                    final p = filtered[index];
+
+                    return _productCard(context, p);
                   },
                 );
               },
@@ -96,13 +98,16 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-        builder: (_) => AddProductPage(adminId: userId),
-      ),
+              builder: (_) => AddProductPage(
+                adminId: userId,
+                initialProduct: null,
+              ),
+            ),
           );
 
           // Refresh list if product added
           if (result == true) {
-            ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
+            ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
           }
         },
         child: const Icon(Icons.add, color: Colors.white),
@@ -158,14 +163,14 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => AddProductPage(
-                      productId: product.productId,
                       adminId: ref.read(adminloginViewModelProvider).userId,
+                      initialProduct: product,
                     ),
                   ),
                 );
 
                 if (result == true) {
-                  ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).userId);
+                  ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
                 }
               },
             ),

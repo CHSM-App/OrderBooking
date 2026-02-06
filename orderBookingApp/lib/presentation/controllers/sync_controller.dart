@@ -14,13 +14,16 @@ final syncControllerProvider = Provider<void>((ref) {
       // Trigger sync only when transitioning from offline -> online
       if (wasOffline && isOnline) {
         try {
+
+          final companyId = ref.read(adminloginViewModelProvider).companyId??"";
+          final userId = ref.read(adminloginViewModelProvider).userId;
+
           // Call sync methods for all offline data
           await ref.read(visitViewModelProvider.notifier).sync();
-          await ref.read(regionofflineViewModelProvider.notifier).sync();
-          await ref.read(shopViewModelProvider.notifier).sync(ref.read(adminloginViewModelProvider).companyId??"");
-          await ref.read(productViewModelProvider.notifier).syncProducts();
-          await ref.read(ordersViewModelProvider.notifier)
-              .syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+          await ref.read(shopViewModelProvider.notifier).sync(companyId);
+          await ref.read(productViewModelProvider.notifier).syncProducts(companyId);
+          await ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(userId);
+          await ref.read(regionofflineViewModelProvider.notifier).sync(companyId);
 
           print("✅ All offline data synced successfully");
         } catch (e, st) {

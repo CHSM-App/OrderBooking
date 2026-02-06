@@ -7,6 +7,7 @@ part of 'region.dart';
 // **************************************************************************
 
 Region _$RegionFromJson(Map<String, dynamic> json) => Region(
+  companyId: json['company_id'] as String?,
   regionId: (json['region_id'] as num?)?.toInt(),
   regionName: json['region_name'] as String?,
   pincode: json['pincode'] as String?,
@@ -21,5 +22,6 @@ Map<String, dynamic> _$RegionToJson(Region instance) => <String, dynamic>{
   'pincode': instance.pincode,
   'district': instance.district,
   'state': instance.state,
+  'company_id': instance.companyId,
   'created_by': instance.createdBy,
 };

@@ -543,6 +543,156 @@ Widget _buildModernProfileHeader(
   );
 }
 
+// Widget _buildModernProfileHeader(
+//   String employeeName,
+//   String employeeId,
+//   String? imageUrl,
+//   bool isActive,
+// ) {
+//   return Padding(
+//     padding: const EdgeInsets.symmetric(horizontal: 16),
+//     child: Stack(
+//       children: [
+//         // MAIN CARD
+//         Container(
+//           width: double.infinity,
+//           padding: const EdgeInsets.all(20),
+//           decoration: BoxDecoration(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.circular(20),
+//             boxShadow: [
+//               BoxShadow(
+//                 color: Colors.black.withOpacity(0.05),
+//                 blurRadius: 20,
+//                 offset: const Offset(0, 6),
+//               ),
+//             ],
+//           ),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.center,
+//             children: [
+//               // Avatar + Status
+//               Stack(
+//                 children: [
+//                   Container(
+//                     padding: const EdgeInsets.all(4),
+//                     decoration: BoxDecoration(
+//                       shape: BoxShape.circle,
+//                       gradient: const LinearGradient(
+//                         colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+//                       ),
+//                     ),
+//                     child: CircleAvatar(
+//                       radius: 52,
+//                       backgroundColor: const Color(0xFFF5F5F5),
+//                       child: imageUrl != null && imageUrl.isNotEmpty
+//                           ? ClipOval(
+//                               child: Image.network(
+//                                 imageUrl,
+//                                 width: 104,
+//                                 height: 104,
+//                                 fit: BoxFit.cover,
+//                                 errorBuilder: (_, __, ___) =>
+//                                     _buildInitialsAvatar(employeeName),
+//                               ),
+//                             )
+//                           : _buildInitialsAvatar(employeeName),
+//                     ),
+//                   ),
+//                   Positioned(
+//                     right: 6,
+//                     bottom: 6,
+//                     child: Container(
+//                       width: 14,
+//                       height: 14,
+//                       decoration: BoxDecoration(
+//                         color: isActive
+//                             ? const Color(0xFF2ECC71)
+//                             : const Color(0xFFE74C3C),
+//                         shape: BoxShape.circle,
+//                         border: Border.all(color: Colors.white, width: 2),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+
+//               const SizedBox(height: 16),
+
+//               Text(
+//                 employeeName,
+//                 style: const TextStyle(
+//                   fontSize: 22,
+//                   fontWeight: FontWeight.w700,
+//                   color: Color(0xFF2C2C2C),
+//                 ),
+//               ),
+
+//               const SizedBox(height: 8),
+
+//               Container(
+//                 padding:
+//                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+//                 decoration: BoxDecoration(
+//                   color: const Color(0xFFF1F5F9),
+//                   borderRadius: BorderRadius.circular(20),
+//                 ),
+//                 child: Text(
+//                   'ID: $employeeId',
+//                   style: const TextStyle(
+//                     fontSize: 13,
+//                     fontWeight: FontWeight.w600,
+//                     color: Color(0xFF475569),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+
+//         // ✏️ EDIT BUTTON (TOP RIGHT)
+//         Positioned(
+//           top: 12,
+//           right: 12,
+//           child: Material(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.circular(12),
+//             elevation: 3,
+//             child: InkWell(
+//               borderRadius: BorderRadius.circular(12),
+//               onTap: () {
+//                 Navigator.push(
+//                   context,
+//                   MaterialPageRoute(
+//                     builder: (_) => EditProfilePage(
+//                       name: employeeName,
+//                       phone: mobileNo ?? "N/A",
+//                       email: "", // pass email if needed
+//                       address: "",
+//                       onSave: (_) {
+//                         ref
+//                             .read(employeeloginViewModelProvider.notifier)
+//                             .fetchEmployeeInfo(mobileNo ?? "");
+//                       },
+//                     ),
+//                   ),
+//                 );
+//               },
+//               child: const Padding(
+//                 padding: EdgeInsets.all(8),
+//                 child: Icon(
+//                   Icons.edit_rounded,
+//                   size: 18,
+//                   color: Color(0xFF667EEA),
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//       ],
+//     ),
+//   );
+// }
 
   Widget _buildInitialsAvatar(String employeeName) {
     return Container(

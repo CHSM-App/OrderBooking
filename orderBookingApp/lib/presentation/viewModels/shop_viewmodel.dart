@@ -45,7 +45,7 @@ class ShopViewModel extends StateNotifier<ShopState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final shop = await usecase.getShopList();
+      final shop = await usecase.getShopList(companyId);
       if (companyId.isNotEmpty) {
         await sync(companyId);
       }
@@ -56,7 +56,7 @@ class ShopViewModel extends StateNotifier<ShopState> {
   }
 
   Future<void> sync(String companyId) async {
-    await usecase.sync(companyId);
+    await  getShopList(companyId);
   }
 }
 

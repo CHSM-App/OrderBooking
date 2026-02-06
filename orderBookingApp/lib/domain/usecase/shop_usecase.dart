@@ -11,11 +11,9 @@ class ShopUsecase {
     return shoprepository.addShop(shopDetails);
   }
 
-     Future<List<ShopDetails>> getShopList( ) {
-    return shoprepository.getShopList( );
+     Future<List<ShopDetails>> getShopList(String companyId) {
+    return shoprepository.getShopList(companyId );
   }
 
-  Future<void> sync(String company_id){
-    return shoprepository.sync(company_id);
-  }
+
 }

@@ -11,7 +11,6 @@ import 'package:order_booking_app/domain/usecase/region.dart';
 import 'package:order_booking_app/domain/usecase/shop_usecase.dart';
 import 'package:order_booking_app/domain/usecase/shop_visit.dart';
 import 'package:order_booking_app/presentation/providers/repository_provider.dart';
-import 'package:order_booking_app/domain/usecase/add_region_usecase.dart';
 
 final authUsecaseProvider = Provider<AuthUsecase>((ref) {
   final authRepo = ref.watch(authRepositoryProvider);
@@ -28,10 +27,6 @@ final adminloginUsecaseProvider=Provider<AdminloginUsecase>((ref){
   return AdminloginUsecase(adminloginRepo);
 });
 
-final regionUsecaseProvider=Provider<AddRegionUsecase>((ref){
-  final regionRepo=ref.watch(regionRepositoryProvider);
-  return AddRegionUsecase(regionRepo);
-});
 
 final addShopUsecaseProvider=Provider<ShopUsecase>((ref){
   final shopRepo=ref.watch(shopRepositoryProvider);

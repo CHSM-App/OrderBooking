@@ -14,7 +14,7 @@ void main() {
     ProviderScope(
       child: Consumer(
         builder: (context, ref, _) {
-          ref.read(syncControllerProvider); // 👈 existing sync
+          ref.read(syncControllerProvider);
           return const EmployeePortalApp();
         },
       ),
