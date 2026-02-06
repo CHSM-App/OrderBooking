@@ -1,8 +1,5 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
-import 'package:order_booking_app/screens/theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -26,7 +23,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(
@@ -34,7 +31,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       curve: Curves.easeInOut,
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -48,376 +45,518 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _animationController.dispose();
     super.dispose();
   }
+Future<void> _onRefresh() async {
+  await Future.delayed(const Duration(seconds: 2));
 
-  @override
-  Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double horizontalPadding = 20;
- double gridSpacing = screenWidth < 250 ? 12 : 16;
-
-    double cardWidth = (screenWidth - horizontalPadding * 2 - gridSpacing) / 2;
-double cardHeight = screenWidth < 250 ? cardWidth * 0.85 : cardWidth * 1.1;
-// normal
-
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: FadeTransition(
-        
+  setState(() {
+    _todayOrders = 15;
+    _shopsVisited = 10;
+    _pendingOrders = 1;
+    _todayRevenue = 22500.0;
+  });
+}
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFF8F9FA),
+    body: RefreshIndicator(
+      color: const Color(0xFF6C63FF),
+      backgroundColor: Colors.white,
+      displacement: 70,
+      onRefresh: _onRefresh,
+      child: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
           position: _slideAnimation,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.all(horizontalPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Quick Actions Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Quick Actions',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Start your day efficiently',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.bolt_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.add_shopping_cart_rounded,
-                                label: 'New Order',
-                                onTap: () {
-                                  setState(() {
-                                    _selectedTabIndex = 1;
-                                  });
-                                },
-                                gradient: AppTheme.primaryGradient,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.add_business_rounded,
-                                label: 'Add Shop',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            const AddShopScreen()),
-                                  );
-                                },
-                                gradient: AppTheme.primaryGradient,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Stats Section Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Today\'s Performance',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.green.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.trending_up_rounded,
-                              color: Colors.green.shade700,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '+12%',
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Stats Grid (Responsive height)
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: gridSpacing,
-                    mainAxisSpacing: gridSpacing,
-                    childAspectRatio: cardWidth / cardHeight,
-                    children: [
-                      _ModernStatCard(
-                        icon: Icons.shopping_bag_rounded,
-                        title: 'Orders',
-                        value: _todayOrders.toString(),
-                        gradient: AppTheme.primaryGradient,
-                      ),
-                      _ModernStatCard(
-                        icon: Icons.store_rounded,
-                        title: 'Shops Visited',
-                        value: _shopsVisited.toString(),
-                        gradient: AppTheme.secondaryGradient,
-                      ),
-                      _ModernStatCard(
-                        icon: Icons.pending_actions_rounded,
-                        title: 'Pending',
-                        value: _pendingOrders.toString(),
-                        gradient: AppTheme.errorGradient,
-                      ),
-                      _ModernStatCard(
-                        icon: Icons.currency_rupee_rounded,
-                        title: 'Revenue',
-                        value: '₹${_todayRevenue.toStringAsFixed(0)}',
-                        gradient: AppTheme.successGradient,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Recent Activity
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Recent Activity',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'View All',
-                          style: TextStyle(
-                            color: Color(0xFFFFC107),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _ModernActivityCard(
-                    icon: Icons.check_circle_rounded,
-                    title: 'Order Delivered',
-                    subtitle: 'Green Juice Corner',
-                    orderId: 'ORD#001',
-                    time: '2 hours ago',
-                    gradient: AppTheme.successGradient,
-                  ),
-                  _ModernActivityCard(
-                    icon: Icons.shopping_cart_rounded,
-                    title: 'New Order Created',
-                    subtitle: 'Fresh Fruits Hub',
-                    orderId: 'ORD#002',
-                    time: '3 hours ago',
-                    gradient: AppTheme.primaryGradient,
-                  ),
-                  _ModernActivityCard(
-                    icon: Icons.add_business_rounded,
-                    title: 'Shop Added',
-                    subtitle: 'Health Juice Bar',
-                    orderId: '',
-                    time: '5 hours ago',
-                    gradient: AppTheme.secondaryGradient,
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildPerformanceSection(),
+                    const SizedBox(height: 24),
+                    _buildStatsOverview(),
+                    const SizedBox(height: 24),
+                    _buildQuickActions(context),
+                    const SizedBox(height: 24),
+                    _buildRecentActivity(),
+                    const SizedBox(height: 20),
+                  ]),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    ),
+  );
+}
+
+
+  Widget _buildStatsOverview() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 380;
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'Orders',
+                    value: _todayOrders.toString(),
+                    icon: Icons.shopping_bag_outlined,
+                    color: const Color(0xFF6C63FF),
+                    trend: '+12%',
+                    isSmall: isSmallScreen,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    title: 'Revenue',
+                    value: '₹${(_todayRevenue / 1000).toStringAsFixed(1)}K',
+                    icon: Icons.trending_up_rounded,
+                    color: const Color(0xFF00C853),
+                    trend: '+8%',
+                    isSmall: isSmallScreen,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'Shops',
+                    value: _shopsVisited.toString(),
+                    icon: Icons.store_outlined,
+                    color: const Color(0xFFFF6B6B),
+                    trend: '+5',
+                    isSmall: isSmallScreen,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    title: 'Pending',
+                    value: _pendingOrders.toString(),
+                    icon: Icons.pending_outlined,
+                    color: const Color(0xFFFFA726),
+                    trend: '-2',
+                    isSmall: isSmallScreen,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C6FDC).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.flash_on_rounded,
+                color: Color(0xFF7C6FDC),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Quick Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3142),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.shopping_cart_rounded,
+                label: 'New Order',
+                backgroundColor: const Color(0xFFE8E5FF),
+                iconColor: const Color(0xFF7C6FDC),
+                onTap: () {
+                  setState(() {
+                    _selectedTabIndex = 1;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.add_business_rounded,
+                label: 'Add Shop',
+                backgroundColor: const Color(0xFFD4F4E7),
+                iconColor: const Color(0xFF00C853),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddShopScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+             const SizedBox(width: 12),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.bar_chart_rounded,
+                label: 'Reports',
+                backgroundColor: const Color(0xFFD4F4E7),
+                iconColor: const Color.fromARGB(255, 180, 29, 12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddShopScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildHeroCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6C63FF),
+            Color(0xFF00D4FF),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6C63FF).withOpacity(0.5),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today\'s Revenue',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '₹${_todayRevenue.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.arrow_upward_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  '+24.5% from yesterday',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPerformanceSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color.fromARGB(255, 247, 107, 97), Color.fromARGB(255, 248, 45, 45)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 208, 71, 47).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today\'s Performance',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Great work! Keep it up',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      '+12%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _PerformanceMetric(
+                label: 'Efficiency',
+                value: '87%',
+                icon: Icons.speed_rounded,
+              ),
+              _PerformanceMetric(
+                label: 'Success Rate',
+                value: '94%',
+                icon: Icons.check_circle_outline_rounded,
+              ),
+              _PerformanceMetric(
+                label: 'Avg. Time',
+                value: '15m',
+                icon: Icons.access_time_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivity() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recent Activity',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text(
+                'View All',
+                style: TextStyle(
+                  color: Color(0xFF6C63FF),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _ActivityItem(
+          icon: Icons.check_circle_rounded,
+          title: 'Order Delivered',
+          subtitle: 'Green Juice Corner',
+          time: '2h ago',
+          color: const Color(0xFF00C853),
+          badge: 'ORD#001',
+        ),
+        const SizedBox(height: 10),
+        _ActivityItem(
+          icon: Icons.shopping_cart_rounded,
+          title: 'New Order Created',
+          subtitle: 'Fresh Fruits Hub',
+          time: '3h ago',
+          color: const Color(0xFF6C63FF),
+          badge: 'ORD#002',
+        ),
+        const SizedBox(height: 10),
+        _ActivityItem(
+          icon: Icons.add_business_rounded,
+          title: 'Shop Added',
+          subtitle: 'Health Juice Bar',
+          time: '5h ago',
+          color: const Color(0xFFFF6B6B),
+        ),
+      ],
     );
   }
 }
-
 // Quick Action Button
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color backgroundColor;
+  final Color iconColor;
   final VoidCallback onTap;
-  final Gradient gradient;
 
   const _QuickActionButton({
     required this.icon,
     required this.label,
+    required this.backgroundColor,
+    required this.iconColor,
     required this.onTap,
-    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors[0].withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Stats Card
-class _ModernStatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final Gradient gradient;
-
-  const _ModernStatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.gradient,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors[0].withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: iconColor.withOpacity(0.2),
+            width: 1.5,
           ),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(14), // reduce padding for small screens
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.white, size: 26),
-            ),
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
                 color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColor.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              child: Icon(icon, color: iconColor, size: 26),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 10),
             Text(
-              title,
+              label,
               style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.9),
-                fontWeight: FontWeight.w500,
+                color: iconColor,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -426,108 +565,273 @@ class _ModernStatCard extends StatelessWidget {
     );
   }
 }
-
-// Activity Card
-class _ModernActivityCard extends StatelessWidget {
-  final IconData icon;
+// Modern Stat Card
+class _StatCard extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final String orderId;
-  final String time;
-  final Gradient gradient;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final String trend;
+  final bool isSmall;
 
-  const _ModernActivityCard({
-    required this.icon,
+  const _StatCard({
     required this.title,
-    required this.subtitle,
-    required this.orderId,
-    required this.time,
-    required this.gradient,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.trend,
+    this.isSmall = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = gradient.colors.first;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isSmall ? 14 : 16),
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 15,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.shade100,
-          width: 1,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: isSmall ? 18 : 20),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  trend,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isSmall ? 10 : 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isSmall ? 22 : 24,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF757575),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Action Button
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
         ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Performance Metric
+class _PerformanceMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _PerformanceMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Activity Item
+class _ActivityItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String time;
+  final Color color;
+  final String? badge;
+
+  const _ActivityItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.color,
+    this.badge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  color.withOpacity(0.2),
-                  color.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 26),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
                 Row(
                   children: [
                     Flexible(
                       child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
-                    if (orderId.isNotEmpty) ...[
-                      const SizedBox(width: 6),
+                    if (badge != null) ...[
+                      const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: color.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          orderId,
-                          style: const TextStyle(
+                          badge!,
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white,
+                            color: color,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ],
                   ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF757575),
+                  ),
                 ),
               ],
             ),
@@ -536,17 +840,13 @@ class _ModernActivityCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Icon(
-                Icons.access_time_rounded,
-                size: 14,
-                color: Colors.white70,
-              ),
+              Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
               const SizedBox(height: 4),
               Text(
                 time,
                 style: const TextStyle(
                   fontSize: 11,
-                  color: Colors.white70,
+                  color: Color(0xFF9E9E9E),
                   fontWeight: FontWeight.w500,
                 ),
               ),

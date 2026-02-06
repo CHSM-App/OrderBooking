@@ -172,7 +172,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: isCheckedIn ? Colors.redAccent : Colors.white,
+                      color: isCheckedIn ? const Color.fromARGB(255, 235, 13, 13) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
