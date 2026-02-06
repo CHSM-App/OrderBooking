@@ -129,7 +129,6 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       state = state.copyWith(
         isLoading: false,
         adminDetails: AsyncValue.data(admindetails),
-        
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -142,6 +141,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     try {
       final result = await usecase.checkPhoneNumber(mobileNo);
       state = state.copyWith(phoneCheckResult: AsyncValue.data(result));
+      await loadFromStorage();
     } catch (e, st) {
       state = state.copyWith(phoneCheckResult: AsyncValue.error(e, st));
     }

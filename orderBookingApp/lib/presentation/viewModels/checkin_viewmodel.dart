@@ -95,7 +95,6 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
     try {
       // ✅ Get response from usecase
       final response = await usecase.checkOut(empId);
-      print('resposne $response');
       // ✅ Extract message from response
       final message = response.message ?? 'Checked out successfully!';
 

@@ -52,10 +52,6 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
   @override
   void initState() {
     super.initState();
-    debugPrint(
-      'AddProductPage opened. '
-      'productId: ${widget.initialProduct?.productId}',
-    );
 
     productNameController = TextEditingController();
 

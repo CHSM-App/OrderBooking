@@ -159,8 +159,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => EmployeeDetailsPage(
-                                empId: emp["id"],
-                                companyId: {},
+                                empId: emp["id"]
                               ),
                             ),
                           );

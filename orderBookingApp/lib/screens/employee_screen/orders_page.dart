@@ -16,10 +16,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   @override
   void initState() {
     super.initState();
+        print("inside the initState of the Orders_page");
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getAllOrders();
-      ref.read(ordersViewModelProvider.notifier).syncOfflineOrders(
-          ref.read(adminloginViewModelProvider).userId);
+      ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
     });
   }
 
@@ -105,9 +104,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              ref.read(ordersViewModelProvider.notifier).getAllOrders();
-              ref.read(ordersViewModelProvider.notifier)
-                  .syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+              ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
+
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
@@ -158,7 +156,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getAllOrders();
+                ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
@@ -182,9 +180,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return RefreshIndicator(
       color: Colors.deepPurpleAccent,
       onRefresh: () async {
-        await ref.read(ordersViewModelProvider.notifier).getAllOrders();
-        ref.read(ordersViewModelProvider.notifier)
-            .syncOfflineOrders(ref.read(adminloginViewModelProvider).userId);
+        await ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
+
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),

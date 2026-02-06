@@ -14,42 +14,42 @@ class ProfilePage extends ConsumerStatefulWidget {
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProviderStateMixin {
+class _ProfilePageState extends ConsumerState<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
+    print("inside the initState of the Profile_page");
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(employeeloginViewModelProvider.notifier)
+          .fetchEmployeeInfo(mobileNo ?? "");
+    });
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
-    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOut,
-      ),
-    );
-    
-    _animationController.forward();
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
 
-    });
-    
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _animationController.forward();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -61,7 +61,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final isLoading = employeeState.isLoading;
     final error = employeeState.error;
-     List<EmployeeLogin> list = employeeState.employeeDetails!.value??[];
+    List<EmployeeLogin> list = employeeState.employeeDetails!.value ?? [];
     final employeeDetails = list.isNotEmpty ? list.first : null;
 
     return Scaffold(
@@ -69,10 +69,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
       body: isLoading
           ? _buildLoadingState()
           : error != null
-              ? _buildErrorState(error)
-              : employeeDetails != null
-                  ? _buildProfileContent(employeeDetails)
-                  : _buildEmptyState(),
+          ? _buildErrorState(error)
+          : employeeDetails != null
+          ? _buildProfileContent(employeeDetails)
+          : _buildEmptyState(),
     );
   }
 
@@ -145,15 +145,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(ref.read(adminloginViewModelProvider).mobileNo??"");
+                ref
+                    .read(employeeloginViewModelProvider.notifier)
+                    .fetchEmployeeInfo(
+                      ref.read(adminloginViewModelProvider).mobileNo ?? "",
+                    );
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
@@ -165,9 +166,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   }
 
   Widget _buildEmptyState() {
-    return const Center(
-      child: Text('No employee data available'),
-    );
+    return const Center(child: Text('No employee data available'));
   }
 
   Widget _buildProfileContent(EmployeeLogin employeeDetails) {
@@ -178,7 +177,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     final imageUrl = employeeDetails.imageUrl;
     final joiningDate = employeeDetails.joiningDate ?? "";
     final isActive = employeeDetails.activeStatus == 1;
-    
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: CustomScrollView(
@@ -213,7 +212,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                   _CompactInfoTile(
                     icon: Icons.phone_rounded,
                     label: 'Phone',
-                    value: mobileNo??"",
+                    value: mobileNo ?? "",
                     gradient: AppTheme.primaryGradient,
                   ),
                   if (email.isNotEmpty)
@@ -263,7 +262,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
-        
         padding: const EdgeInsets.only(top: 50, bottom: 20),
         decoration: BoxDecoration(
           gradient: AppTheme.primaryGradient,
@@ -286,17 +284,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
               alignment: Alignment.topRight,
               child: Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: _buildEditButton(employeeName, mobileNo??"N/A", email, address),
+                child: _buildEditButton(
+                  employeeName,
+                  mobileNo ?? "N/A",
+                  email,
+                  address,
+                ),
               ),
             ),
-            
+
             const SizedBox(height: 10),
-            
+
             // Avatar
             _buildCompactAvatar(employeeName, imageUrl),
-            
+
             const SizedBox(height: 16),
-            
+
             // Name
             Text(
               employeeName,
@@ -306,15 +309,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                 color: Colors.white,
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // ID and Status - Side by side compact
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -337,9 +343,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isActive 
+                    color: isActive
                         ? Colors.green.withOpacity(0.3)
                         : Colors.red.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(20),
@@ -424,7 +433,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     );
   }
 
-  Widget _buildCompactInfoCard(EmployeeLogin employeeDetails, String joiningDate) {
+  Widget _buildCompactInfoCard(
+    EmployeeLogin employeeDetails,
+    String joiningDate,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -453,7 +465,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             employeeDetails.regionId?.toString() ?? 'N/A',
             AppTheme.secondaryColor,
           ),
-          if (employeeDetails.idProof != null && employeeDetails.idProof!.isNotEmpty) ...[
+          if (employeeDetails.idProof != null &&
+              employeeDetails.idProof!.isNotEmpty) ...[
             const Divider(height: 20),
             _buildCompactInfoRow(
               Icons.badge,
@@ -467,7 +480,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     );
   }
 
-  Widget _buildCompactInfoRow(IconData icon, String label, String value, Color color) {
+  Widget _buildCompactInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Row(
       children: [
         Container(
@@ -485,10 +503,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
               ),
               Text(
                 value,
@@ -525,7 +540,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             label: 'Refresh',
             gradient: AppTheme.primaryGradient,
             onTap: () {
-              ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
+              ref
+                  .read(employeeloginViewModelProvider.notifier)
+                  .fetchEmployeeInfo(mobileNo ?? "");
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Row(
@@ -537,7 +554,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                   ),
                   backgroundColor: AppTheme.successColor,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -600,7 +619,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
     );
   }
 
-  Widget _buildEditButton(String name, String phone, String email, String address) {
+  Widget _buildEditButton(
+    String name,
+    String phone,
+    String email,
+    String address,
+  ) {
     return Material(
       color: Colors.white.withOpacity(0.2),
       borderRadius: BorderRadius.circular(12),
@@ -615,7 +639,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
                 email: email,
                 address: address,
                 onSave: (updatedData) {
-                  ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(mobileNo??"");
+                  ref
+                      .read(employeeloginViewModelProvider.notifier)
+                      .fetchEmployeeInfo(mobileNo ?? "");
                 },
               ),
             ),
@@ -647,7 +673,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return dateStr;
@@ -710,7 +749,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Logout'),
           content: const Text(
             'You are offline, logout may cause data loss, still want to logout?',
@@ -750,15 +791,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProv
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-               onPressed: () {
-                ref.read(tokenProvider.notifier).clearTokens();
-                ref.read(adminloginViewModelProvider.notifier).clearLogin();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
-                );
-              },
+            onPressed: () {
+              ref.read(tokenProvider.notifier).clearTokens();
+              ref.read(adminloginViewModelProvider.notifier).clearLogin();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
             child: const Text('Logout'),
           ),
         ],
@@ -814,10 +855,7 @@ class _CompactInfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -949,7 +987,11 @@ class _CompactSettingTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade400),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey.shade400,
+                ),
               ],
             ),
           ),

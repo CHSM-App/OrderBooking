@@ -9,7 +9,6 @@ import 'package:order_booking_app/screens/theme.dart';
 import 'package:uuid/uuid.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
-import 'dart:math' as math;
 
 class ShopListPage extends ConsumerStatefulWidget {
   const ShopListPage({Key? key}) : super(key: key);
@@ -22,7 +21,6 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
     with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _isSearchExpanded = false;
   late AnimationController _fabAnimationController;
   late AnimationController _headerAnimationController;
   late Animation<double> _headerSlideAnimation;
@@ -31,6 +29,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
   @override
   void initState() {
     super.initState();
+    print("inside the initState of shops_page");
     
     _fabAnimationController = AnimationController(
       vsync: this,
@@ -1278,9 +1277,6 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
   }
 }
 
-// ================================
-// ULTRA MODERN SHOP CARD WIDGET
-// ================================
 class UltraModernShopCard extends StatefulWidget {
   final ShopDetails shop;
   final VoidCallback onTap;

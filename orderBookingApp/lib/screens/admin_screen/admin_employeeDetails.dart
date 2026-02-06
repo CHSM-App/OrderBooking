@@ -12,11 +12,7 @@ import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
-  const EmployeeDetailsPage({
-    super.key,
-    required this.empId,
-    required Map<String, dynamic> companyId,
-  });
+  const EmployeeDetailsPage({super.key, required this.empId});
 
   @override
   ConsumerState<EmployeeDetailsPage> createState() =>
@@ -38,6 +34,18 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref
+          .read(employeeloginViewModelProvider.notifier)
+          .fetchEmployeeDetails(widget.empId);
+      await ref
+          .read(visitViewModelProvider.notifier)
+          .fetchEmployeeVisits(widget.empId);
+      await ref
+          .read(ordersViewModelProvider.notifier)
+          .getEmployeeOrders(widget.empId);
+    });
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -48,18 +56,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(employeeloginViewModelProvider.notifier)
-          .fetchEmployeeDetails(widget.empId);
-      ref
-          .read(visitViewModelProvider.notifier)
-          .fetchEmployeeVisits(widget.empId);
-      ref
-          .read(ordersViewModelProvider.notifier)
-          .getEmployeeOrders(widget.empId);
-    });
 
     _controller.forward();
   }
@@ -175,50 +171,42 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
         "${date.month.toString().padLeft(2, '0')}-"
         "${date.year.toString().padLeft(2, '0')}";
   }
- 
 
   //filter orders
- bool _passesOrderFilter(Order order) {
-  final date = _parseOrderDate(order.orderDate);
-  if (date == null) return false;
+  bool _passesOrderFilter(Order order) {
+    final date = _parseOrderDate(order.orderDate);
+    if (date == null) return false;
 
-  final now = DateTime.now();
+    final now = DateTime.now();
 
-  switch (selectedFilter) {
-    case "All":
-      return true;
+    switch (selectedFilter) {
+      case "All":
+        return true;
 
-    case "Today":
-      return !date.isBefore(_startOfDay(now)) &&
-             !date.isAfter(_endOfDay(now));
+      case "Today":
+        return !date.isBefore(_startOfDay(now)) &&
+            !date.isAfter(_endOfDay(now));
 
-    case "Month":
-      return date.year == now.year &&
-             date.month == now.month;
+      case "Month":
+        return date.year == now.year && date.month == now.month;
 
-    case "Year":
-      return date.year == now.year;
+      case "Year":
+        return date.year == now.year;
 
-    case "Custom":
-      if (_customRange == null) return true;
-      return !date.isBefore(_startOfDay(_customRange!.start)) &&
-             !date.isAfter(_endOfDay(_customRange!.end));
+      case "Custom":
+        if (_customRange == null) return true;
+        return !date.isBefore(_startOfDay(_customRange!.start)) &&
+            !date.isAfter(_endOfDay(_customRange!.end));
 
-    default:
-      return true;
+      default:
+        return true;
+    }
   }
-}
 
+  DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
-
-
-DateTime _startOfDay(DateTime d) =>
-    DateTime(d.year, d.month, d.day);
-
-DateTime _endOfDay(DateTime d) =>
-    DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
-
-
+  DateTime _endOfDay(DateTime d) =>
+      DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
 
   @override
   Widget build(BuildContext context) {
@@ -249,84 +237,72 @@ DateTime _endOfDay(DateTime d) =>
     final avgShopTimeText = _calculateAvgShopTime(
       ref.watch(visitViewModelProvider).visits?.value,
     );
+
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
       ref.watch(visitViewModelProvider).visits?.value,
     );
+    final employeeOrdersForAvg = ordersState.orders?.maybeWhen(
+      data: (orders) => orders,
+      orElse: () => null,
+    );
     final avgOrdersPerDayText = _calculateAvgOrdersPerDay(
-      ref.watch(ordersViewModelProvider).orders?.value,
+      employeeOrdersForAvg,
     );
 
-    // final ordersAsync = ordersState.orders; 
-    // List<Order> employeeOrders = [];
+    final ordersAsync = ordersState.orders;
 
-    
-    // ordersAsync?.whenData((orders) {
-    //   employeeOrders =
-    //       orders
-    //           .where(_passesOrderFilter) // 🔥 FILTER APPLIED
-    //           .toList()
-    //         ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
-    // });
-
-  final ordersAsync = ordersState.orders;
-
-Widget ordersWidget() {
-  if (ordersAsync == null) {
-    return const Padding(
-      padding: EdgeInsets.all(16),
-      child: Text("No orders found for this employee"),
-    );
-  }
-
-  return ordersAsync.when(
-    loading: () => const Padding(
-      padding: EdgeInsets.all(16),
-      child: CircularProgressIndicator(),
-    ),
-    error: (e, _) => Padding(
-      padding: const EdgeInsets.all(16),
-      child: Text(e.toString()),
-    ),
-    data: (orders) {
-      // ✅ FILTER HERE — EVERY BUILD
-      final filteredOrders = orders
-    .where(_passesOrderFilter)
-    .toList()
-  ..sort(
-    (a, b) =>
-        _parseOrderDate(b.orderDate)!
-            .compareTo(_parseOrderDate(a.orderDate)!),
-  );
-
-      if (filteredOrders.isEmpty) {
+    Widget ordersWidget() {
+      if (ordersAsync == null) {
         return const Padding(
           padding: EdgeInsets.all(16),
-          child: Text("No orders found for this filter"),
+          child: Text("No orders found for this employee"),
         );
       }
 
-      return ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: filteredOrders.length,
-        itemBuilder: (_, index) {
-          final order = filteredOrders[index];
-          return _AnimatedOrderCard(
-            order: order,
-            orderNumber: filteredOrders.length - index,
-            amount: order.totalPrice.toInt(),
-            filter: selectedFilter,
-            delay: index * 100,
+      return ordersAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(e.toString()),
+        ),
+        data: (orders) {
+          // ✅ FILTER HERE — EVERY BUILD
+          final filteredOrders = orders.where(_passesOrderFilter).toList()
+            ..sort(
+              (a, b) => _parseOrderDate(
+                b.orderDate,
+              )!.compareTo(_parseOrderDate(a.orderDate)!),
+            );
+
+          if (filteredOrders.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text("No orders found for this filter"),
+            );
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filteredOrders.length,
+            itemBuilder: (_, index) {
+              final order = filteredOrders[index];
+              return _AnimatedOrderCard(
+                order: order,
+                orderNumber: filteredOrders.length - index,
+                amount: order.totalPrice.toInt(),
+                filter: selectedFilter,
+                delay: index * 100,
+              );
+            },
           );
         },
       );
-    },
-  );
-}
-
-
-
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -451,7 +427,7 @@ Widget ordersWidget() {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        employee.regionName?.toString() ?? '', 
+                                        employee.regionName?.toString() ?? '',
                                         style: const TextStyle(
                                           color: Colors.white70,
                                         ),
@@ -499,7 +475,7 @@ Widget ordersWidget() {
                   ),
                   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
                   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
-                  
+
                   _infoRow(
                     Icons.calendar_today,
                     "Joining Date",
@@ -722,9 +698,7 @@ Widget ordersWidget() {
 
                 const SizedBox(height: 12),
 
-                
                 ordersWidget(),
-
 
                 const SizedBox(height: 24),
               ],
@@ -931,6 +905,7 @@ Widget ordersWidget() {
   }
 
   String _calculateAvgOrdersPerDay(List<Order>? orders) {
+    print('total orders ${orders?.length}');
     if (orders == null || orders.isEmpty) return "0";
 
     final byDay = <String, int>{};
@@ -1193,7 +1168,7 @@ class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
                               color: Colors.black87,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 6),
                           Row(
                             children: [

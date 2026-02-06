@@ -15,14 +15,12 @@ class OrdersRepositoryImpl implements OrdersRepository {
     try {
       // await _apiService.addProduct(order);
       await offlineOrderDao.insertOrder(order);
-      await syncOfflineOrders();
     } catch (e) {
       throw Exception('Failed to add order line item: $e');
     }
   }
 
   Future<void> syncOfflineOrders() async {
-    print("in the syncOfflineOrders of repo");
     final orders = await offlineOrderDao.fetchPendingOrders();
 
     for (final o in orders) {
@@ -65,7 +63,10 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
 
-  Future<List<Order>> getAllOrders() async {
+  Future<List<Order>> getAllOrders(int empId) async {
+
+  await syncOfflineOrders();
+  await syncServerOrdersToLocal(empId);
   final rows = await offlineOrderDao.fetchAllOrders();
 
   final result = <Order>[];
@@ -105,7 +106,6 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
 
 Future<void> syncServerOrdersToLocal(int employeeId) async {
-  print('Syncing server orders to local');
 
   // 1️⃣ Fetch from server
   final serverOrders = await _apiService.getOrders(employeeId);

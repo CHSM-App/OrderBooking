@@ -304,7 +304,6 @@ Future<List<Map<String, dynamic>>> getPendingSubProductDeletes() async {
 
 
 Future<void> hardDeleteSubProduct(String localSubId) async {
-  print("hard detelted product done");
   final db = await AppDatabase.database;
 
   await db.delete(
