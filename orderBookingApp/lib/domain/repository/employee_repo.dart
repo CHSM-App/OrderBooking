@@ -10,4 +10,7 @@ abstract class EmployeeloginRepository {
   Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo);
 
   Future<EmployeeLogin> deleteEmployee(int empId);
+
+   Future<dynamic> checkMobileExists(String mobileNo, String companyId);
+
 }

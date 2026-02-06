@@ -19,10 +19,11 @@ class OrderPrintPreviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Print Preview'),
-      ),
+      appBar: AppBar(title: const Text('Print Preview')),
       body: PdfPreview(
+       
+        canDebug: false, // 👈 hides the ON/OFF switch
+
         build: (PdfPageFormat format) async {
           final pdf = pw.Document();
 

@@ -9,16 +9,19 @@ class EmployeeloginState {
   final AsyncValue<List<EmployeeLogin>>? employeeList;
   final AsyncValue<List<EmployeeLogin>>? employeeDetails;
   final String? companyId;
+  final bool? isPhoneNoExists;
 
   const EmployeeloginState({
     this.isLoading = false,
     this.companyId,
+    this.isPhoneNoExists,
     this.error,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
   });
 
   EmployeeloginState copyWith({
+    bool? isPhoneNoExists,
     bool? isLoading,
     String? error,
     AsyncValue<List<EmployeeLogin>>? employeeList,
@@ -26,6 +29,7 @@ class EmployeeloginState {
   }) {
     return EmployeeloginState(
       isLoading: isLoading ?? this.isLoading,
+      isPhoneNoExists: isPhoneNoExists ?? this.isPhoneNoExists,
       error: error ?? this.error,
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
@@ -38,6 +42,8 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
   
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
+
+
 
   // EXISTING: Add Employee
   Future<void> addEmployee(EmployeeLogin employeeLogin) async {
@@ -110,5 +116,27 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+
+  //check weather mobile number already exists in table
+  Future<void> checkMobileExists(String mobileNo, String companyId) async {
+    state = state.copyWith(isLoading: true, error: null,isPhoneNoExists: null );
+
+    try {
+      final exists = await usecase.checkMobileExists(
+        mobileNo,
+        companyId,
+      );
+
+      state = state.copyWith(isLoading: false, isPhoneNoExists: exists);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        isPhoneNoExists: false,
+      );
+    }
+}
+
 }
 

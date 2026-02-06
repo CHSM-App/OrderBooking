@@ -1,4 +1,6 @@
  
+import 'dart:convert';
+
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 
@@ -29,5 +31,11 @@ class EmployeeloginImpl implements EmployeeloginRepository {
    @override
   Future<EmployeeLogin> deleteEmployee(int empId) {
     return apiService.deleteEmployee(empId);
+  }
+
+   @override
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId) {
+    return apiService.checkMobileExists(mobileNo, companyId);
+    
   }
 }

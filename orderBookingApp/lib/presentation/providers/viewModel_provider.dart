@@ -1,6 +1,5 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/presentation/providers/usecase_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/checkin_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
