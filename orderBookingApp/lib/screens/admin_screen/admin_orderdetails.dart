@@ -52,6 +52,26 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     super.dispose();
   }
 
+  // Check if error is network-related
+  bool _isNetworkError(String? errorMessage) {
+    if (errorMessage == null) return false;
+    
+    final networkKeywords = [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host lookup',
+      'no address associated',
+      'timeout',
+      'unreachable',
+      'failed to connect',
+    ];
+    
+    final lowerError = errorMessage.toLowerCase();
+    return networkKeywords.any((keyword) => lowerError.contains(keyword));
+  }
+
   @override
   Widget build(BuildContext context) {
     final ordersState = ref.watch(ordersViewModelProvider);
@@ -88,7 +108,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     return Container(
       padding: EdgeInsets.all(isTablet ? 24 : 16),
       decoration: BoxDecoration(
-      //  color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -100,82 +119,80 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         
-       Row(
-  children: [
-    // 🔍 Search bar (UNCHANGED)
-    Expanded(
-      child: Container(
-        height: isTablet ? 56 : 50,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _searchQuery.isNotEmpty
-                ? Colors.green.shade300
-                : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value.toLowerCase();
-            });
-          },
-          style: TextStyle(fontSize: isTablet ? 16 : 14),
-          decoration: InputDecoration(
-            hintText: 'Search by order number, shop, employee...',
-            hintStyle: TextStyle(
-              color: Colors.grey[400],
-              fontSize: isTablet ? 16 : 14,
-            ),
-            prefixIcon: Container(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                Icons.search_rounded,
-                color: Colors.grey[600],
-                size: isTablet ? 24 : 22,
-              ),
-            ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        shape: BoxShape.circle,
+          Row(
+            children: [
+              // 🔍 Search bar
+              Expanded(
+                child: Container(
+                  height: isTablet ? 56 : 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _searchQuery.isNotEmpty
+                          ? Colors.green.shade300
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.toLowerCase();
+                      });
+                    },
+                    style: TextStyle(fontSize: isTablet ? 16 : 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search by order number, shop, employee...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: isTablet ? 16 : 14,
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
+                      prefixIcon: Container(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: Colors.grey[600],
+                          size: isTablet ? 24 : 22,
+                        ),
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 20 : 16,
+                        vertical: isTablet ? 18 : 14,
                       ),
                     ),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 20 : 16,
-              vertical: isTablet ? 18 : 14,
-            ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // 🎛 Filter button
+              _buildFilterButton(),
+            ],
           ),
-        ),
-      ),
-    ),
-
-    const SizedBox(width: 12),
-
-    // 🎛 SAME filter button (reuse existing method)
-    _buildFilterButton(),
-  ],
-),
-
 
           // Active filter chip
           if (_selectedFilter != null) ...[
@@ -355,8 +372,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
       );
     }
 
+    // Check if error is network-related
     if (state.errorMessage != null) {
-      return _buildErrorState(state.errorMessage!, isTablet);
+      if (_isNetworkError(state.errorMessage)) {
+        return _buildNoInternetWidget(isTablet);
+      } else {
+        return _buildErrorState(state.errorMessage!, isTablet);
+      }
     }
 
     if (state.orders != null) {
@@ -368,11 +390,163 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
           return _buildOrdersList(context, orders, isTablet);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(error.toString(), isTablet),
+        error: (error, stack) {
+          // Check if this error is network-related
+          if (_isNetworkError(error.toString())) {
+            return _buildNoInternetWidget(isTablet);
+          }
+          return _buildErrorState(error.toString(), isTablet);
+        },
       );
     }
 
     return _buildEmptyState(isTablet);
+  }
+
+  Widget _buildNoInternetWidget(bool isTablet) {
+    return Center(
+      child: FadeTransition(
+        opacity: _animationController,
+        child: Padding(
+          padding: EdgeInsets.all(isTablet ? 48 : 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated WiFi Icon
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade50, Colors.red.shade50],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.wifi_off_rounded,
+                  size: isTablet ? 100 : 80,
+                  color: Colors.orange.shade400,
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // Title
+              Text(
+                'No Internet Connection',
+                style: TextStyle(
+                  fontSize: isTablet ? 28 : 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Subtitle
+              Text(
+                'Please check your internet connection\nand try again',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isTablet ? 18 : 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              
+              // Retry Button
+              _buildModernButton(
+                onPressed: () {
+                  ref.read(ordersViewModelProvider.notifier).getOrderList(
+                        ref.read(adminloginViewModelProvider).companyId ?? '',
+                      );
+                },
+                icon: Icons.refresh_rounded,
+                label: 'Retry',
+                isTablet: isTablet,
+                color: Colors.orange,
+              ),
+              const SizedBox(height: 16),
+              
+              // Tips Card
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.blue.shade100,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Quick Tips',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16 : 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTipItem('Check your WiFi or mobile data', isTablet),
+                    _buildTipItem('Try turning airplane mode on/off', isTablet),
+                    _buildTipItem('Restart your router if using WiFi', isTablet),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipItem(String text, bool isTablet) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.blue.shade400,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 13,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState(bool isTablet) {
@@ -489,16 +663,17 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     required IconData icon,
     required String label,
     required bool isTablet,
+    Color color = Colors.green,
   }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
-          colors: [Colors.green.shade400, Colors.green.shade600],
+          colors: [Colors.blueGrey, Colors.grey],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: color.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1134,7 +1309,7 @@ class _OrderCardState extends State<_OrderCard>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-         Icon(icon, size: 16, color: color.withOpacity(0.7)),
+          Icon(icon, size: 16, color: color.withOpacity(0.7)),
           const SizedBox(width: 6),
           Flexible(
             child: Text(

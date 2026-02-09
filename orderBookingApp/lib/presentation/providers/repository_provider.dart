@@ -11,7 +11,7 @@ import 'package:order_booking_app/data/local/shop_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
 import 'package:order_booking_app/data/repositories/orders.impl.dart';
 import 'package:order_booking_app/data/repositories/product_impl.dart';
-import 'package:order_booking_app/data/repositories/region.dart';
+import 'package:order_booking_app/data/repositories/region_impl.dart';
 
 
 import 'package:order_booking_app/data/repositories/shop_impl.dart';

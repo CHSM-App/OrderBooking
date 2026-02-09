@@ -27,6 +27,12 @@ class CheckinStatusRequestImpl implements CheckinRepository {
     final list = await apiService.fetchTodayAttendance(empId);
     return list.isNotEmpty ? list.first : null;
   }
+  @override
+  Future<List<CheckInStatusRequest>> getAttendance(int empId) async {
+    return await apiService.getAttendance(empId);
+  }
+
+  
 }
 
 

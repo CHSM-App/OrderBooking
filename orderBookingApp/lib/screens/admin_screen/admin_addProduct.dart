@@ -9,11 +9,7 @@ class AddProductPage extends ConsumerStatefulWidget {
   final int adminId;
   final Product? initialProduct;
 
-  const AddProductPage({
-    super.key,
-    required this.adminId,
-    this.initialProduct,
-  });
+  const AddProductPage({super.key, required this.adminId, this.initialProduct});
 
   @override
   ConsumerState<AddProductPage> createState() => _AddProductPageState();
@@ -104,19 +100,50 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
       final subtype = ProductSubType(
         localId: Uuid().v4(),
         subItemId: null,
-        measuringUnit:  measuringUnit ?? '',
+        measuringUnit: measuringUnit ?? '',
         availableUnit: double.tryParse(unitController.text) ?? 0,
         price: double.tryParse(priceController.text),
-        
       );
-    
+
       addedItems.add(subtype);
       unitController.clear();
       priceController.clear();
     });
   }
 
+  Future<bool> _ensureOnline() async {
+    final isConnected = await ref
+        .read(networkServiceProvider)
+        .checkConnection();
+    if (!isConnected) {
+      // Ensure the global banner reflects the latest status.
+      ref.invalidate(networkStatusProvider);
+      return false;
+    }
+    return true;
+  }
+
   Future<void> submitForm() async {
+    final online = await _ensureOnline();
+    if (!online) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.wifi_off, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text("No internet connection!"),
+            ],
+          ),
+          backgroundColor: Colors.grey[800],
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(8),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     if (addedItems.isEmpty) {
@@ -145,11 +172,15 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
           .read(productViewModelProvider.notifier)
           .addOrUpdateProduct(product);
 
-      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
+      ref
+          .read(productViewModelProvider.notifier)
+          .fetchProductList(
+            ref.read(adminloginViewModelProvider).companyId ?? "",
+          );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text( 
+          content: Text(
             widget.initialProduct != null
                 ? "Product updated successfully!"
                 : "Product added successfully!",
@@ -483,7 +514,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
                       // final subItemlocalId = item['local_id'];
                       final subItemlocalId = item.localId;
 
-                      if (subItemlocalId !=null) {
+                      if (subItemlocalId != null) {
                         // Confirm deletion
                         final confirm = await showDialog<bool>(
                           context: context,
@@ -574,7 +605,6 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
-                  
                 ),
               ),
             ],
@@ -613,7 +643,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
         .whereType<ProductSubType>()
         .toList();
   }
- 
+
   Widget _buildAnimatedField({required int delay, required Widget child}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),

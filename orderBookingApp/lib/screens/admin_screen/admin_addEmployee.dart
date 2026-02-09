@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/presentation/providers/network_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 
 class AddEmployeeForm extends ConsumerStatefulWidget {
@@ -108,76 +109,95 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     super.dispose();
   }
 
-  Future<void> submitForm() async {
-    final state = ref.read(employeeloginViewModelProvider);
-    if (state.isPhoneNoExists == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Mobile number already exists"),
-          backgroundColor: Colors.red,
+ Future<void> submitForm() async {
+  final isConnected = await ref.read(networkServiceProvider).checkConnection();
+  if (!isConnected) {
+    // Ensure the global banner reflects the latest status.
+    ref.invalidate(networkStatusProvider);
+    
+    // Show a bottom banner for no connection
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.wifi_off, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text("No internet connection!"),
+          ],
         ),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
-
-    // Create updated/new Employee object
-    final employeeToSave = widget.isEdit
-        ? EmployeeLogin(
-            empId: widget.employee!.empId, // important for update
-            empName: name,
-            empMobile: mobile,
-            empEmail: email,
-            empAddress: address,
-            companyId: ref.read(adminloginViewModelProvider).companyId,
-            adminId: ref.read(adminloginViewModelProvider).userId,
-            // regionId: region ?? widget.employee!.regionId,
-            regionId: selectedRegionId!,
-
-            roleId: widget.employee!.roleId,
-          )
-        : EmployeeLogin(
-            empName: name,
-            empMobile: mobile,
-            empEmail: email,
-            empAddress: address,
-            regionId: selectedRegionId!,
-            companyId: ref.read(adminloginViewModelProvider).companyId,
-            adminId: ref.read(adminloginViewModelProvider).userId,
-            roleId: 2,
-          );
-
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .addEmployee(employeeToSave);
-
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
-
-    // final state = ref.read(employeeloginViewModelProvider);
-
-    if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!), backgroundColor: Colors.blue),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isEdit
-                ? "Employee updated successfully"
-                : "Employee added successfully",
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context, true);
-    }
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(8),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+    return;
   }
 
+  final state = ref.read(employeeloginViewModelProvider);
+  if (state.isPhoneNoExists == true) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Mobile number already exists"),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  if (!_formKey.currentState!.validate()) return;
+  _formKey.currentState!.save();
+
+  // Create updated/new Employee object
+  final employeeToSave = widget.isEdit
+      ? EmployeeLogin(
+          empId: widget.employee!.empId, // important for update
+          empName: name,
+          empMobile: mobile,
+          empEmail: email,
+          empAddress: address,
+          companyId: ref.read(adminloginViewModelProvider).companyId,
+          adminId: ref.read(adminloginViewModelProvider).userId,
+          regionId: selectedRegionId!,
+          roleId: widget.employee!.roleId,
+        )
+      : EmployeeLogin(
+          empName: name,
+          empMobile: mobile,
+          empEmail: email,
+          empAddress: address,
+          regionId: selectedRegionId!,
+          companyId: ref.read(adminloginViewModelProvider).companyId,
+          adminId: ref.read(adminloginViewModelProvider).userId,
+          roleId: 2,
+        );
+
+  await ref
+      .read(employeeloginViewModelProvider.notifier)
+      .addEmployee(employeeToSave);
+
+  await ref
+      .read(employeeloginViewModelProvider.notifier)
+      .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+
+  if (state.error != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(state.error!), backgroundColor: Colors.blue),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isEdit
+              ? "Employee updated successfully"
+              : "Employee added successfully",
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pop(context, true);
+  }
+}
   @override
   Widget build(BuildContext context) {
     final employeeState = ref.watch(employeeloginViewModelProvider);

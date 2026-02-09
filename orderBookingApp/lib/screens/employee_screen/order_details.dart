@@ -3,9 +3,6 @@ import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/screens/employee_screen/order_printPdf.dart';
 
-import 'package:printing/printing.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 
 class OrderDetailsPage extends StatelessWidget {
   final Order order;

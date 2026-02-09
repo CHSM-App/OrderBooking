@@ -27,13 +27,34 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ref.read(adminloginViewModelProvider).mobileNo ?? "");
     });
   }
-Future<void> _onRefresh() async {
-  await ref
-      .read(adminloginViewModelProvider.notifier)
-      .fetchAdminDetails(
-        ref.read(adminloginViewModelProvider).mobileNo ?? "",
-      );
-}
+
+  Future<void> _onRefresh() async {
+    await ref
+        .read(adminloginViewModelProvider.notifier)
+        .fetchAdminDetails(
+          ref.read(adminloginViewModelProvider).mobileNo ?? "",
+        );
+  }
+
+  // Check if error is network-related
+  bool _isNetworkError(String? errorMessage) {
+    if (errorMessage == null) return false;
+    
+    final networkKeywords = [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host lookup',
+      'no address associated',
+      'timeout',
+      'unreachable',
+      'failed to connect',
+    ];
+    
+    final lowerError = errorMessage.toLowerCase();
+    return networkKeywords.any((keyword) => lowerError.contains(keyword));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,59 +62,235 @@ Future<void> _onRefresh() async {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-     
-    body: RefreshIndicator(
-  onRefresh: _onRefresh,
-  color: const Color(0xFF6C63FF),
-  child: adminState.isLoading
-      ? ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 300),
-            Center(child: CircularProgressIndicator()),
-          ],
-        )
-      : adminState.error != null
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 200),
-                Center(child: Text('Error: ${adminState.error}')),
-              ],
-            )
-          : adminState.adminDetails!.when(
-              data: (profile) => profile.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 200),
-                        Center(child: Text('No admin details found')),
-                      ],
-                    )
-                  : _buildProfileContent(profile.first),
-              loading: () => ListView(
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: const Color(0xFF6C63FF),
+        child: adminState.isLoading
+            ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
                   SizedBox(height: 300),
                   Center(child: CircularProgressIndicator()),
                 ],
+              )
+            : adminState.error != null
+                ? _isNetworkError(adminState.error)
+                    ? _buildNoInternetWidget()
+                    : ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          const SizedBox(height: 200),
+                          Center(child: Text('Error: ${adminState.error}')),
+                        ],
+                      )
+                : adminState.adminDetails!.when(
+                    data: (profile) => profile.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: 200),
+                              Center(child: Text('No admin details found')),
+                            ],
+                          )
+                        : _buildProfileContent(profile.first),
+                    loading: () => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 300),
+                        Center(child: CircularProgressIndicator()),
+                      ],
+                    ),
+                    error: (e, _) => _isNetworkError(e.toString())
+                        ? _buildNoInternetWidget()
+                        : ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              const SizedBox(height: 200),
+                              Center(child: Text('Error: $e')),
+                            ],
+                          ),
+                  ),
+      ),
+    );
+  }
+
+  Widget _buildNoInternetWidget() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 100),
+        Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated WiFi Icon
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade50, Colors.red.shade50],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.wifi_off_rounded,
+                  size: 80,
+                  color: Colors.orange.shade400,
+                ),
               ),
-              error: (e, _) => ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  const SizedBox(height: 200),
-                  Center(child: Text('Error: $e')),
-                ],
+              const SizedBox(height: 32),
+              
+              // Title
+              Text(
+                'No Internet Connection',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Subtitle
+              Text(
+                'Please check your internet connection\nand try again',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              
+              // Retry Button
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade400, Colors.orange.shade600],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: _onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  label: const Text(
+                    'Retry',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Tips Card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.blue.shade100,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Quick Tips',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTipItem('Check your WiFi or mobile data'),
+                    _buildTipItem('Try turning airplane mode on/off'),
+                    _buildTipItem('Restart your router if using WiFi'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTipItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.blue.shade400,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
               ),
             ),
-),
-
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildProfileContent(AdminLogin adminLogin) {
     return SingleChildScrollView(
-       physics: const AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           const SizedBox(height: 20),
@@ -468,7 +665,6 @@ Future<void> _onRefresh() async {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-        
           const SizedBox(height: 12),
           _buildModernActionTile(
             icon: Icons.logout_rounded,
@@ -541,7 +737,7 @@ Future<void> _onRefresh() async {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
           ],
         ),
       ),
@@ -762,10 +958,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         slivers: [
           // Modern App Bar
           SliverAppBar(
-           // expandedHeight: 50,
             floating: false,
             pinned: true,
-          //  backgroundColor: const Color(0xFF6C63FF),
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
                 'Edit Profile',
@@ -775,16 +969,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 ),
               ),
               background: Container(
-                // decoration: const BoxDecoration(
-                //   gradient: LinearGradient(
-                //     begin: Alignment.topLeft,
-                //     end: Alignment.bottomRight,
-                //     colors: [
-                //       Color(0xFF6C63FF),
-                //       Color(0xFF5A52E0),
-                //     ],
-                //   ),
-                // ),
                 child: Stack(
                   children: [
                     Positioned(

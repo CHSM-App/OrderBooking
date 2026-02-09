@@ -115,6 +115,27 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
     }
   }
 
+  Future<void> getAttendance(int empId) async {
+    state = state.copyWith(isLoading: true, error: null, message: null);
+    try {
+      final attendanceList = await usecase.getAttendance(empId);
+      // You can handle the attendance list as needed, e.g., store it in state
+      state = state.copyWith(
+        isLoading: false,
+        attendance: AsyncValue.data(attendanceList.isNotEmpty ? attendanceList.first : null ),
+        error: null,
+        message: 'Attendance fetched successfully!',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        message: null,
+      );
+    }
+  }
+
+
   /// Clear message (call after showing snackbar)
   void clearMessage() {
     state = state.copyWith(message: null, error: null);

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/theme.dart';
 
 class CatalogPage extends ConsumerStatefulWidget {
   const CatalogPage({Key? key}) : super(key: key);
