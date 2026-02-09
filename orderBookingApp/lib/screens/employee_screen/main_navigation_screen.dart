@@ -128,15 +128,30 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             /// PROFILE + NAME
             title: Row(
               children: [
+                // CircleAvatar(
+                //   radius: 20,
+                //   backgroundColor: Colors.white,
+                //   child: Icon(
+                //     Icons.person,
+                //     color: AppTheme.accentColor,
+                //     size: 26,
+                //   ),
+                // ),
                 CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    color: AppTheme.accentColor,
-                    size: 26,
-                  ),
-                ),
+  radius: 20,
+  backgroundColor: Colors.white,
+  child: Text(
+    employeeName.isNotEmpty
+        ? employeeName[0].toUpperCase()
+        : "?",
+    style: TextStyle(
+      color: AppTheme.accentColor,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,13 +159,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   children: [
                     const Text(
                       "Hello,",
-                      style: TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: Colors.white, fontSize: 15),
                     ),
                     Text(
                       employeeName,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

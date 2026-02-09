@@ -201,6 +201,8 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
         color: Color(0xFF2D3748),
       ),
       decoration: InputDecoration(
+          filled: true, // ⭐ REQUIRED
+    fillColor: Colors.white, // ⭐ FORCE WHITE
         hintText: "Search by name, mobile, email...",
         hintStyle: TextStyle(
           color: Colors.grey[400],
@@ -393,303 +395,287 @@ Widget _modernStatsCard({
   required IconData icon,
   required List<Color> gradient,
 }) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), // ⬇️ height reduced
-    decoration: BoxDecoration(
-      color: Colors.white, // ✅ white background
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: gradient.first.withOpacity(0.15),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final isSmall = constraints.maxWidth < 170;
+
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmall ? 12 : 16,
+          vertical: isSmall ? 12 : 14,
         ),
-      ],
-      border: Border.all(
-        color: gradient.first.withOpacity(0.25),
-        width: 1.2,
-      ),
-    ),
-    child: Row(
-      children: [
-        /// Icon container with gradient
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: gradient,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: gradient.first.withOpacity(0.25),
+            width: 1.2,
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.first.withOpacity(0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-
-        const SizedBox(width: 14),
-
-        /// Text
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
+            /// ICON
+            Container(
+              padding: EdgeInsets.all(isSmall ? 10 : 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: isSmall ? 20 : 24,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              count.toString(),
-              style: TextStyle(
-                fontSize: 26, // ⬇️ smaller than before
-                fontWeight: FontWeight.bold,
-                color: gradient.first,
-                height: 1,
+
+            const SizedBox(width: 12),
+
+            /// TEXT (flexible – prevents overflow)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: isSmall ? 12 : 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    count.toString(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: isSmall ? 20 : 26,
+                      fontWeight: FontWeight.bold,
+                      color: gradient.first,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      );
+    },
+  );
+}
+
+  Widget _modernEmployeeCard(
+  BuildContext context,
+  Map<String, dynamic> employee,
+  int index,
+) {
+  final isActive = employee["status"] == "Active";
+  final name = employee["name"].toString().trim();
+
+  /// Responsive sizing
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isSmall = screenWidth < 360;
+  final avatarSize = isSmall ? 56.0 : 70.0;
+
+  /// Initials
+  String initials = "NA";
+  if (name.isNotEmpty) {
+    final parts =
+        name.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+    if (parts.isNotEmpty) {
+      initials = parts.map((e) => e[0]).take(2).join().toUpperCase();
+    }
+  }
+
+  final gradientColors = avatarGradients[index % avatarGradients.length];
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 24,
+          offset: const Offset(0, 6),
+        ),
       ],
+      border: Border.all(
+        color: Colors.grey.withOpacity(0.1),
+        width: 1,
+      ),
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EmployeeDetailsPage(empId: employee["id"]),
+            ),
+          );
+        },
+        child: Padding(
+          padding: EdgeInsets.all(isSmall ? 14 : 18),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// AVATAR
+                  Container(
+                    width: avatarSize,
+                    height: avatarSize,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: gradientColors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: isSmall ? 16 : 20,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  /// DETAILS
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// NAME (overflow safe)
+                        Text(
+                          name.isEmpty ? "N/A" : name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        /// REGION
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_rounded,
+                                size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                employee["region"].toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        /// PHONE
+                        if (employee["mobile"].toString().isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.phone_rounded,
+                                  size: 14, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  employee["mobile"].toString(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  /// STATUS BADGE (flexible – NO OVERFLOW)
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmall ? 10 : 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? const Color(0xFF10B981).withOpacity(0.12)
+                            : const Color(0xFFEF4444).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isActive
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Text(
+                        employee["status"],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isActive
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     ),
   );
 }
 
-
-  /// ✨ MODERN EMPLOYEE CARD WITH ENHANCED AVATAR
-  Widget _modernEmployeeCard(
-    BuildContext context,
-    Map<String, dynamic> employee,
-    int index,
-  ) {
-    final isActive = employee["status"] == "Active";
-    final name = employee["name"].toString().trim();
-
-    /// Generate initials
-    String initials = "NA";
-    if (name.isNotEmpty) {
-      final parts =
-          name.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
-      if (parts.isNotEmpty) {
-        initials = parts.map((e) => e[0]).take(2).join().toUpperCase();
-      }
-    }
-
-    final gradientColors = avatarGradients[index % avatarGradients.length];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white, // ✅ White background
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EmployeeDetailsPage(empId: employee["id"]),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                /// ✨ GRADIENT AVATAR - SAME BACKGROUND AS NAME INITIALS
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: gradientColors, // ✅ Same gradient for all
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: gradientColors[0].withOpacity(0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 18),
-
-                /// DETAILS
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name.isEmpty ? "N/A" : name,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Icon(
-                              Icons.location_on_rounded,
-                              size: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              employee["region"].toString(),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (employee["mobile"].toString().isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Icon(
-                                Icons.phone_rounded,
-                                size: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              employee["mobile"].toString(),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                /// ✨ MODERN STATUS BADGE
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isActive
-                          ? [
-                              const Color(0xFF10B981).withOpacity(0.15),
-                              const Color(0xFF10B981).withOpacity(0.08),
-                            ]
-                          : [
-                              const Color(0xFFEF4444).withOpacity(0.15),
-                              const Color(0xFFEF4444).withOpacity(0.08),
-                            ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xFF10B981).withOpacity(0.4)
-                          : const Color(0xFFEF4444).withOpacity(0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: isActive
-                                  ? const Color(0xFF10B981).withOpacity(0.5)
-                                  : const Color(0xFFEF4444).withOpacity(0.5),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Text(
-                        employee["status"],
-                        style: TextStyle(
-                          color: isActive
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

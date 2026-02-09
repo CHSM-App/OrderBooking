@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
@@ -27,34 +28,13 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ref.read(adminloginViewModelProvider).mobileNo ?? "");
     });
   }
-
-  Future<void> _onRefresh() async {
-    await ref
-        .read(adminloginViewModelProvider.notifier)
-        .fetchAdminDetails(
-          ref.read(adminloginViewModelProvider).mobileNo ?? "",
-        );
-  }
-
-  // Check if error is network-related
-  bool _isNetworkError(String? errorMessage) {
-    if (errorMessage == null) return false;
-    
-    final networkKeywords = [
-      'network',
-      'internet',
-      'connection',
-      'socket',
-      'failed host lookup',
-      'no address associated',
-      'timeout',
-      'unreachable',
-      'failed to connect',
-    ];
-    
-    final lowerError = errorMessage.toLowerCase();
-    return networkKeywords.any((keyword) => lowerError.contains(keyword));
-  }
+Future<void> _onRefresh() async {
+  await ref
+      .read(adminloginViewModelProvider.notifier)
+      .fetchAdminDetails(
+        ref.read(adminloginViewModelProvider).mobileNo ?? "",
+      );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -62,235 +42,59 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        color: const Color(0xFF6C63FF),
-        child: adminState.isLoading
-            ? ListView(
+     
+    body: RefreshIndicator(
+  onRefresh: _onRefresh,
+  color: const Color(0xFF6C63FF),
+  child: adminState.isLoading
+      ? ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 300),
+            Center(child: CircularProgressIndicator()),
+          ],
+        )
+      : adminState.error != null
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 200),
+                Center(child: Text('Error: ${adminState.error}')),
+              ],
+            )
+          : adminState.adminDetails!.when(
+              data: (profile) => profile.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(child: Text('No admin details found')),
+                      ],
+                    )
+                  : _buildProfileContent(profile.first),
+              loading: () => ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
                   SizedBox(height: 300),
                   Center(child: CircularProgressIndicator()),
                 ],
-              )
-            : adminState.error != null
-                ? _isNetworkError(adminState.error)
-                    ? _buildNoInternetWidget()
-                    : ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          const SizedBox(height: 200),
-                          Center(child: Text('Error: ${adminState.error}')),
-                        ],
-                      )
-                : adminState.adminDetails!.when(
-                    data: (profile) => profile.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 200),
-                              Center(child: Text('No admin details found')),
-                            ],
-                          )
-                        : _buildProfileContent(profile.first),
-                    loading: () => ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 300),
-                        Center(child: CircularProgressIndicator()),
-                      ],
-                    ),
-                    error: (e, _) => _isNetworkError(e.toString())
-                        ? _buildNoInternetWidget()
-                        : ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              const SizedBox(height: 200),
-                              Center(child: Text('Error: $e')),
-                            ],
-                          ),
-                  ),
-      ),
-    );
-  }
-
-  Widget _buildNoInternetWidget() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 100),
-        Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated WiFi Icon
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.orange.shade50, Colors.red.shade50],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orange.withOpacity(0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.wifi_off_rounded,
-                  size: 80,
-                  color: Colors.orange.shade400,
-                ),
               ),
-              const SizedBox(height: 32),
-              
-              // Title
-              Text(
-                'No Internet Connection',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Subtitle
-              Text(
-                'Please check your internet connection\nand try again',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 40),
-              
-              // Retry Button
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    colors: [Colors.orange.shade400, Colors.orange.shade600],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orange.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: _onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 20),
-                  label: const Text(
-                    'Retry',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Tips Card
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.blue.shade100,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Quick Tips',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTipItem('Check your WiFi or mobile data'),
-                    _buildTipItem('Try turning airplane mode on/off'),
-                    _buildTipItem('Restart your router if using WiFi'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTipItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade400,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
+              error: (e, _) => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 200),
+                  Center(child: Text('Error: $e')),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
+),
+
     );
   }
 
   Widget _buildProfileContent(AdminLogin adminLogin) {
     return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
+       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           const SizedBox(height: 20),
@@ -370,13 +174,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                           color: Colors.grey[600],
                         ),
                       ),
-                      Text(
-                        "Joined:",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                      
                     ],
                   ),
                 ),
@@ -665,6 +463,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
+        
           const SizedBox(height: 12),
           _buildModernActionTile(
             icon: Icons.logout_rounded,
@@ -737,7 +536,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+            Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
           ],
         ),
       ),
@@ -950,233 +749,225 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: CustomScrollView(
-        slivers: [
-          // Modern App Bar
-          SliverAppBar(
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Edit Profile',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFFAFAFA),
+
+    // ✅ WHITE APP BAR
+    appBar: AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      centerTitle: true,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF2C2C2C),
+            size: 18,
+          ),
+        ),
+      ),
+      title: const Text(
+        'Edit Profile',
+        style: TextStyle(
+          color: Color(0xFF2C2C2C),
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+
+    // ✅ BODY
+    body: SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+
+          // ✅ PROFILE AVATAR
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6C63FF).withOpacity(0.25),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF6C63FF),
+                  width: 3,
                 ),
               ),
-              background: Container(
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -30,
-                      right: -30,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                  ],
+              child: CircleAvatar(
+                radius: 55,
+                backgroundColor:
+                    const Color(0xFF6C63FF).withOpacity(0.1),
+                child: Text(
+                  (nameController.text.isNotEmpty
+                          ? nameController.text
+                          : "A")
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6C63FF),
+                  ),
                 ),
               ),
             ),
           ),
 
-          // Form Content
-          SliverToBoxAdapter(
+          const SizedBox(height: 12),
+          Text(
+            "Update Profile Photo",
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ✅ FORM CARD
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
             child: Column(
               children: [
+                _buildModernTextField(
+                  controller: companyController,
+                  label: "Company / Business Name",
+                  icon: Icons.business_rounded,
+                  color: const Color(0xFF6C63FF),
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: nameController,
+                  label: "Owner Name",
+                  icon: Icons.person_outline_rounded,
+                  color: const Color(0xFF4CAF50),
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: mobileController,
+                  label: "Mobile Number",
+                  icon: Icons.phone_android_rounded,
+                  color: const Color(0xFF2196F3),
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: emailController,
+                  label: "Email Address",
+                  icon: Icons.email_rounded,
+                  color: const Color(0xFFFF9800),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: addressController,
+                  label: "Address",
+                  icon: Icons.location_on_rounded,
+                  color: const Color(0xFFE91E63),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: gstinController,
+                  label: "GSTIN Number",
+                  icon: Icons.receipt_long_rounded,
+                  color: const Color(0xFF9C27B0),
+                ),
+
                 const SizedBox(height: 30),
 
-                // Profile Avatar
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C63FF).withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF6C63FF), width: 3),
-                    ),
-                    child: CircleAvatar(
-                      radius: 55,
-                      backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
-                      child: Text(
-                        (nameController.text.isNotEmpty
-                                ? nameController.text
-                                : "A")
-                            .substring(0, 1)
-                            .toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6C63FF),
-                        ),
+                // ✅ SAVE BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: isSaving ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6C63FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Update Profile Photo",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Form Fields
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _buildModernTextField(
-                        controller: companyController,
-                        label: "Company / Business Name",
-                        icon: Icons.business_rounded,
-                        color: const Color(0xFF6C63FF),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: nameController,
-                        label: "Owner Name",
-                        icon: Icons.person_outline_rounded,
-                        color: const Color(0xFF4CAF50),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: mobileController,
-                        label: "Mobile Number",
-                        icon: Icons.phone_android_rounded,
-                        color: const Color(0xFF2196F3),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: emailController,
-                        label: "Email Address",
-                        icon: Icons.email_rounded,
-                        color: const Color(0xFFFF9800),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: addressController,
-                        label: "Address",
-                        icon: Icons.location_on_rounded,
-                        color: const Color(0xFFE91E63),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: gstinController,
-                        label: "GSTIN Number",
-                        icon: Icons.receipt_long_rounded,
-                        color: const Color(0xFF9C27B0),
-                      ),
-                      const SizedBox(height: 30),
-
-                      // Save Button
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF5A52E0)],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6C63FF).withOpacity(0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: isSaving ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                    child: isSaving
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          )
+                        : const Text(
+                            "Save Changes",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          child: isSaving
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.save_rounded, size: 22),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Save Changes',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-                const SizedBox(height: 30),
               ],
             ),
           ),
+
+          const SizedBox(height: 32),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildModernTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required Color color,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-  }) {
+  required TextEditingController controller,
+  required String label,
+  required IconData icon,
+  required Color color,
+  TextInputType? keyboardType,
+  int maxLines = 1,
+  int? maxLength,
+  List<TextInputFormatter>? inputFormatters,
+}) {
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
@@ -1192,6 +983,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+  maxLength: maxLength,
+  inputFormatters: inputFormatters,
         enabled: !isSaving,
         style: const TextStyle(
           fontSize: 15,

@@ -119,73 +119,76 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // 🔍 Search bar
-              Expanded(
-                child: Container(
-                  height: isTablet ? 56 : 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _searchQuery.isNotEmpty
-                          ? Colors.green.shade300
-                          : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value.toLowerCase();
-                      });
-                    },
-                    style: TextStyle(fontSize: isTablet ? 16 : 14),
-                    decoration: InputDecoration(
-                      hintText: 'Search by order number, shop, employee...',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: isTablet ? 16 : 14,
-                      ),
-                      prefixIcon: Container(
-                        padding: const EdgeInsets.all(12),
-                        child: Icon(
-                          Icons.search_rounded,
-                          color: Colors.grey[600],
-                          size: isTablet ? 24 : 22,
-                        ),
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 20 : 16,
-                        vertical: isTablet ? 18 : 14,
-                      ),
-                    ),
-                  ),
-                ),
+         
+       Row(
+  children: [
+    // 🔍 Search bar (UNCHANGED)
+    Expanded(
+      child: Container(
+        height: isTablet ? 56 : 50,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _searchQuery.isNotEmpty
+                ? Colors.green.shade300
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value.toLowerCase();
+            });
+          },
+          style: TextStyle(fontSize: isTablet ? 16 : 14),
+          decoration: InputDecoration(
+              filled: true, // ⭐ REQUIRED
+    fillColor: Colors.white, // ⭐ FORCE WHITE
+            hintText: 'Search by order number, shop, employee...',
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontSize: isTablet ? 16 : 14,
+            ),
+            prefixIcon: Container(
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                Icons.search_rounded,
+                color: Colors.grey[600],
+                size: isTablet ? 24 : 22,
               ),
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 20 : 16,
+              vertical: isTablet ? 18 : 14,
+            ),
+          ),
+        ),
+      ),
+    ),
 
               const SizedBox(width: 12),
 
@@ -208,54 +211,104 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
       ),
     );
   }
+Widget _buildFilterButton() {
+  final bool isActive = _selectedFilter != null;
 
-  Widget _buildFilterButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: _selectedFilter != null
-              ? [Colors.green.shade400, Colors.green.shade600]
-              : [Colors.grey.shade200, Colors.grey.shade300],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: _selectedFilter != null
-            ? [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+  return Container(
+    height: 50,
+    width: 50,
+    decoration: BoxDecoration(
+      color: Colors.white, // ✅ PURE WHITE BACKGROUND
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: isActive ? Colors.green.shade400 : Colors.grey.shade300,
+        width: 1.5,
       ),
-      child: PopupMenuButton<String>(
-        icon: Icon(
-          Icons.filter_list_rounded,
-          color: _selectedFilter != null ? Colors.white : Colors.grey[700],
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        onSelected: (value) {
-          if (value == _filterAll) {
-            setState(() {
-              _selectedFilter = null;
-              _customRange = null;
-            });
-          } else {
-            _onFilterSelected(value);
-          }
-        },
-        itemBuilder: (_) => [
-          _buildPopupMenuItem(_filterAll, Icons.all_inclusive),
-          _buildPopupMenuItem(_filterToday, Icons.today),
-          _buildPopupMenuItem(_filterYesterday, Icons.history),
-          _buildPopupMenuItem(_filterThisMonth, Icons.calendar_month),
-          _buildPopupMenuItem(_filterCustom, Icons.date_range),
-        ],
+      ],
+    ),
+    child: PopupMenuButton<String>(
+      icon: Icon(
+        Icons.filter_list_rounded,
+        color: Colors.black, // ✅ BLACK ICON
+        size: 24,
       ),
-    );
-  }
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      onSelected: (value) {
+        if (value == _filterAll) {
+          setState(() {
+            _selectedFilter = null;
+            _customRange = null;
+          });
+        } else {
+          _onFilterSelected(value);
+        }
+      },
+      itemBuilder: (_) => [
+        _buildPopupMenuItem(_filterAll, Icons.all_inclusive),
+        _buildPopupMenuItem(_filterToday, Icons.today),
+        _buildPopupMenuItem(_filterYesterday, Icons.history),
+        _buildPopupMenuItem(_filterThisMonth, Icons.calendar_month),
+        _buildPopupMenuItem(_filterCustom, Icons.date_range),
+      ],
+    ),
+  );
+}
+
+  // Widget _buildFilterButton() {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       gradient: LinearGradient(
+  //         colors: _selectedFilter != null
+  //             ? [Colors.green.shade400, Colors.green.shade600]
+  //             : [Colors.grey.shade200, Colors.grey.shade300],
+  //       ),
+  //       borderRadius: BorderRadius.circular(12),
+  //       boxShadow: _selectedFilter != null
+  //           ? [
+  //               BoxShadow(
+  //                 color: Colors.green.withOpacity(0.3),
+  //                 blurRadius: 8,
+  //                 offset: const Offset(0, 4),
+  //               ),
+  //             ]
+  //           : null,
+  //     ),
+  //     child: PopupMenuButton<String>(
+  //       icon: Icon(
+  //         Icons.filter_list_rounded,
+  //         color: _selectedFilter != null ? Colors.white : Colors.grey[700],
+  //       ),
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //       ),
+  //       onSelected: (value) {
+  //         if (value == _filterAll) {
+  //           setState(() {
+  //             _selectedFilter = null;
+  //             _customRange = null;
+  //           });
+  //         } else {
+  //           _onFilterSelected(value);
+  //         }
+  //       },
+  //       itemBuilder: (_) => [
+  //         _buildPopupMenuItem(_filterAll, Icons.all_inclusive),
+  //         _buildPopupMenuItem(_filterToday, Icons.today),
+  //         _buildPopupMenuItem(_filterYesterday, Icons.history),
+  //         _buildPopupMenuItem(_filterThisMonth, Icons.calendar_month),
+  //         _buildPopupMenuItem(_filterCustom, Icons.date_range),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   PopupMenuItem<String> _buildPopupMenuItem(String value, IconData icon) {
     final isSelected = _selectedFilter == value ||

@@ -300,17 +300,17 @@ Widget _buildModernHeader(List<Product> products) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// TITLE
-          const Text(
-            'Product Catalog',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2C2C2C),
-            ),
-          ),
+          // /// TITLE
+          // const Text(
+          //   'Product Catalog',
+          //   style: TextStyle(
+          //     fontSize: 24,
+          //     fontWeight: FontWeight.w700,
+          //     color: Color(0xFF2C2C2C),
+          //   ),
+          // ),
 
-          const SizedBox(height: 14),
+         
 
           /// SEARCH
           _buildSearchField(products),
