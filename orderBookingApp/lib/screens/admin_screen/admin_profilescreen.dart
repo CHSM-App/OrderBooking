@@ -27,6 +27,13 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ref.read(adminloginViewModelProvider).mobileNo ?? "");
     });
   }
+Future<void> _onRefresh() async {
+  await ref
+      .read(adminloginViewModelProvider.notifier)
+      .fetchAdminDetails(
+        ref.read(adminloginViewModelProvider).mobileNo ?? "",
+      );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -35,45 +42,58 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
      
-      body: adminState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : adminState.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error: ${adminState.error}',
-                        style: const TextStyle(fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(
-                              ref.read(adminloginViewModelProvider).mobileNo ?? "");
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : adminState.adminDetails!.when(
-                  data: (profile) => profile.isEmpty
-                      ? const Center(child: Text('No admin details found'))
-                      : _buildProfileContent(profile.first),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(
-                    child: Text('Error: $error'),
-                  ),
-                ),
+    body: RefreshIndicator(
+  onRefresh: _onRefresh,
+  color: const Color(0xFF6C63FF),
+  child: adminState.isLoading
+      ? ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 300),
+            Center(child: CircularProgressIndicator()),
+          ],
+        )
+      : adminState.error != null
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 200),
+                Center(child: Text('Error: ${adminState.error}')),
+              ],
+            )
+          : adminState.adminDetails!.when(
+              data: (profile) => profile.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(child: Text('No admin details found')),
+                      ],
+                    )
+                  : _buildProfileContent(profile.first),
+              loading: () => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 300),
+                  Center(child: CircularProgressIndicator()),
+                ],
+              ),
+              error: (e, _) => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 200),
+                  Center(child: Text('Error: $e')),
+                ],
+              ),
+            ),
+),
+
     );
   }
 
   Widget _buildProfileContent(AdminLogin adminLogin) {
     return SingleChildScrollView(
+       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           const SizedBox(height: 20),
