@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
@@ -81,10 +80,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
         ],
       ),
       child: Column(
+         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
          
-          const SizedBox(height: 12),
+        //  const SizedBox(height: 12),
         _buildStatsWithFilter(context, state),
 
         ],
@@ -106,10 +106,10 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
 
   return Row(
     children: [
-      // 🔹 Stats Card
+      // 🔹 Stats Card - REDUCED HEIGHT
       Expanded(
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2), // Reduced padding
 
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -138,7 +138,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
               ),
               Container(
                 width: 1,
-                height: 40,
+                height: 35, // Reduced height
                 color: Colors.white.withOpacity(0.3),
               ),
               Expanded(
@@ -153,14 +153,14 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
         ),
       ),
 
-      const SizedBox(width: 12),
+      const SizedBox(width: 5),
 
-      // 🔹 Filter Card
+      // 🔹 Filter Card - REDUCED HEIGHT
       InkWell(
         onTap: () => _showFilterBottomSheet(context),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
 
           decoration: BoxDecoration(
             color: Colors.white,
@@ -177,7 +177,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8), // Reduced padding
                 decoration: BoxDecoration(
                   color: Colors.deepPurple.shade50,
                   borderRadius: BorderRadius.circular(12),
@@ -185,14 +185,14 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
                 child: Icon(
                   Icons.filter_list_rounded,
                   color: Colors.deepPurple.shade400,
-                  size: 24,
+                  size: 20, // Reduced icon size
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4), // Reduced spacing
               Text(
                 'Filter',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12, // Reduced font size
                   fontWeight: FontWeight.w600,
                   color: Colors.deepPurple.shade700,
                 ),
@@ -209,13 +209,13 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
   Widget _buildStatItem(IconData icon, String label, String value) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.9), size: 24),
-        const SizedBox(height: 8),
+        Icon(icon, color: Colors.white.withOpacity(0.9), size: 20), // Reduced icon size
+        const SizedBox(height: 4), // Reduced spacing
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18, // Reduced font size
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -223,7 +223,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
+            fontSize: 11, // Reduced font size
           ),
         ),
       ],
@@ -445,7 +445,8 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
           // Responsive: Show grid on tablets/large screens
           if (constraints.maxWidth > 600) {
             return GridView.builder(
-              padding: const EdgeInsets.all(20),
+           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: constraints.maxWidth > 900 ? 3 : 2,
                 childAspectRatio: 1.1,
@@ -455,7 +456,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
               itemCount: orders.length,
               itemBuilder: (context, index) {
                 return FadeInAnimation(
-                  delay: index * 0.1,
+                  delay: index * 0, // SLOWER ANIMATION - increased from 0.1 to 0.15
                   child: _OrderCard(
                     order: orders[index],
                     orderNumber: index + 1,
@@ -466,13 +467,13 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
             );
           }
           
-          // Mobile: Show list
+          // Mobile: Show list with SLOWER ANIMATION
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: orders.length,
             itemBuilder: (context, index) {
               return FadeInAnimation(
-                delay: index * 0.1,
+                delay: index * 0, // SLOWER ANIMATION - increased from 0.1 to 0.15
                 child: _OrderCard(
                   order: orders[index],
                   orderNumber: index + 1,
@@ -534,7 +535,7 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
 
   Widget _buildFilterOption(String label, bool isSelected) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: isSelected ? Colors.deepPurple.shade50 : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -587,7 +588,7 @@ class _FadeInAnimationState extends State<FadeInAnimation>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 700), // Slightly longer animation
     );
 
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -595,7 +596,7 @@ class _FadeInAnimationState extends State<FadeInAnimation>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
+      begin: const Offset(0, 0.15), // Increased from 0.1 for more visible effect
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
@@ -661,7 +662,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12), // Reduced from 16
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -691,15 +692,15 @@ class _OrderCard extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16), // Reduced from 20
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Section
+                // Header Section - REDUCED HEIGHT
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(8), // Reduced from 12
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -719,10 +720,10 @@ class _OrderCard extends StatelessWidget {
                       child: const Icon(
                         Icons.receipt_long_rounded,
                         color: Colors.white,
-                        size: 22,
+                        size: 20, // Reduced from 22
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,34 +731,34 @@ class _OrderCard extends StatelessWidget {
                           Text(
                             'Order #$orderNumber',
                             style: const TextStyle(
-                              fontSize: 17,
+                              fontSize: 16, // Reduced from 17
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                               letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3), // Reduced from 4
                           Row(
                             children: [
                               Icon(Icons.calendar_today_rounded,
-                                  size: 12, color: Colors.grey[600]),
+                                  size: 11, color: Colors.grey[600]), // Reduced from 12
                               const SizedBox(width: 4),
                               Text(
                                 _formatDate(order.orderDate),
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11, // Reduced from 12
                                   color: Colors.grey[600],
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Icon(Icons.access_time_rounded,
-                                  size: 12, color: Colors.grey[600]),
+                                  size: 11, color: Colors.grey[600]), // Reduced from 12
                               const SizedBox(width: 4),
                               Text(
                                 _formatTime(order.orderDate),
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11, // Reduced from 12
                                   color: Colors.grey[600],
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -768,20 +769,20 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(5), // Reduced from 8
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.arrow_forward_ios_rounded,
-                        size: 16,
+                        size: 14, // Reduced from 16
                         color: Colors.grey[700],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14), // Reduced from 18
                 
                 // Divider
                 Container(
@@ -796,12 +797,12 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12), // Reduced from 16
                 
                 // Info Chips
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
                     _buildModernChip(
                       Icons.store_rounded,
@@ -817,11 +818,12 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14), // Reduced from 18
                 
-                // Total Amount Section
+                // Total Amount Section - REDUCED HEIGHT
                 Container(
-                  padding: const EdgeInsets.all(16),
+padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+ // Reduced from 16
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -841,7 +843,7 @@ class _OrderCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(5), // Reduced from 6
                             decoration: BoxDecoration(
                               color: Colors.green.shade100,
                               borderRadius: BorderRadius.circular(8),
@@ -849,14 +851,14 @@ class _OrderCard extends StatelessWidget {
                             child: Icon(
                               Icons.payments_rounded,
                               color: Colors.green.shade700,
-                              size: 18,
+                              size: 16, // Reduced from 18
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8), // Reduced from 10
                           Text(
                             'Total Amount',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 13, // Reduced from 14
                               fontWeight: FontWeight.w600,
                               color: Colors.green.shade900,
                             ),
@@ -866,7 +868,7 @@ class _OrderCard extends StatelessWidget {
                       Text(
                         '₹${order.totalPrice.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18, // Reduced from 20
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade700,
                           letterSpacing: -0.5,
@@ -886,7 +888,7 @@ class _OrderCard extends StatelessWidget {
   Widget _buildModernChip(
       IconData icon, String label, Color iconColor, Color bgColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced from 12, 8
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(10),
@@ -898,12 +900,12 @@ class _OrderCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14, color: iconColor), // Reduced from 16
+          const SizedBox(width: 5), // Reduced from 6
           Text(
             label,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12, // Reduced from 13
               fontWeight: FontWeight.w600,
               color: Colors.grey[800],
             ),

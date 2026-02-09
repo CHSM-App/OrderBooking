@@ -174,13 +174,7 @@ Future<void> _onRefresh() async {
                           color: Colors.grey[600],
                         ),
                       ),
-                      Text(
-                        "Joined:",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                      
                     ],
                   ),
                 ),

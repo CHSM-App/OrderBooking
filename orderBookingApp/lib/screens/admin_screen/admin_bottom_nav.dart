@@ -25,22 +25,6 @@
       extends ConsumerState<AdminDashboardScreen> {
     int _selectedIndex = 0;
 
-    // @override
-    // void initState() {
-    //   super.initState();
-
-    //   /// Load admin data from local storage
-    //   Future.microtask(() {
-    //     ref.read(adminloginViewModelProvider.notifier).loadFromStorage();
-    //   });
-
-    //   Future.microtask(() {
-    //     ref.watch(adminloginViewModelProvider.notifier).fetchAdminDetails(ref.read(adminloginViewModelProvider).mobileNo?? '');
-    //   });
-
-
-    // }
-
 
     @override
   void initState() {
@@ -60,15 +44,9 @@
       }
     });
 
-
-   
       ref
           .read(employeeloginViewModelProvider.notifier).getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '',);
-  
-
-    
       final adminId = ref.read(adminloginViewModelProvider).userId;
-
     
         ref.read(ordersViewModelProvider.notifier).getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '',);
       
@@ -95,8 +73,8 @@
         case 1:
           return const AdminCatalogPage();
 
-      case 2:
-    return OrdersListPage();
+        case 2:
+          return OrdersListPage();
 
         case 3:
           return const AdminEmployeesPage();
@@ -127,14 +105,21 @@
           titleSpacing: 16,
           title: Row(
             children: [
-              const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  color: Color(0xFFF57C00),
-                ),
-              ),
+             CircleAvatar(
+  radius: 18,
+  backgroundColor: Colors.white,
+  child: Text(
+    adminName != null && adminName.isNotEmpty
+        ? adminName[0].toUpperCase()
+        : "?",
+    style: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Color(0xFFF57C00),
+    ),
+  ),
+),
+
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

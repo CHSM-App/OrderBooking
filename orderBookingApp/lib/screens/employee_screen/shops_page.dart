@@ -790,108 +790,6 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
     );
   }
 
-  // Widget _buildSliverHeader(bool isTablet) {
-  //   return SliverAppBar(
-  //     expandedHeight: isTablet ? 220 : 180,
-  //     floating: false,
-  //     pinned: true,
-  //     elevation: 0,
-  //     backgroundColor: const Color(0xFF6366F1),
-  //     flexibleSpace: FlexibleSpaceBar(
-  //       background: Container(
-  //         decoration: const BoxDecoration(
-  //           gradient: LinearGradient(
-  //             begin: Alignment.topLeft,
-  //             end: Alignment.bottomRight,
-  //             colors: [
-  //               Color(0xFF6366F1),
-  //               Color(0xFF8B5CF6),
-  //               Color(0xFFA855F7),
-  //             ],
-  //           ),
-  //         ),
-  //         child: Stack(
-  //           children: [
-  //             // Decorative pattern
-  //             Positioned.fill(
-  //               child: CustomPaint(
-  //                 painter: _HeaderPatternPainter(),
-  //               ),
-  //             ),
-
-  //             // Content
-  //             SafeArea(
-  //               child: AnimatedBuilder(
-  //                 animation: _headerAnimationController,
-  //                 builder: (context, child) {
-  //                   return Transform.translate(
-  //                     offset: Offset(0, _headerSlideAnimation.value),
-  //                     child: Opacity(
-  //                       opacity: _headerFadeAnimation.value,
-  //                       child: Padding(
-  //                         padding: EdgeInsets.all(isTablet ? 32 : 24),
-  //                         child: Column(
-  //                           crossAxisAlignment: CrossAxisAlignment.start,
-  //                           mainAxisAlignment: MainAxisAlignment.end,
-  //                           children: [
-  //                             Container(
-  //                               padding: const EdgeInsets.symmetric(
-  //                                   horizontal: 14, vertical: 8),
-  //                               decoration: BoxDecoration(
-  //                                 color: Colors.white.withOpacity(0.2),
-  //                                 borderRadius: BorderRadius.circular(20),
-  //                               ),
-  //                               child: Row(
-  //                                 mainAxisSize: MainAxisSize.min,
-  //                                 children: [
-  //                                   const Icon(Icons.store_rounded,
-  //                                       color: Colors.white, size: 16),
-  //                                   const SizedBox(width: 6),
-  //                                   Text(
-  //                                     'Shop Directory',
-  //                                     style: TextStyle(
-  //                                       fontSize: isTablet ? 14 : 12,
-  //                                       color: Colors.white,
-  //                                       fontWeight: FontWeight.w600,
-  //                                     ),
-  //                                   ),
-  //                                 ],
-  //                               ),
-  //                             ),
-  //                             SizedBox(height: isTablet ? 16 : 12),
-  //                             Text(
-  //                               'My Shops',
-  //                               style: TextStyle(
-  //                                 fontSize: isTablet ? 40 : 32,
-  //                                 fontWeight: FontWeight.bold,
-  //                                 color: Colors.white,
-  //                                 height: 1.1,
-  //                               ),
-  //                             ),
-  //                             SizedBox(height: isTablet ? 10 : 8),
-  //                             Text(
-  //                               'Manage and visit your shop locations',
-  //                               style: TextStyle(
-  //                                 fontSize: isTablet ? 16 : 14,
-  //                                 color: Colors.white.withOpacity(0.9),
-  //                                 fontWeight: FontWeight.w400,
-  //                               ),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   );
-  //                 },
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _buildModernSearchBar(bool isTablet) {
     return Hero(
       tag: 'search_bar',
@@ -990,13 +888,6 @@ class _ShopListPageState extends ConsumerState<ShopListPage>
           gradient: const LinearGradient(
             colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
           ),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: const Color(0xFF6366F1).withOpacity(0.5),
-          //     blurRadius: 20,
-          //     offset: const Offset(0, 8),
-          //   ),
-          // ],
         ),
         child: Material(
           color: Colors.transparent,
@@ -1403,7 +1294,7 @@ class _HeaderPatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Modern Shop Card Widget
+// Modern Shop Card Widget - UPDATED WITH REDUCED HEIGHT
 class UltraModernShopCard extends StatefulWidget {
   final ShopDetails shop;
   final VoidCallback onTap;
@@ -1449,14 +1340,8 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
   }
 
   List<Color> get gradientColors {
-    // Different gradient combinations for visual variety
     final gradients = [
-
       [const Color(0xFF667EEA), const Color(0xFF764BA2)], // Purple
-      // [const Color(0xFF10B981), const Color(0xFF059669)], // Green
-      // [const Color(0xFFF59E0B), const Color(0xFFD97706)], // Orange
-      // [const Color(0xFFEC4899), const Color(0xFFDB2777)], // Pink
-      // [const Color(0xFF06B6D4), const Color(0xFF0891B2)], // Cyan
     ];
     return gradients[widget.index % gradients.length];
   }
@@ -1468,7 +1353,7 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Padding(
-        padding: EdgeInsets.only(bottom: widget.isTablet ? 20 : 16),
+        padding: EdgeInsets.only(bottom: widget.isTablet ? 12 : 10), // REDUCED from 20/16
         child: GestureDetector(
           onTapDown: (_) {
             setState(() => _isPressed = true);
@@ -1486,7 +1371,7 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(widget.isTablet ? 28 : 24),
+              borderRadius: BorderRadius.circular(widget.isTablet ? 24 : 20), // REDUCED from 28/24
               boxShadow: [
                 BoxShadow(
                   color: _isPressed
@@ -1499,7 +1384,7 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.isTablet ? 28 : 24),
+              borderRadius: BorderRadius.circular(widget.isTablet ? 24 : 20), // REDUCED from 28/24
               child: Stack(
                 children: [
                   // Gradient accent bar
@@ -1508,7 +1393,7 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
                     left: 0,
                     right: 0,
                     child: Container(
-                      height: 6,
+                      height: 4, // REDUCED from 6
                       decoration: BoxDecoration(
                         gradient: LinearGradient(colors: colors),
                       ),
@@ -1517,59 +1402,49 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
 
                   // Main content
                   Padding(
-                    padding: EdgeInsets.all(widget.isTablet ? 24 : 20),
+                    padding: EdgeInsets.all(widget.isTablet ? 18 : 16), // REDUCED from 24/20
                     child: Row(
                       children: [
-                        // Icon Container
+                        // Icon Container - REDUCED SIZE
                         Container(
-                          width: widget.isTablet ? 84 : 72,
-                          height: widget.isTablet ? 84 : 72,
+                          width: widget.isTablet ? 64 : 60, // REDUCED from 84/72
+                          height: widget.isTablet ? 64 : 60, // REDUCED from 84/72
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: colors,
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(widget.isTablet ? 24 : 20),
+                            borderRadius: BorderRadius.circular(widget.isTablet ? 18 : 16), // REDUCED from 24/20
                           ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Positioned.fill(
-                              //   child: CustomPaint(
-                              //     painter: _DotPatternPainter(
-                              //       color: Colors.white.withOpacity(0.1),
-                              //     ),
-                              //   ),
-                              // ),
-                              Icon(
-                                Icons.storefront_rounded,
-                                size: widget.isTablet ? 42 : 36,
-                                color: Colors.white,
-                              ),
-                            ],
+                          child: Icon(
+                            Icons.storefront_rounded,
+                            size: widget.isTablet ? 32 : 30, // REDUCED from 42/36
+                            color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: widget.isTablet ? 24 : 20),
+                        SizedBox(width: widget.isTablet ? 18 : 16), // REDUCED from 24/20
 
                         // Shop Details
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min, // ADDED to prevent vertical expansion
                             children: [
                               // Shop Name
                               Text(
                                 widget.shop.shopName ?? 'Unknown Shop',
                                 style: TextStyle(
-                                  fontSize: widget.isTablet ? 20 : 18,
+                                  fontSize: widget.isTablet ? 17 : 16, // REDUCED from 20/18
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF1E293B),
                                   letterSpacing: -0.5,
+                                  height: 1.2, // ADDED for tighter line height
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: widget.isTablet ? 12 : 10),
+                              SizedBox(height: widget.isTablet ? 8 : 6), // REDUCED from 12/10
 
                               // Owner
                               if (widget.shop.ownerName != null)
@@ -1581,7 +1456,7 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
 
                               // Phone
                               if (widget.shop.mobileNo != null) ...[
-                                SizedBox(height: widget.isTablet ? 8 : 6),
+                                const SizedBox(height: 4), // REDUCED from 8/6
                                 _buildDetailRow(
                                   Icons.phone_rounded,
                                   widget.shop.mobileNo!,
@@ -1589,9 +1464,9 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
                                 ),
                               ],
 
-                              // Address
+                              // Address - wrapped properly
                               if (widget.shop.address != null) ...[
-                                SizedBox(height: widget.isTablet ? 8 : 6),
+                                const SizedBox(height: 4), // REDUCED from 8/6
                                 _buildDetailRow(
                                   Icons.location_on_rounded,
                                   widget.shop.address!,
@@ -1603,9 +1478,9 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
                           ),
                         ),
 
-                        // Arrow
+                        // Arrow - REDUCED SIZE
                         Container(
-                          padding: EdgeInsets.all(widget.isTablet ? 14 : 12),
+                          padding: EdgeInsets.all(widget.isTablet ? 10 : 8), // REDUCED from 14/12
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -1613,11 +1488,11 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
                                 colors[1].withOpacity(0.15),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12), // REDUCED from 14
                           ),
                           child: Icon(
                             Icons.arrow_forward_ios_rounded,
-                            size: widget.isTablet ? 20 : 18,
+                            size: widget.isTablet ? 16 : 14, // REDUCED from 20/18
                             color: colors[1],
                           ),
                         ),
@@ -1642,32 +1517,32 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
     return Row(
       children: [
         Container(
-          padding: EdgeInsets.all(widget.isTablet ? 7 : 6),
+          padding: EdgeInsets.all(widget.isTablet ? 6 : 5), // REDUCED from 7/6
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6), // REDUCED from 8
           ),
           child: Icon(
             icon,
-            size: widget.isTablet ? 15 : 14,
+            size: widget.isTablet ? 13 : 12, // REDUCED from 15/14
             color: color,
           ),
         ),
-        SizedBox(width: widget.isTablet ? 12 : 10),
+        SizedBox(width: widget.isTablet ? 10 : 8), // REDUCED from 12/10
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: isAddress
-                  ? (widget.isTablet ? 13 : 12)
-                  : (widget.isTablet ? 15 : 14),
+                  ? (widget.isTablet ? 12 : 11) // REDUCED from 13/12
+                  : (widget.isTablet ? 13 : 12), // REDUCED from 15/14
               color: isAddress
                   ? const Color(0xFF64748B).withOpacity(0.7)
                   : const Color(0xFF64748B),
               fontWeight: FontWeight.w500,
-              height: 1.3,
+              height: 1.2, // REDUCED from 1.3 for tighter spacing
             ),
-            maxLines: 1,
+            maxLines: isAddress ? 2 : 1, // ALLOW 2 lines for address to wrap
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -1675,29 +1550,3 @@ class _UltraModernShopCardState extends State<UltraModernShopCard>
     );
   }
 }
-
-// // Dot pattern painter
-// class _DotPatternPainter extends CustomPainter {
-//   final Color color;
-
-//   _DotPatternPainter({required this.color});
-
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final paint = Paint()
-//       ..color = color
-//       ..style = PaintingStyle.fill;
-
-//     const spacing = 8.0;
-//     const dotSize = 2.0;
-
-//     for (double x = spacing; x < size.width; x += spacing) {
-//       for (double y = spacing; y < size.height; y += spacing) {
-//         canvas.drawCircle(Offset(x, y), dotSize, paint);
-//       }
-//     }
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
