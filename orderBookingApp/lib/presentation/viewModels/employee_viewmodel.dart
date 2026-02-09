@@ -19,7 +19,6 @@ class EmployeeloginState {
     this.error,
     this.companyId,
     this.isPhoneNoExists,
-    this.error,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
   });
