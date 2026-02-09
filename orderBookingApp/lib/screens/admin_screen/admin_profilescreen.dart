@@ -134,15 +134,15 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text(
-                            adminLogin.companyName != null && adminLogin.companyName!.isNotEmpty
-                                ? adminLogin.companyName!
-                                : "1",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                          // Text(
+                          //   adminLogin.companyName != null && adminLogin.companyName!.isNotEmpty
+                          //       ? adminLogin.companyName!
+                          //       : "1",
+                          //   style: TextStyle(
+                          //     fontSize: 13,
+                          //     color: Colors.grey[600],
+                          //   ),
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 2),
