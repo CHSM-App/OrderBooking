@@ -55,7 +55,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                   "mobile": e.empMobile ?? "",
                   "email": e.empEmail ?? "",
                   "address": e.empAddress ?? "",
-                  "region": e.empAddress ?? "",
+                  "region": e.regionName ?? "",
                   "status": e.activeStatus == 1 ? "Active" : "Inactive",
                 },
               )

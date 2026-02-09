@@ -66,18 +66,17 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     //       ); // companyId
     // });
 
-
     Future.microtask(() {
-    final companyId =
-        ref.read(adminloginViewModelProvider).companyId;
+      final companyId = ref.read(adminloginViewModelProvider).companyId;
 
-    if (companyId != null && companyId.isNotEmpty) {
-      ref
-          .read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
-    } else {
-      debugPrint("❌ companyId is null – region API not called");
-    }
-  });
+      if (companyId != null && companyId.isNotEmpty) {
+        ref
+            .read(regionofflineViewModelProvider.notifier)
+            .fetchRegions(companyId);
+      } else {
+        debugPrint("❌ companyId is null – region API not called");
+      }
+    });
 
     _animationController = AnimationController(
       vsync: this,
@@ -110,6 +109,17 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
   }
 
   Future<void> submitForm() async {
+    final state = ref.read(employeeloginViewModelProvider);
+    if (state.isPhoneNoExists == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Mobile number already exists"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
@@ -145,9 +155,9 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
 
     await ref
         .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId?? '');
+        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
 
-    final state = ref.read(employeeloginViewModelProvider);
+    // final state = ref.read(employeeloginViewModelProvider);
 
     if (state.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,6 +180,9 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
 
   @override
   Widget build(BuildContext context) {
+    final employeeState = ref.watch(employeeloginViewModelProvider);
+    final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -215,6 +228,16 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                       icon: Icons.person_outline,
                       onSaved: (v) => name = v!,
                     ),
+                    // _field(
+                    //   label: "Mobile Number",
+                    //   controller: mobileController,
+                    //   icon: Icons.phone_outlined,
+                    //   keyboard: TextInputType.phone,
+                    //   maxLength: 10,
+                    //   formatter: FilteringTextInputFormatter.digitsOnly,
+                    //   onSaved: (v) => mobile = v!,
+                    //   counterText: '', // hides 0/10
+                    // ),
                     _field(
                       label: "Mobile Number",
                       controller: mobileController,
@@ -222,9 +245,30 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                       keyboard: TextInputType.phone,
                       maxLength: 10,
                       formatter: FilteringTextInputFormatter.digitsOnly,
+                      counterText: '',
+
+                      onChanged: (value) {
+                        if (value.length == 10) {
+                          ref
+                              .read(employeeloginViewModelProvider.notifier)
+                              .checkMobileExists(value, companyId);
+                        } else {
+                          // reset error while typing
+                          ref
+                              .read(employeeloginViewModelProvider.notifier)
+                              .state = employeeState.copyWith(
+                            isPhoneNoExists: null,
+                          );
+                        }
+                      },
+
+                      errorText: employeeState.isPhoneNoExists == true
+                          ? 'Mobile number already exists'
+                          : null,
+
                       onSaved: (v) => mobile = v!,
-                      counterText: '', // hides 0/10
                     ),
+
                     _field(
                       label: "Email Address",
                       controller: emailController,
@@ -303,8 +347,27 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                     SizedBox(
                       width: double.infinity,
                       height: 56,
+                      // child: ElevatedButton(
+                      //   onPressed: submitForm,
+                      //   style: ElevatedButton.styleFrom(
+                      //     backgroundColor: const Color(0xFFF57C00),
+                      //     shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12),
+                      //     ),
+                      //   ),
+                      //   child: Text(
+                      //     widget.isEdit ? "Update Employee" : "Add Employee",
+                      //     style: const TextStyle(
+                      //       color: Colors.white,
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.w600,
+                      //     ),
+                      //   ),
+                      // ),
                       child: ElevatedButton(
-                        onPressed: submitForm,
+                        onPressed: employeeState.isPhoneNoExists == true
+                            ? null // disable button
+                            : submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF57C00),
                           shape: RoundedRectangleBorder(
@@ -340,6 +403,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     TextInputType keyboard = TextInputType.text,
     TextInputFormatter? formatter,
     required Function(String?) onSaved,
+    ValueChanged<String>? onChanged, // ✅ ADD
+    String? errorText,
     String? counterText, // optional to hide maxLength counter
   }) {
     return Padding(
@@ -350,6 +415,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
         maxLines: maxLines,
         maxLength: maxLength,
         inputFormatters: formatter != null ? [formatter] : null,
+        onChanged: onChanged,
         validator: (v) => v == null || v.isEmpty ? "Required" : null,
         onSaved: onSaved,
         decoration: InputDecoration(
@@ -357,6 +423,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
           prefixIcon: Icon(icon),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           counterText: counterText, // ✅ hide counter
+          errorText: errorText,
         ),
       ),
     );

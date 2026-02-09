@@ -25,4 +25,8 @@ class EmployeeloginUsecase {
   Future<EmployeeLogin> deleteEmployee(int empId) {
     return employeeloginRepository.deleteEmployee(empId);
   }
+
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId) async {
+      return employeeloginRepository.checkMobileExists(mobileNo, companyId);
+  }
 }

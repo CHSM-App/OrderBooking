@@ -34,6 +34,9 @@ abstract class ApiService {
   @POST("insert/employee")
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
 
+  @GET("users/checkMobile/{company_id}/{emp_mobile}")
+  Future<dynamic> checkMobileExists(@Path("emp_mobile") String empMobile, @Path("company_id") String companyId) ;
+
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
@@ -79,9 +82,7 @@ abstract class ApiService {
   Future<List<Region>> fetchRegionList(@Path("company_id") String companyId);
 
   @GET("users/current/{emp_id}")
-  Future<List<CheckInStatusRequest>> fetchTodayAttendance(
-    @Path("emp_id") int empId,
-  );
+  Future<List<CheckInStatusRequest>> fetchTodayAttendance(@Path("emp_id") int empId,);
 
   //Login Check
   @GET("login/checkPhone")
