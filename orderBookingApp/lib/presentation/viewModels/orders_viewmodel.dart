@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:order_booking_app/domain/models/orders.dart';
@@ -13,19 +13,19 @@ class ordersState {
   final int? empId;
 
   const ordersState({
-    required this.isLoading,
-    required this.isSuccess,
+    this.isLoading = false,
+    this.isSuccess = false,
     this.errorMessage,
     this.orders,
-     this.companyId,
-     this.empId
+    this.companyId,
+    this.empId,
   });
 
   ordersState copyWith({
     bool? isLoading,
     String? errorMessage,
     bool? isSuccess,
-      final AsyncValue<List<Order>>? orders
+    final AsyncValue<List<Order>>? orders,
   }) {
     return ordersState(
       orders: orders ?? this.orders,
@@ -40,7 +40,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
   final OrderUsecase usecase;
 
   ordersStateNotifier(this.usecase)
-    : super(ordersState(isLoading: false, isSuccess: false));
+    : super(ordersState());
 
   Future<void> addOrderLineItem(Order order) async {
     state = state.copyWith(
@@ -51,7 +51,6 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     try {
       await usecase.addProduct(order);
       state = state.copyWith(isLoading: false, isSuccess: true);
-      await getAllOrders();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -61,30 +60,29 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-  Future<void> syncOfflineOrders(int empID) async {
-    await usecase.syncOfflineOrders();
-    await usecase.syncServerOrdersToLocal(empID);
-  }
-
   //get Offline orders of that employee
-    Future<void> getAllOrders() async {
+  Future<void> getAllOrders(int empId) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      isSuccess: false,
+    );
+
+    try {
+      final result = await usecase.getAllOrders(empId);
       state = state.copyWith(
-        isLoading: true,
-        errorMessage: null,
+        isLoading: false,
+        isSuccess: true,
+        orders: AsyncValue.data(result),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
         isSuccess: false,
       );
-
-      try {
-      final result =  await usecase.getAllOrders();
-        state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
-      } catch (e) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: e.toString(),
-          isSuccess: false,
-        );
-      }
     }
+  }
 
   //Get all orders by companyId
   Future<void> getOrderList(String companyId) async {
@@ -95,8 +93,12 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     );
 
     try {
-     final result =  await usecase.getOrderList(companyId);
-       state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
+      final result = await usecase.getOrderList(companyId);
+      state = state.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        orders: AsyncValue.data(result),
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -107,7 +109,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
   }
 
   //get all order for an employee(remote)
-   Future<void> getEmployeeOrders(int empId) async {
+  Future<void> getEmployeeOrders(int empId) async {
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,
@@ -115,8 +117,13 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     );
 
     try {
-     final result =  await usecase.getEmployeeOrders(empId);
-       state = state.copyWith(isLoading: false, isSuccess: true, orders: AsyncValue.data(result));
+      final result = await usecase.getEmployeeOrders(empId);
+
+      state = state.copyWith(
+        isLoading: false,
+        isSuccess: true,
+        orders: result.length< 1 ? AsyncValue.data([]): AsyncValue.data(result),
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -126,5 +133,3 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 }
-
-

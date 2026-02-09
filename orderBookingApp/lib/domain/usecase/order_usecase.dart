@@ -16,8 +16,8 @@ class OrderUsecase {
     return ordersRepository.syncOfflineOrders();
   }
 
-  Future<List<Order>> getAllOrders(){
-    return ordersRepository.getAllOrders();
+  Future<List<Order>> getAllOrders(int empId){
+    return ordersRepository.getAllOrders(empId);
   }
 
   Future<void> syncServerOrdersToLocal(int empId){

@@ -13,12 +13,13 @@ class ProfilePage extends ConsumerStatefulWidget {
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends ConsumerState<ProfilePage> with SingleTickerProviderStateMixin {
+class _ProfilePageState extends ConsumerState<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
-  
+
   @override
 void initState() {
   super.initState();
@@ -216,7 +217,11 @@ Widget _buildEmptyStateWithRefresh() {
             const SizedBox(height: 24),
             _ModernButton(
               onPressed: () {
-                ref.read(employeeloginViewModelProvider.notifier).fetchEmployeeInfo(ref.read(adminloginViewModelProvider).mobileNo??"");
+                ref
+                    .read(employeeloginViewModelProvider.notifier)
+                    .fetchEmployeeInfo(
+                      ref.read(adminloginViewModelProvider).mobileNo ?? "",
+                    );
               },
               label: 'Try Again',
               icon: Icons.refresh_rounded,

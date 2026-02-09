@@ -34,7 +34,6 @@ class VisitViewModel extends StateNotifier<EmployeeVisitState> {
   VisitViewModel(this.repo) : super(const EmployeeVisitState());
 
   Future<void> addVisit(VisitPayload visit) async {
-
     try {
       await repo.saveVisitOffline(visit);
       await sync();

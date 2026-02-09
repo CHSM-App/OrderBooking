@@ -78,7 +78,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   /// GET EMPLOYEE LIST
   /// -----------------------
   Future<void> getEmployeeList(String companyId) async {
-    debugPrint("inside the employlist");
     state = state.copyWith(isLoading: true, error: null);
     try {
       final employees = await usecase.getEmployeeList(companyId);
