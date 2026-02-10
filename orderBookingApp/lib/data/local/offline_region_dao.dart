@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:order_booking_app/data/DB/app_database.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/models/region.dart';
@@ -16,16 +15,17 @@ class OfflineRegionDao {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Map<String, dynamic>>> fetchPending() async {
-    final db = await AppDatabase.database;
+Future<List<Map<String, dynamic>>> fetchPending() async {
+  final db = await AppDatabase.database;
 
-    return db.query(
-      'offline_regions',
-      where: 'status = ?',
-      whereArgs: ['pending'],
-      orderBy: 'captured_at ASC',
-    );
-  }
+  return db.query(
+    'offline_regions',
+    where: 'status = ? AND server_id IS NULL',
+    whereArgs: ['pending'],
+    orderBy: 'captured_at ASC',
+  );
+}
+
 
   Future<List<Map<String, dynamic>>> fetchAll() async {
     final db = await AppDatabase.database;
@@ -37,18 +37,18 @@ class OfflineRegionDao {
     );
   }
 
-  Future<void> markSyncing(int id) async {
+  Future<void> markSyncing(String local_id) async {
     final db = await AppDatabase.database;
 
     await db.update(
       'offline_regions',
       {'status': 'syncing'},
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'local_id = ?',
+      whereArgs: [local_id],
     );
   }
 
-  Future<void> markSynced(int id, int serverId) async {
+  Future<void> markSynced(String local_id, int serverId) async {
     final db = await AppDatabase.database;
 
     await db.update(
@@ -58,12 +58,12 @@ class OfflineRegionDao {
         'server_id': serverId,
         'updated_at': DateTime.now().toIso8601String(),
       },
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'local_id = ?',
+      whereArgs: [local_id],
     );
   }
 
-  Future<void> incrementRetry(int id) async {
+  Future<void> incrementRetry(String local_id) async {
     final db = await AppDatabase.database;
 
     await db.rawUpdate(
@@ -73,7 +73,7 @@ class OfflineRegionDao {
           status = 'pending'
       WHERE id = ?
     ''',
-      [id],
+      [local_id],
     );
   }
 

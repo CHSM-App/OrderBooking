@@ -9,11 +9,7 @@ class AddProductPage extends ConsumerStatefulWidget {
   final int adminId;
   final Product? initialProduct;
 
-  const AddProductPage({
-    super.key,
-    required this.adminId,
-    this.initialProduct,
-  });
+  const AddProductPage({super.key, required this.adminId, this.initialProduct});
 
   @override
   ConsumerState<AddProductPage> createState() => _AddProductPageState();
@@ -48,7 +44,14 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
   final List<String> units = ["Kilogram", "Liter", "Piece", "Packet"];
 
   List<ProductSubType> addedItems = [];
-  bool _hasInitializedData = false; // To avoid overwriting user input
+  bool _hasInitializedData = false;
+
+  // Color scheme
+  static const primaryOrange = Color(0xFFF57C00);
+  static const accentBlue = Color(0xFF2579B4);
+  static const lightOrange = Color(0xFFFFE0B2);
+  static const darkOrange = Color(0xFFE65100);
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +60,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -66,15 +69,14 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _animationController.forward();
 
-    // If product is already available from list, initialize directly
     if (widget.initialProduct != null) {
       _initFromProduct(widget.initialProduct!);
     }
@@ -91,11 +93,28 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
   void addItem() {
     if (unitController.text.isEmpty || priceController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter both unit and price"),
-          backgroundColor: Colors.orange,
-        ),
+      _showSnackBar(
+        "Please enter both unit and price",
+        Colors.orange,
+        Icons.warning_amber_rounded,
+      );
+      return;
+    }
+
+    if (productName.isEmpty) {
+      _showSnackBar(
+        "Please enter product name first",
+        Colors.orange,
+        Icons.warning_amber_rounded,
+      );
+      return;
+    }
+
+    if (measuringUnit == null || measuringUnit!.isEmpty) {
+      _showSnackBar(
+        "Please select measuring unit first",
+        Colors.orange,
+        Icons.warning_amber_rounded,
       );
       return;
     }
@@ -104,27 +123,59 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
       final subtype = ProductSubType(
         localId: Uuid().v4(),
         subItemId: null,
-        measuringUnit:  measuringUnit ?? '',
+        measuringUnit: measuringUnit ?? '',
+        // measuringUnit: measuringUnit ?? '',
         availableUnit: double.tryParse(unitController.text) ?? 0,
         price: double.tryParse(priceController.text),
-        
       );
-    
+
+
       addedItems.add(subtype);
       unitController.clear();
       priceController.clear();
     });
   }
 
+  Future<bool> _ensureOnline() async {
+    final isConnected = await ref
+        .read(networkServiceProvider)
+        .checkConnection();
+    if (!isConnected) {
+      // Ensure the global banner reflects the latest status.
+      ref.invalidate(networkStatusProvider);
+      return false;
+    }
+    return true;
+  }
+
   Future<void> submitForm() async {
+    final online = await _ensureOnline();
+    if (!online) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.wifi_off, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text("No internet connection!"),
+            ],
+          ),
+          backgroundColor: Colors.grey[800],
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(8),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     if (addedItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please add at least one unit and price"),
-          backgroundColor: Colors.orange,
-        ),
+      _showSnackBar(
+        "Please add at least one unit and price",
+        Colors.orange,
+        Icons.info_outline_rounded,
       );
       return;
     }
@@ -145,11 +196,15 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
           .read(productViewModelProvider.notifier)
           .addOrUpdateProduct(product);
 
-      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
+      ref
+          .read(productViewModelProvider.notifier)
+          .fetchProductList(
+            ref.read(adminloginViewModelProvider).companyId ?? "",
+          );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text( 
+          content: Text(
             widget.initialProduct != null
                 ? "Product updated successfully!"
                 : "Product added successfully!",
@@ -160,101 +215,71 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
       Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to save product: $e"),
-          backgroundColor: Colors.red,
-        ),
+      _showSnackBar(
+        "Failed to save product: $e",
+        Colors.red,
+        Icons.error_outline_rounded,
       );
     }
+  }
+
+  void _showSnackBar(String message, Color color, IconData icon) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        foregroundColor: Colors.white,
+     backgroundColor: Colors.grey[100],
+        iconTheme: const IconThemeData(color: Color.fromARGB(255, 31, 30, 30)),
         title: Text(
           widget.initialProduct != null ? "Edit Product" : "Add New Product",
           style: const TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             fontSize: 20,
-            color: Colors.white,
+            color: Colors.black87,
           ),
         ),
-        backgroundColor: const Color(0xFFF57C00),
-        iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 241, 239, 236),
+               // Color(0xFFF57C00),
+              ],
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildAnimatedHeader(),
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: _buildForm(),
-                ),
-              ),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildForm(),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnimatedHeader() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: Opacity(opacity: value, child: child),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF57C00),
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30),
-            bottomRight: Radius.circular(30),
           ),
-        ),
-        padding: const EdgeInsets.only(bottom: 30),
-        child: Column(
-          children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.elasticOut,
-              builder: (context, value, child) {
-                return Transform.scale(scale: value, child: child);
-              },
-              child: const Icon(
-                Icons.add_box_rounded,
-                size: 60,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.initialProduct != null
-                  ? "Edit Product Information"
-                  : "Product Information",
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -264,57 +289,191 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: primaryOrange.withOpacity(0.1),
+        //     blurRadius: 30,
+        //     offset: const Offset(0, 10),
+        //   ),
+        // ],
       ),
-      padding: const EdgeInsets.all(24),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAnimatedField(
-              delay: 0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Header section
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color.fromARGB(255, 237, 219, 191).withOpacity(0.3),
+                    Colors.white,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Row(
                 children: [
-                  _buildLabel("Product Name"),
-                  TextFormField(
-                    controller: productNameController,
-                    decoration: _buildInputDecoration(
-                      hint: "Enter product name",
-                      icon: Icons.inventory_2_outlined,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 9, 9, 9).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    validator: (val) => val == null || val.isEmpty
-                        ? "Enter product name"
-                        : null,
-                    onSaved: (val) => productName = val!,
-                    onChanged: (val) => productName = val,
+                    child: const Icon(
+                      Icons.edit_note_rounded,
+                      color: Color.fromARGB(255, 16, 16, 15),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Product Details",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "Fill in the information below",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _buildProductTypeField(),
-            const SizedBox(height: 16),
-            _buildMeasuringUnitField(),
-            const SizedBox(height: 16),
-            _buildUnitPriceField(),
-            const SizedBox(height: 12),
-            _buildAddButton(),
-            const SizedBox(height: 24),
-            _buildAddedItemsList(),
-            const SizedBox(height: 24),
-            _buildSubmitButton(),
+            
+            // Form fields
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  _buildAnimatedField(
+                    delay: 0,
+                    child: _buildModernTextField(
+                      label: "Product Name",
+                      controller: productNameController,
+                      icon: Icons.shopping_bag_rounded,
+                      hint: "Enter product name",
+                      validator: (val) => val == null || val.isEmpty
+                          ? "Enter product name"
+                          : null,
+                      onSaved: (val) => productName = val!,
+                      onChanged: (val) => productName = val,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildProductTypeField(),
+                  const SizedBox(height: 20),
+                  _buildMeasuringUnitField(),
+                  const SizedBox(height: 24),
+                  
+                  // Unit and Price section
+                  _buildUnitPriceSection(),
+                  
+                  const SizedBox(height: 24),
+                  _buildAddedItemsList(),
+                  const SizedBox(height: 28),
+                  _buildSubmitButton(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    String? Function(String?)? validator,
+    void Function(String?)? onSaved,
+    void Function(String)? onChanged,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: primaryOrange),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            filled: true,
+            fillColor: Colors.grey[50],
+            prefixIcon: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: primaryOrange, size: 20),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: primaryOrange, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+          validator: validator,
+          onSaved: onSaved,
+          onChanged: onChanged,
+          keyboardType: keyboardType,
+        ),
+      ],
     );
   }
 
@@ -324,11 +483,68 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLabel("Product Type"),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: const [
+                Icon(Icons.category_rounded, size: 18, color: primaryOrange),
+                SizedBox(width: 8),
+                Text(
+                  "Product Type",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
           DropdownButtonFormField2<String>(
-            decoration: _buildDropdownDecoration(icon: Icons.category_outlined),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[50],
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.category_rounded,
+                  color: primaryOrange,
+                  size: 20,
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: primaryOrange, width: 2),
+              ),
+            ),
+            dropdownStyleData: DropdownStyleData(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+              ),
+              elevation: 8,
+            ),
             items: productTypes
-                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                .map((type) => DropdownMenuItem(
+                      value: type,
+                      child: Text(
+                        type,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ))
                 .toList(),
             value: productType,
             onChanged: (val) => setState(() => productType = val),
@@ -346,13 +562,68 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLabel("Measuring Unit"),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: const [
+                Icon(Icons.straighten_rounded, size: 18, color: primaryOrange),
+                SizedBox(width: 8),
+                Text(
+                  "Measuring Unit",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
           DropdownButtonFormField2<String>(
-            decoration: _buildDropdownDecoration(
-              icon: Icons.straighten_outlined,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[50],
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primaryOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.straighten_rounded,
+                  color: primaryOrange,
+                  size: 20,
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: primaryOrange, width: 2),
+              ),
+            ),
+            dropdownStyleData: DropdownStyleData(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+              ),
+              elevation: 8,
             ),
             items: units
-                .map((unit) => DropdownMenuItem(value: unit, child: Text(unit)))
+                .map((unit) => DropdownMenuItem(
+                      value: unit,
+                      child: Text(
+                        unit,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ))
                 .toList(),
             value: measuringUnit,
             onChanged: (val) => setState(() => measuringUnit = val),
@@ -364,74 +635,152 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     );
   }
 
-  Widget _buildUnitPriceField() {
+  Widget _buildUnitPriceSection() {
     return _buildAnimatedField(
       delay: 300,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              accentBlue.withOpacity(0.05),
+              accentBlue.withOpacity(0.02),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accentBlue.withOpacity(0.2), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                _buildLabel("Available Unit"),
-                TextFormField(
-                  controller: unitController,
-                  decoration: _buildInputDecoration(
-                    hint: "Enter unit value",
-                    icon: Icons.straighten_outlined,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  keyboardType: TextInputType.number,
+                  child: const Icon(
+                    Icons.add_shopping_cart_rounded,
+                    color: accentBlue,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  "Add Unit & Price",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+            Row(
               children: [
-                _buildLabel("Price"),
-                TextFormField(
-                  controller: priceController,
-                  decoration: _buildInputDecoration(
-                    hint: "Enter price (₹)",
-                    icon: Icons.price_change_outlined,
+                Expanded(
+                  child: _buildCompactTextField(
+                    label: "Unit",
+                    controller: unitController,
+                    icon: Icons.scale_rounded,
+                    hint: "Value",
                   ),
-                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCompactTextField(
+                    label: "Price",
+                    controller: priceController,
+                    icon: Icons.currency_rupee_rounded,
+                    hint: "₹ Amount",
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: addItem,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 120, 115, 223),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.add_circle_outline, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Add to List",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAddButton() {
-    return _buildAnimatedField(
-      delay: 400,
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: addItem,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 37, 121, 180),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: const Color.fromARGB(255, 45, 78, 139).withOpacity(0.3),
-              ),
+  Widget _buildCompactTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
-          child: const Text(
-            "Add Unit & Price",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
         ),
-      ),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: Icon(icon, color: accentBlue, size: 18),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: accentBlue, width: 2),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+        ),
+      ],
     );
   }
 
@@ -443,11 +792,32 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Added Items",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.playlist_add_check_rounded,
+                color: Colors.green,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Added Items (${addedItems.length})",
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -460,45 +830,155 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
               curve: Curves.easeOut,
               builder: (context, value, child) {
                 return Transform.scale(
-                  scale: value,
+                  scale: 0.8 + (0.2 * value),
                   child: Opacity(opacity: value, child: child),
                 );
               },
-              child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      Colors.grey[50]!,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: primaryOrange.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: ListTile(
-                  // title: Text(
-                  //   // "${} (${item['productType']})",
-                  // ),
-                  subtitle: Text(
-                    "Unit: ${item.availableUnit} ${item.measuringUnit} • Price: ₹${item.price}",
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: primaryOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.inventory_rounded,
+                      color: primaryOrange,
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    "$productName (${item.measuringUnit})",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Colors.black87,
+                    ),
+                  ),
+               
+                  subtitle: Padding(
+  padding: const EdgeInsets.only(top: 6),
+  child: Wrap(
+    spacing: 12,
+    runSpacing: 6,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.straighten_rounded,
+            size: 14,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            "${item.availableUnit} ${item.measuringUnit}",
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.currency_rupee_rounded,
+            size: 14,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 2),
+          Text(
+            "${item.price}",
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.delete_rounded,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ),
                     onPressed: () async {
-                      // final subItemlocalId = item['local_id'];
                       final subItemlocalId = item.localId;
 
-                      if (subItemlocalId !=null) {
+                      if (subItemlocalId != null) {
                         // Confirm deletion
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text("Delete Subitem"),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: Row(
+                              children: const [
+                                Icon(Icons.warning_rounded, color: Colors.orange),
+                                SizedBox(width: 12),
+                                Text("Delete Item"),
+                              ],
+                            ),
                             content: const Text(
-                              "Are you sure you want to delete this subitem?",
+                              "Are you sure you want to delete this item?",
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
                                 child: const Text("Cancel"),
                               ),
-                              TextButton(
+                              ElevatedButton(
                                 onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
                                 child: const Text("Delete"),
                               ),
                             ],
@@ -507,30 +987,26 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
 
                         if (confirm != true) return;
 
-                        // Call API to delete
                         try {
                           await productVM.deleteProductSubType(subItemlocalId);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Subitem deleted successfully"),
-                              backgroundColor: Colors.green,
-                            ),
+                          _showSnackBar(
+                            "Item deleted successfully",
+                            Colors.green,
+                            Icons.check_circle_rounded,
                           );
 
                           setState(() {
                             addedItems.removeAt(index);
                           });
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Failed to delete subitem: $e"),
-                              backgroundColor: Colors.red,
-                            ),
+                          _showSnackBar(
+                            "Failed to delete item: $e",
+                            Colors.red,
+                            Icons.error_outline_rounded,
                           );
                         }
                       } else {
-                        // Local item not saved yet, just remove from list
                         setState(() {
                           addedItems.removeAt(index);
                         });
@@ -549,32 +1025,44 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
   Widget _buildSubmitButton() {
     return _buildAnimatedField(
       delay: 500,
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [primaryOrange, darkOrange],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primaryOrange.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: ElevatedButton(
           onPressed: submitForm,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF57C00),
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
-            elevation: 2,
-            shadowColor: const Color(0xFFF57C00).withOpacity(0.4),
+            shadowColor: Colors.transparent,
+            minimumSize: const Size(double.infinity, 60),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.check_circle_outline, size: 22),
-              SizedBox(width: 8),
+            children: const [
+              Icon(Icons.check_circle_rounded, size: 24),
+              SizedBox(width: 12),
               Text(
                 "Submit Product",
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
-                  
                 ),
               ),
             ],
@@ -613,7 +1101,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
         .whereType<ProductSubType>()
         .toList();
   }
- 
+
   Widget _buildAnimatedField({required int delay, required Widget child}) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
@@ -628,72 +1116,4 @@ class _AddProductPageState extends ConsumerState<AddProductPage>
       child: child,
     );
   }
-
-  Widget _buildLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 6, left: 4),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Colors.black87,
-      ),
-    ),
-  );
-
-  InputDecoration _buildInputDecoration({
-    required String hint,
-    required IconData icon,
-  }) => InputDecoration(
-    hintText: hint,
-    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-    prefixIcon: Icon(
-      icon,
-      color: const Color.fromARGB(255, 37, 121, 180),
-      size: 22,
-    ),
-    filled: true,
-    fillColor: Colors.grey[50],
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey[300]!),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey[300]!),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(
-        color: Color.fromARGB(255, 37, 121, 180),
-        width: 2,
-      ),
-    ),
-  );
-
-  InputDecoration _buildDropdownDecoration({required IconData icon}) =>
-      InputDecoration(
-        prefixIcon: Icon(
-          icon,
-          color: const Color.fromARGB(255, 37, 121, 180),
-          size: 22,
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color.fromARGB(255, 37, 121, 180),
-            width: 2,
-          ),
-        ),
-      );
 }

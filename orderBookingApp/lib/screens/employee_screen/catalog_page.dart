@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/theme.dart';
 
 class CatalogPage extends ConsumerStatefulWidget {
   const CatalogPage({Key? key}) : super(key: key);
@@ -301,17 +300,17 @@ Widget _buildModernHeader(List<Product> products) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// TITLE
-          const Text(
-            'Product Catalog',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2C2C2C),
-            ),
-          ),
+          // /// TITLE
+          // const Text(
+          //   'Product Catalog',
+          //   style: TextStyle(
+          //     fontSize: 24,
+          //     fontWeight: FontWeight.w700,
+          //     color: Color(0xFF2C2C2C),
+          //   ),
+          // ),
 
-          const SizedBox(height: 14),
+         
 
           /// SEARCH
           _buildSearchField(products),

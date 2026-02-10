@@ -45,6 +45,8 @@
 
   @JsonKey(name: 'region_name')
   final String? regionName;
+   @JsonKey(name: 'company_name')
+  final String? companyName;
 
  
   EmployeeLogin({
@@ -62,6 +64,7 @@
     this.companyId,
     this.adminId,
     this.regionName,
+    this.companyName,
   });
 
     // JSON deserialization

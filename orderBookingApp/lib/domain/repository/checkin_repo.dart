@@ -12,4 +12,6 @@ abstract class CheckinRepository {
 
   /// Get today's attendance record
   Future<CheckInStatusRequest?> fetchTodayStatus(int empId);
+
+  Future<List<CheckInStatusRequest>> getAttendance(int empId);
 }

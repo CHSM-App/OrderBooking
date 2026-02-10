@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
@@ -27,7 +27,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   late int _currentIndex;
-  bool _hasRequestedCheckinStatus = false;
+  // bool _hasRequestedCheckinStatus = false;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -99,6 +99,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   void _onTabTapped(int index) {
     if (!ref.read(checkInViewModelProvider).isCheckedIn) return;
+    HapticFeedback.lightImpact();
     setState(() => _currentIndex = index);
   }
 
@@ -127,15 +128,30 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             /// PROFILE + NAME
             title: Row(
               children: [
+                // CircleAvatar(
+                //   radius: 20,
+                //   backgroundColor: Colors.white,
+                //   child: Icon(
+                //     Icons.person,
+                //     color: AppTheme.accentColor,
+                //     size: 26,
+                //   ),
+                // ),
                 CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    color: AppTheme.accentColor,
-                    size: 26,
-                  ),
-                ),
+  radius: 20,
+  backgroundColor: Colors.white,
+  child: Text(
+    employeeName.isNotEmpty
+        ? employeeName[0].toUpperCase()
+        : "?",
+    style: TextStyle(
+      color: AppTheme.accentColor,
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,13 +159,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   children: [
                     const Text(
                       "Hello,",
-                      style: TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: Colors.white, fontSize: 15),
                     ),
                     Text(
                       employeeName,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

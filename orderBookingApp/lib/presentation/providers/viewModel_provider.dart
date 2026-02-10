@@ -1,5 +1,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/core/network/network_service.dart';
 import 'package:order_booking_app/presentation/providers/usecase_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/checkin_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
@@ -12,9 +13,17 @@ import 'package:order_booking_app/presentation/viewModels/region_viewmodel.dart'
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
 
+final networkServiceProvider = Provider((ref) => NetworkService());
+
 final networkStateProvider =
     StateNotifierProvider<EnhancedNetworkStateNotifier, NetworkState>(
         (ref) => EnhancedNetworkStateNotifier());
+
+
+final networkStatusProvider = StreamProvider<bool>((ref) {
+  final service = ref.watch(networkServiceProvider);
+  return service.onConnectivityChanged;
+});
 
 
 final employeeloginViewModelProvider =

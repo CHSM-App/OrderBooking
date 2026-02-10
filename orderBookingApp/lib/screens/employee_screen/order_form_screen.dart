@@ -222,48 +222,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       ),
     );
   }
-
-  // Helper method to pretty print JSON
-  String _prettyPrintJson(Map<String, dynamic> json, {int indent = 0}) {
-    final buffer = StringBuffer();
-    final spacing = '  ' * indent;
-
-    buffer.writeln('{');
-    final entries = json.entries.toList();
-    for (int i = 0; i < entries.length; i++) {
-      final entry = entries[i];
-      final isLast = i == entries.length - 1;
-
-      buffer.write('$spacing  "${entry.key}": ');
-
-      if (entry.value is List) {
-        buffer.writeln('[');
-        final list = entry.value as List;
-        for (int j = 0; j < list.length; j++) {
-          final item = list[j];
-          final isLastItem = j == list.length - 1;
-
-          if (item is Map<String, dynamic>) {
-            buffer.write('$spacing    ');
-            buffer.write(_prettyPrintJson(item, indent: indent + 2).trim());
-            if (!isLastItem) buffer.write(',');
-            buffer.writeln();
-          }
-        }
-        buffer.write('$spacing  ]${isLast ? '' : ','}');
-      } else if (entry.value is String) {
-        buffer.write('"${entry.value}"${isLast ? '' : ','}');
-      } else {
-        buffer.write('${entry.value}${isLast ? '' : ','}');
-      }
-      buffer.writeln();
-    }
-    buffer.write('$spacing}');
-
-    return buffer.toString();
-  }
-
-  double _calculateTotal() {
+ double _calculateTotal() {
     return _orderItems.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
 

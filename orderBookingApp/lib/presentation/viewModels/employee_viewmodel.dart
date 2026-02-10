@@ -63,14 +63,13 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
   // EXISTING: Add Employee
   Future<void> addEmployee(EmployeeLogin employeeLogin) async {
-    if (state.companyId == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
     try {
       await usecase.addEmployee(employeeLogin);
 
       // refresh list
-      await getEmployeeList(state.companyId!);
+      await getEmployeeList(employeeLogin.companyId!);
 
       state = state.copyWith(isLoading: false);
       // Refresh employee list after adding
@@ -147,8 +146,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
   /// DELETE EMPLOYEE
   Future<void> deleteEmployee(int empId) async {
-    if (state.companyId == null) return;
-
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -178,7 +175,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
         companyId,
       );
 
-      state = state.copyWith(isLoading: false, isPhoneNoExists: exists);
+      state = state.copyWith(isLoading: false, isPhoneNoExists: exists['exists']);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -186,6 +183,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
         isPhoneNoExists: false,
       );
     }
+
 }
 
 Future<void> getEmployeeVisit(int empId) async {

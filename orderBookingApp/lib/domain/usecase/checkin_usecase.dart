@@ -18,4 +18,10 @@ class CheckinUsecase {
   Future<CheckInStatusRequest?> fetchTodayStatus(int empId) {
     return repository.fetchTodayStatus(empId);
   }
+
+  Future<List<CheckInStatusRequest>> getAttendance(int empId){
+    return repository.getAttendance(empId);
+  }
 }
+
+

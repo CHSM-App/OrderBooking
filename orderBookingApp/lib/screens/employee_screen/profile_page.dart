@@ -252,8 +252,8 @@ Widget _buildEmptyStateWithRefresh() {
     final imageUrl = employeeDetails.imageUrl;
     final joiningDate = employeeDetails.joiningDate ?? "";
     final isActive = employeeDetails.activeStatus == 1;
-    final region = employeeDetails.regionId?.toString() ?? "N/A";
-final companyName =ref.read(adminloginViewModelProvider).companyName??"";
+    final region = employeeDetails.regionName?.toString() ?? "N/A";
+final companyName =employeeDetails.companyName ?? "";
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -283,6 +283,8 @@ final companyName =ref.read(adminloginViewModelProvider).companyName??"";
    companyName,         // join date
   imageUrl,                  // image
   isActive, 
+  email,
+  address,
                // status
 ),
 
@@ -381,6 +383,8 @@ Widget _buildModernProfileHeader(
   String companyName,
   String? imageUrl,
   bool isActive,
+  String?empEmail,
+  String?empAddress,
 ) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -487,14 +491,15 @@ Widget _buildModernProfileHeader(
                     ),
                     const SizedBox(height: 4),
 
-                    Text(
-                      'Joined: $joinDate',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
-                      ),
-                    ),
+                   Text(
+  'Joined: ${_formatDate(joinDate)}',
+  style: const TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: Color(0xFF94A3B8),
+  ),
+),
+
 
                   
                   ],
@@ -521,8 +526,8 @@ Widget _buildModernProfileHeader(
                     builder: (_) => EditProfilePage(
                       name: employeeName,
                       phone: mobileNo ?? "N/A",
-                      email: "",
-                      address: "",
+                      email: empEmail??"N/A",
+                      address: empAddress??"N/A",
                       onSave: (_) {
                         ref
                             .read(employeeloginViewModelProvider.notifier)
@@ -548,156 +553,6 @@ Widget _buildModernProfileHeader(
   );
 }
 
-// Widget _buildModernProfileHeader(
-//   String employeeName,
-//   String employeeId,
-//   String? imageUrl,
-//   bool isActive,
-// ) {
-//   return Padding(
-//     padding: const EdgeInsets.symmetric(horizontal: 16),
-//     child: Stack(
-//       children: [
-//         // MAIN CARD
-//         Container(
-//           width: double.infinity,
-//           padding: const EdgeInsets.all(20),
-//           decoration: BoxDecoration(
-//             color: Colors.white,
-//             borderRadius: BorderRadius.circular(20),
-//             boxShadow: [
-//               BoxShadow(
-//                 color: Colors.black.withOpacity(0.05),
-//                 blurRadius: 20,
-//                 offset: const Offset(0, 6),
-//               ),
-//             ],
-//           ),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.center,
-//             children: [
-//               // Avatar + Status
-//               Stack(
-//                 children: [
-//                   Container(
-//                     padding: const EdgeInsets.all(4),
-//                     decoration: BoxDecoration(
-//                       shape: BoxShape.circle,
-//                       gradient: const LinearGradient(
-//                         colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-//                       ),
-//                     ),
-//                     child: CircleAvatar(
-//                       radius: 52,
-//                       backgroundColor: const Color(0xFFF5F5F5),
-//                       child: imageUrl != null && imageUrl.isNotEmpty
-//                           ? ClipOval(
-//                               child: Image.network(
-//                                 imageUrl,
-//                                 width: 104,
-//                                 height: 104,
-//                                 fit: BoxFit.cover,
-//                                 errorBuilder: (_, __, ___) =>
-//                                     _buildInitialsAvatar(employeeName),
-//                               ),
-//                             )
-//                           : _buildInitialsAvatar(employeeName),
-//                     ),
-//                   ),
-//                   Positioned(
-//                     right: 6,
-//                     bottom: 6,
-//                     child: Container(
-//                       width: 14,
-//                       height: 14,
-//                       decoration: BoxDecoration(
-//                         color: isActive
-//                             ? const Color(0xFF2ECC71)
-//                             : const Color(0xFFE74C3C),
-//                         shape: BoxShape.circle,
-//                         border: Border.all(color: Colors.white, width: 2),
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-
-//               const SizedBox(height: 16),
-
-//               Text(
-//                 employeeName,
-//                 style: const TextStyle(
-//                   fontSize: 22,
-//                   fontWeight: FontWeight.w700,
-//                   color: Color(0xFF2C2C2C),
-//                 ),
-//               ),
-
-//               const SizedBox(height: 8),
-
-//               Container(
-//                 padding:
-//                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-//                 decoration: BoxDecoration(
-//                   color: const Color(0xFFF1F5F9),
-//                   borderRadius: BorderRadius.circular(20),
-//                 ),
-//                 child: Text(
-//                   'ID: $employeeId',
-//                   style: const TextStyle(
-//                     fontSize: 13,
-//                     fontWeight: FontWeight.w600,
-//                     color: Color(0xFF475569),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-
-//         // ✏️ EDIT BUTTON (TOP RIGHT)
-//         Positioned(
-//           top: 12,
-//           right: 12,
-//           child: Material(
-//             color: Colors.white,
-//             borderRadius: BorderRadius.circular(12),
-//             elevation: 3,
-//             child: InkWell(
-//               borderRadius: BorderRadius.circular(12),
-//               onTap: () {
-//                 Navigator.push(
-//                   context,
-//                   MaterialPageRoute(
-//                     builder: (_) => EditProfilePage(
-//                       name: employeeName,
-//                       phone: mobileNo ?? "N/A",
-//                       email: "", // pass email if needed
-//                       address: "",
-//                       onSave: (_) {
-//                         ref
-//                             .read(employeeloginViewModelProvider.notifier)
-//                             .fetchEmployeeInfo(mobileNo ?? "");
-//                       },
-//                     ),
-//                   ),
-//                 );
-//               },
-//               child: const Padding(
-//                 padding: EdgeInsets.all(8),
-//                 child: Icon(
-//                   Icons.edit_rounded,
-//                   size: 18,
-//                   color: Color(0xFF667EEA),
-//                 ),
-//               ),
-//             ),
-//           ),
-//         ),
-//       ],
-//     ),
-//   );
-// }
 
   Widget _buildInitialsAvatar(String employeeName) {
     return Container(
@@ -731,12 +586,14 @@ Widget _buildModernProfileHeader(
       child: Row(
         children: [
           Expanded(
-            child: _StatCard(
-              icon: Icons.calendar_today_rounded,
-              label: 'Joined',
-              value: joiningDate.isNotEmpty ? _formatDate(joiningDate) : 'N/A',
-              color: const Color(0xFF667EEA),
-            ),
+            child:
+         _StatCard(
+  icon: Icons.calendar_today_rounded,
+  label: 'Joined',
+  value: joiningDate.isNotEmpty ? _formatDate(joiningDate) : 'N/A',
+  color: const Color(0xFF667EEA),
+),
+
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -751,6 +608,7 @@ Widget _buildModernProfileHeader(
       ),
     );
   }
+  
 
   Widget _buildModernSection({
     required String title,
@@ -895,15 +753,32 @@ Widget _buildModernProfileHeader(
     );
   }
 
+  // String _formatDate(String dateStr) {
+  //   try {
+  //     final date = DateTime.parse(dateStr);
+  //     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  //     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  //   } catch (e) {
+  //     return dateStr;
+  //   }
+  // }
   String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${date.day} ${months[date.month - 1]} ${date.year}';
-    } catch (e) {
-      return dateStr;
-    }
+  try {
+    // Parse ISO 8601 UTC string and convert to local time
+    final date = DateTime.parse(dateStr).toLocal();
+
+    // Format as "9 Feb 2026"
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  } catch (e) {
+    return 'N/A';
   }
+}
+
 
   String _getInitials(String name) {
     final parts = name.trim().split(' ');

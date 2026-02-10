@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
+import 'package:order_booking_app/screens/employee_screen/reports.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -233,7 +234,7 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AddShopScreen(),
+                      builder: (context) => const ReportsPage(),
                     ),
                   );
                 },

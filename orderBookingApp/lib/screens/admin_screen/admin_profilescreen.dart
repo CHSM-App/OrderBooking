@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
@@ -754,245 +755,225 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: CustomScrollView(
-        slivers: [
-          // Modern App Bar
-          SliverAppBar(
-           // expandedHeight: 50,
-            floating: false,
-            pinned: true,
-          //  backgroundColor: const Color(0xFF6C63FF),
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Edit Profile',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFFAFAFA),
+
+    // ✅ WHITE APP BAR
+    appBar: AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      centerTitle: true,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF2C2C2C),
+            size: 18,
+          ),
+        ),
+      ),
+      title: const Text(
+        'Edit Profile',
+        style: TextStyle(
+          color: Color(0xFF2C2C2C),
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+
+    // ✅ BODY
+    body: SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+
+          // ✅ PROFILE AVATAR
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6C63FF).withOpacity(0.25),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF6C63FF),
+                  width: 3,
                 ),
               ),
-              background: Container(
-                // decoration: const BoxDecoration(
-                //   gradient: LinearGradient(
-                //     begin: Alignment.topLeft,
-                //     end: Alignment.bottomRight,
-                //     colors: [
-                //       Color(0xFF6C63FF),
-                //       Color(0xFF5A52E0),
-                //     ],
-                //   ),
-                // ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -30,
-                      right: -30,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                  ],
+              child: CircleAvatar(
+                radius: 55,
+                backgroundColor:
+                    const Color(0xFF6C63FF).withOpacity(0.1),
+                child: Text(
+                  (nameController.text.isNotEmpty
+                          ? nameController.text
+                          : "A")
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6C63FF),
+                  ),
                 ),
               ),
             ),
           ),
 
-          // Form Content
-          SliverToBoxAdapter(
+          const SizedBox(height: 12),
+          Text(
+            "Update Profile Photo",
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ✅ FORM CARD
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
             child: Column(
               children: [
+                _buildModernTextField(
+                  controller: companyController,
+                  label: "Company / Business Name",
+                  icon: Icons.business_rounded,
+                  color: const Color(0xFF6C63FF),
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: nameController,
+                  label: "Owner Name",
+                  icon: Icons.person_outline_rounded,
+                  color: const Color(0xFF4CAF50),
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: mobileController,
+                  label: "Mobile Number",
+                  icon: Icons.phone_android_rounded,
+                  color: const Color(0xFF2196F3),
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: emailController,
+                  label: "Email Address",
+                  icon: Icons.email_rounded,
+                  color: const Color(0xFFFF9800),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: addressController,
+                  label: "Address",
+                  icon: Icons.location_on_rounded,
+                  color: const Color(0xFFE91E63),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 20),
+
+                _buildModernTextField(
+                  controller: gstinController,
+                  label: "GSTIN Number",
+                  icon: Icons.receipt_long_rounded,
+                  color: const Color(0xFF9C27B0),
+                ),
+
                 const SizedBox(height: 30),
 
-                // Profile Avatar
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6C63FF).withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF6C63FF), width: 3),
-                    ),
-                    child: CircleAvatar(
-                      radius: 55,
-                      backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
-                      child: Text(
-                        (nameController.text.isNotEmpty
-                                ? nameController.text
-                                : "A")
-                            .substring(0, 1)
-                            .toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6C63FF),
-                        ),
+                // ✅ SAVE BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: isSaving ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6C63FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Update Profile Photo",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // Form Fields
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _buildModernTextField(
-                        controller: companyController,
-                        label: "Company / Business Name",
-                        icon: Icons.business_rounded,
-                        color: const Color(0xFF6C63FF),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: nameController,
-                        label: "Owner Name",
-                        icon: Icons.person_outline_rounded,
-                        color: const Color(0xFF4CAF50),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: mobileController,
-                        label: "Mobile Number",
-                        icon: Icons.phone_android_rounded,
-                        color: const Color(0xFF2196F3),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: emailController,
-                        label: "Email Address",
-                        icon: Icons.email_rounded,
-                        color: const Color(0xFFFF9800),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: addressController,
-                        label: "Address",
-                        icon: Icons.location_on_rounded,
-                        color: const Color(0xFFE91E63),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildModernTextField(
-                        controller: gstinController,
-                        label: "GSTIN Number",
-                        icon: Icons.receipt_long_rounded,
-                        color: const Color(0xFF9C27B0),
-                      ),
-                      const SizedBox(height: 30),
-
-                      // Save Button
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF5A52E0)],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6C63FF).withOpacity(0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: isSaving ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                    child: isSaving
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          )
+                        : const Text(
+                            "Save Changes",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          child: isSaving
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.save_rounded, size: 22),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Save Changes',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-                const SizedBox(height: 30),
               ],
             ),
           ),
+
+          const SizedBox(height: 32),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildModernTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required Color color,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-  }) {
+  required TextEditingController controller,
+  required String label,
+  required IconData icon,
+  required Color color,
+  TextInputType? keyboardType,
+  int maxLines = 1,
+  int? maxLength,
+  List<TextInputFormatter>? inputFormatters,
+}) {
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
@@ -1008,6 +989,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+  maxLength: maxLength,
+  inputFormatters: inputFormatters,
         enabled: !isSaving,
         style: const TextStyle(
           fontSize: 15,

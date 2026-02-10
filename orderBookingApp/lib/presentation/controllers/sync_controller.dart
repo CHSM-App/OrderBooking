@@ -25,7 +25,7 @@ final syncControllerProvider = Provider<void>((ref) {
           await ref.read(ordersViewModelProvider.notifier).getAllOrders(userId);
           await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
 
-        } catch (e, st) {
+        } catch (e) {
         }
       }
     },
