@@ -115,6 +115,8 @@ Future<dynamic> addOrder(
 @GET("users/getAllOrders/{company_id}")
   Future<List<Order>> getOrderList(@Path("company_id") String companyId);
 
+@GET("users/getEmployeeVisits/{emp_id}")
+  Future<List<VisitPayload>>getEmployeeVisit(@Path("emp_id") int empId);
 }
 
 

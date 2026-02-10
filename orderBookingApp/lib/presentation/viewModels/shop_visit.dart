@@ -58,5 +58,7 @@ class VisitViewModel extends StateNotifier<EmployeeVisitState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+
 }
 

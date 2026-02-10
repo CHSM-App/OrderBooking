@@ -13,7 +13,7 @@ class OfflineVisitDao {
       'local_id': visit.localId,
       'payload': jsonEncode(visit.toLocalJson()),
       'status': 'pending',
-      'captured_at': visit.capturedAt.toIso8601String(),
+      'captured_at': visit.capturedAt!.toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 

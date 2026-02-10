@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
 
 /// =======================
@@ -11,6 +12,8 @@ class EmployeeloginState {
   final String? error;
   final AsyncValue<List<EmployeeLogin>> employeeList;
   final AsyncValue<List<EmployeeLogin>> employeeDetails;
+  final AsyncValue<List<VisitPayload>> employeeVisits;
+
   final String? companyId;
   final bool? isPhoneNoExists;
 
@@ -21,6 +24,7 @@ class EmployeeloginState {
     this.isPhoneNoExists,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
+    this.employeeVisits = const AsyncValue.loading(),
   });
 
   EmployeeloginState copyWith({
@@ -29,6 +33,7 @@ class EmployeeloginState {
     String? error,
     AsyncValue<List<EmployeeLogin>>? employeeList,
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
+    AsyncValue<List<VisitPayload>>? employeeVisits,
     String? companyId,
   }) {
     return EmployeeloginState(
@@ -37,6 +42,7 @@ class EmployeeloginState {
       error: error ?? this.error,
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
+      employeeVisits: employeeVisits ?? this.employeeVisits,
       companyId: companyId ?? this.companyId,
     );
   }
@@ -50,6 +56,8 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
   
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
+  
+
 
 
 
@@ -122,41 +130,22 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   /// -----------------------
   /// FETCH EMPLOYEE INFO (LOGIN / PROFILE)
   /// 🔥 FIXED FIRST-TIME ERROR
- Future<void> fetchEmployeeInfo(String mobile) async {
-  debugPrint('🚀 fetchEmployeeInfo called');
-  debugPrint('📞 Mobile param: $mobile');
+  Future<void> fetchEmployeeInfo(String mobile) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await usecase.fetchEmployeeInfo(mobile);
+      state = state.copyWith(
+        isLoading: false,
+        employeeDetails: AsyncData(response),
+      );
 
-  state = state.copyWith(isLoading: true, error: null);
-  debugPrint('⏳ Loading TRUE');
-
-  try {
-    final response = await usecase.fetchEmployeeInfo(mobile);
-
-    debugPrint('✅ API SUCCESS');
-    debugPrint('📦 Response length: ${response.length}');
-    debugPrint('📦 Response data: $response');
-
-    state = state.copyWith(
-      isLoading: false,
-      employeeDetails: AsyncData(response),
-    );
-
-    debugPrint('⏳ Loading FALSE (success)');
-  } catch (e, stack) {
-    debugPrint('❌ API ERROR: $e');
-    debugPrint('🧵 STACK: $stack');
-
-    state = state.copyWith(
-      isLoading: false,
-      error: e.toString(),
-    );
+      debugPrint('⏳ Loading FALSE (success)');
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
-}
 
-
-  /// -----------------------
   /// DELETE EMPLOYEE
-  /// -----------------------
   Future<void> deleteEmployee(int empId) async {
     if (state.companyId == null) return;
 
@@ -165,12 +154,10 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     try {
       await usecase.deleteEmployee(empId);
 
-      // ✅ CLEAR DETAILS SAFELY
+      
       state = state.copyWith(
         employeeDetails: const AsyncValue.data([]),
       );
-
-      // ✅ Refresh the list (this already sets isLoading: false internally)
       
     } catch (e) {
       state = state.copyWith(
@@ -200,6 +187,26 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       );
     }
 }
+
+Future<void> getEmployeeVisit(int empId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final employees = await usecase.getEmployeeVisit(empId);
+      for (var employee in employees){
+        print(employee);
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        employeeVisits: AsyncValue.data(employees),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+         employeeVisits: AsyncValue.error(e, StackTrace.current),
+      );
+    }
+  }
 
 }
 

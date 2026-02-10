@@ -167,19 +167,19 @@ Future<void> _onRefresh() async {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "Company Name: ${adminLogin.companyName ?? "null"}",
+                        "${adminLogin.companyName ?? "null"}",
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[600],
                         ),
                       ),
-                      Text(
-                        "Joined:",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                      // Text(
+                      //   "Joined:",
+                      //   style: TextStyle(
+                      //     fontSize: 13,
+                      //     color: Colors.grey[600],
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

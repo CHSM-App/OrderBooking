@@ -26,6 +26,7 @@ class AdminLogin {
 
   @JsonKey(name: 'gstin_no')
   final String? gstinNo;
+  
   @JsonKey(name: 'role_id')
   final int? role_id;
 
