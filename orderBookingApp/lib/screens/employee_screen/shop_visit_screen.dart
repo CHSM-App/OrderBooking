@@ -110,7 +110,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                 lat: widget.visit.lat,
                 lng: widget.visit.lng,
                 accuracy: widget.visit.accuracy,
-                capturedAt: widget.visit.capturedAt,
+                capturedAt: widget.visit.capturedAt ?? now,
                 punchIn: widget.visit.punchIn,
                 punchOut: VisitPayload.formatForApi(now.toLocal()),
               );

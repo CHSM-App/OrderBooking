@@ -17,7 +17,6 @@ part 'visite.g.dart';
 //   final String? regionName;
 //   final String? shopName;
 //   final String? email;
-
 //   VisitPayload({
 //     this.localId,
 //     this.shopId,
@@ -32,7 +31,6 @@ part 'visite.g.dart';
 //     this.punchOut,
 //     this.email
 //   });
-
 class VisitPayload {
   final String? localId;
   final int? shopId;
@@ -48,7 +46,7 @@ class VisitPayload {
   final String? mobileNo;
   final String? email;
   final double? accuracy;
- final DateTime? capturedAt;
+  final DateTime? capturedAt;
 
   VisitPayload({
     this.localId,
@@ -57,7 +55,7 @@ class VisitPayload {
     this.lng,
     required this.punchIn,
     this.punchOut,
-         this.employeeId,
+    this.employeeId,
     this.regionName,
     this.shopName,
     this.ownerName,
@@ -65,7 +63,7 @@ class VisitPayload {
     this.mobileNo,
     this.email,
     this.accuracy,
-     this.capturedAt
+    this.capturedAt,
   });
 
   static String formatForApi(DateTime dt) {
@@ -88,28 +86,21 @@ class VisitPayload {
 
   /// Payload sent to backend
   Map<String, dynamic> toJson() => {
-        'shopId': shopId,
-        'lat': lat,
-        'lng': lng,
-        'accuracy': accuracy,
-        'capturedAt': capturedAt!.toIso8601String(),
-        'punchIn': normalizeDateTimeForApi(punchIn),
-        'employeeId': employeeId,
-        'punchOut': normalizeDateTimeForApi(punchOut),
-        'shop_name': shopName,
-        'region_name': regionName,
-        'email' : email
-      };
-
-
- 
-
+    'shopId': shopId,
+    'lat': lat,
+    'lng': lng,
+    'accuracy': accuracy,
+    'capturedAt': (capturedAt ?? DateTime.now()).toIso8601String(),
+    'punchIn': normalizeDateTimeForApi(punchIn),
+    'employeeId': employeeId,
+    'punchOut': normalizeDateTimeForApi(punchOut),
+    'shop_name': shopName,
+    'region_name': regionName,
+    'email': email,
+  };
 
   /// Full JSON including localId (for SQLite)
-  Map<String, dynamic> toLocalJson() => {
-        'localId': localId,
-        ...toJson(),
-      };
+  Map<String, dynamic> toLocalJson() => {'localId': localId, ...toJson()};
 
   // factory VisitPayload.fromJson(Map<String, dynamic> json) {
   //   return VisitPayload(
@@ -128,17 +119,18 @@ class VisitPayload {
   //   );
   // }
 
-   factory VisitPayload.fromJson(Map<String, dynamic> json) {
+  factory VisitPayload.fromJson(Map<String, dynamic> json) {
     return VisitPayload(
-      shopId: json['location_id'] as int?, // ✅ FIX
-      employeeId: json['emp_id'] as int?,
+      localId: json['localId'],
+      shopId: json['shopId'], // ✅ FIX
+      employeeId: json['employeeId'] as int?,
 
-      lat: (json['latitude'] as num?)?.toDouble(),   // ✅ FIX
-      lng: (json['longitude'] as num?)?.toDouble(),  // ✅ FIX
+      lat: (json['lat'] as num?)?.toDouble(), // ✅ FIX
+      lng: (json['lng'] as num?)?.toDouble(), // ✅ FIX
+      accuracy: (json['accuracy'] as num?)?.toDouble(),
+      punchIn: json['punchIn'],
 
-      punchIn: json['punchIn'] ,
-
-      punchOut: json['punchOut'] ,
+      punchOut: json['punchOut'],
 
       shopName: json['shop_name']?.toString(),
       ownerName: json['owner_name']?.toString(),
@@ -148,5 +140,4 @@ class VisitPayload {
       regionName: json['region_name']?.toString(),
     );
   }
-
 }

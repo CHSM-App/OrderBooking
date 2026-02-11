@@ -16,9 +16,11 @@ class VisitImpl implements VisitRepository {
 
   Future<void> saveVisitOffline(VisitPayload visit) async {
     await local.insert(visit);
+    await syncOfflineVisits();
   }
 
   Future<void> syncOfflineVisits() async {
+    print("sync offline visits called");
     if (_isSyncing) return;
     _isSyncing = true;
 
@@ -43,7 +45,8 @@ class VisitImpl implements VisitRepository {
           }
 
           await local.delete(id);
-        } catch (_) {
+        } catch (e) {
+          print("sync offline visits called but got error: $e");
           await local.incrementRetry(id);
         }
       }
