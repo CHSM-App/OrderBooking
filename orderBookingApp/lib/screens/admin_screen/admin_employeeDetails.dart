@@ -780,8 +780,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const AttendanceCalendarPage(
-                                  
+                                builder: (_) => AttendanceCalendarPage(
+                                  empId: employee.empId ?? widget.empId,
+                                  joiningDate: employee.joiningDate
                                 ), 
                               ),
                             );

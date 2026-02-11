@@ -8,6 +8,7 @@ class CheckinState {
   final String? error;
   final String? message; // ✅ Added message state
   final AsyncValue<CheckInStatusRequest?> attendance;
+  final AsyncValue<List<CheckInStatusRequest>> attendanceList;
   final bool isCheckedIn;
 
   const CheckinState({
@@ -16,6 +17,7 @@ class CheckinState {
     this.error,
     this.message,
     this.attendance = const AsyncValue.loading(),
+    this.attendanceList = const AsyncValue.loading()
   });
 
   CheckinState copyWith({
@@ -24,6 +26,7 @@ class CheckinState {
     String? error,
     String? message,
     AsyncValue<CheckInStatusRequest?>? attendance,
+    AsyncValue<List<CheckInStatusRequest>>? attendanceList,
   }) {
     return CheckinState(
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
@@ -31,6 +34,7 @@ class CheckinState {
       error: error,
       message: message,
       attendance: attendance ?? this.attendance,
+      attendanceList: attendanceList ?? this.attendanceList
     );
   }
 }
@@ -118,11 +122,11 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
   Future<void> getAttendance(int empId) async {
     state = state.copyWith(isLoading: true, error: null, message: null);
     try {
-      final attendanceList = await usecase.getAttendance(empId);
+      final attendanceL = await usecase.getAttendance(empId);
       // You can handle the attendance list as needed, e.g., store it in state
       state = state.copyWith(
         isLoading: false,
-        attendance: AsyncValue.data(attendanceList.isNotEmpty ? attendanceList.first : null ),
+        attendanceList: AsyncValue.data(attendanceL),
         error: null,
         message: 'Attendance fetched successfully!',
       );

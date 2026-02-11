@@ -13,13 +13,14 @@ class EmployeeloginState {
   final AsyncValue<List<EmployeeLogin>> employeeList;
   final AsyncValue<List<EmployeeLogin>> employeeDetails;
   final AsyncValue<List<VisitPayload>> employeeVisits;
-
+  final int? empId;
   final String? companyId;
   final bool? isPhoneNoExists;
 
   const EmployeeloginState({
     this.isLoading = false,
     this.error,
+    this.empId,
     this.companyId,
     this.isPhoneNoExists,
     this.employeeList = const AsyncValue.loading(),
@@ -35,6 +36,7 @@ class EmployeeloginState {
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
     AsyncValue<List<VisitPayload>>? employeeVisits,
     String? companyId,
+    int? empId
   }) {
     return EmployeeloginState(
       isLoading: isLoading ?? this.isLoading,
@@ -44,6 +46,7 @@ class EmployeeloginState {
       employeeDetails: employeeDetails ?? this.employeeDetails,
       employeeVisits: employeeVisits ?? this.employeeVisits,
       companyId: companyId ?? this.companyId,
+      empId: empId ?? this.empId
     );
   }
 }
