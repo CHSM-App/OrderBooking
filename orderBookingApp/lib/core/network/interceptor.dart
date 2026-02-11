@@ -39,6 +39,20 @@ class TokenInterceptor extends Interceptor {
  
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Retry once when backend says "Connection is closed"
+    if (_shouldRetryConnectionClosed(err)) {
+      final reqOptions = err.requestOptions;
+      if (reqOptions.extra['retry_connection_closed'] != true) {
+        reqOptions.extra['retry_connection_closed'] = true;
+        try {
+          final response = await dio.fetch(reqOptions);
+          return handler.resolve(response);
+        } catch (_) {
+          // fall through to normal error handling
+        }
+      }
+    }
+
     // No response? Network issue → not a token problem
     if (err.response == null) {
       return handler.next(err);
@@ -118,6 +132,29 @@ class TokenInterceptor extends Interceptor {
     } catch (e) { 
       handler.next(err);
     }
+  }
+
+  bool _shouldRetryConnectionClosed(DioException err) {
+    const target = 'connection is closed';
+    final message = err.message?.toLowerCase();
+    if (message != null && message.contains(target)) {
+      return true;
+    }
+    final data = err.response?.data;
+    if (data is String && data.toLowerCase().contains(target)) {
+      return true;
+    }
+    if (data is Map) {
+      final error = data['error'];
+      if (error is String && error.toLowerCase().contains(target)) {
+        return true;
+      }
+      final message = data['message'];
+      if (message is String && message.toLowerCase().contains(target)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 void _goToLogin() {

@@ -440,7 +440,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
                                     ],
                                   ),
                                   child: DropdownButtonFormField<int>(
-                                    value: selectedRegionId,
+                                    initialValue: selectedRegionId,
                                     decoration: InputDecoration(
                                       prefixIcon: Icon(
                                         Icons.location_on_outlined,

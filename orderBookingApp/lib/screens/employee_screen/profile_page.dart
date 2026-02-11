@@ -6,6 +6,38 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
+// Theme Colors matching the booking app design
+class ProfileTheme {
+  // Primary magenta/pink from the design
+  static const primaryPink =Color(0xFFE8720C);
+  static const primaryPinkDark = Color(0xFFC01869);
+  
+  // Background colors
+  static const backgroundGray = Color(0xFFF5F5F5); // Gray100
+  
+  // Neutral colors
+  static const cardWhite = Color.fromARGB(255, 255, 255, 255);
+  static const textDark = Color(0xFF1E1E1E);
+  static const textGray = Color(0xFF6B7280);
+  
+  // Soft shadows
+  static List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
+  
+  static List<BoxShadow> buttonShadow = [
+    BoxShadow(
+      color: primaryPink.withOpacity(0.3),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
+}
+
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
@@ -21,45 +53,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  _animationController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 800),
-  );
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
 
-  _fadeAnimation =
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
+    _fadeAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
 
-  _slideAnimation = Tween<Offset>(
-    begin: const Offset(0, 0.1),
-    end: Offset.zero,
-  ).animate(
-    CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-  );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
-  _animationController.forward();
+    _animationController.forward();
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
+
+      if (mobileNo != null && mobileNo.isNotEmpty) {
+        ref
+            .read(employeeloginViewModelProvider.notifier)
+            .fetchEmployeeInfo(mobileNo);
+      }
+    });
+  }
+
+  Future<void> _onRefresh() async {
     final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
-
     if (mobileNo != null && mobileNo.isNotEmpty) {
-      ref
+      await ref
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeInfo(mobileNo);
     }
-  });
-}
-
-  Future<void> _onRefresh() async {
-  final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
-  if (mobileNo != null && mobileNo.isNotEmpty) {
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .fetchEmployeeInfo(mobileNo);
   }
-}
 
   @override
   void dispose() {
@@ -68,77 +100,86 @@ void initState() {
   }
 
   @override
-Widget build(BuildContext context) {
-  final employeeState = ref.watch(employeeloginViewModelProvider);
+  Widget build(BuildContext context) {
+    final employeeState = ref.watch(employeeloginViewModelProvider);
 
-  // 1. Loading
-  if (employeeState.isLoading) {
+    // 1. Loading
+    if (employeeState.isLoading) {
+      return Scaffold(
+        backgroundColor: ProfileTheme.backgroundGray,
+        body: _buildLoadingState(),
+      );
+    }
+
+    // 2. Error
+    if (employeeState.error != null) {
+      return Scaffold(
+        backgroundColor: ProfileTheme.backgroundGray,
+        body: _buildErrorState(employeeState.error!),
+      );
+    }
+
+    // 3. Data null (API call complete but data not set yet)
+    final detailsState = employeeState.employeeDetails;
+
+    // 4. Empty list
+    final list = detailsState.value ?? [];
+    if (list.isEmpty) {
+      return Scaffold(
+        backgroundColor: ProfileTheme.backgroundGray,
+        body: _buildEmptyStateWithRefresh(),
+      );
+    }
+
+    // 5. Success
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: _buildLoadingState(),
+      backgroundColor: ProfileTheme.backgroundGray,
+      body: _buildProfileContent(list.first),
     );
   }
 
-  // 2. Error
-  if (employeeState.error != null) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: _buildErrorState(employeeState.error!),
+  Widget _buildEmptyStateWithRefresh() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: ProfileTheme.primaryPink.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_off_rounded,
+              size: 48,
+              color: ProfileTheme.primaryPink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No data available',
+            style: TextStyle(
+              fontSize: 15,
+              color: ProfileTheme.textGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _ModernButton(
+            label: 'Refresh',
+            icon: Icons.refresh_rounded,
+            onPressed: () {
+              ref
+                  .read(employeeloginViewModelProvider.notifier)
+                  .fetchEmployeeInfo(
+                    ref.read(adminloginViewModelProvider).mobileNo ?? "",
+                  );
+            },
+          ),
+        ],
+      ),
     );
   }
-
-  // 3. Data null (API call complete but data not set yet)
-  final detailsState = employeeState.employeeDetails;
-  if (detailsState == null) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: _buildLoadingState(), // 🔥 IMPORTANT
-    );
-  }
-
-  // 4. Empty list
-  final list = detailsState.value ?? [];
-  if (list.isEmpty) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: _buildEmptyStateWithRefresh(),
-    );
-  }
-
-  // 5. Success
-  return Scaffold(
-    backgroundColor: const Color(0xFFFAFAFA),
-    body: _buildProfileContent(list.first),
-  );
-}
-Widget _buildEmptyStateWithRefresh() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.person_off_rounded, size: 48, color: Colors.grey),
-        const SizedBox(height: 12),
-        const Text(
-          'No data available',
-          style: TextStyle(fontSize: 15, color: Color(0xFF999999)),
-        ),
-        const SizedBox(height: 16),
-        _ModernButton(
-          label: 'Refresh',
-          icon: Icons.refresh_rounded,
-          onPressed: () {
-            ref
-                .read(employeeloginViewModelProvider.notifier)
-                .fetchEmployeeInfo(
-                  ref.read(adminloginViewModelProvider).mobileNo ?? "",
-                );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
 
   Widget _buildLoadingState() {
     return Center(
@@ -146,21 +187,15 @@ Widget _buildEmptyStateWithRefresh() {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 60,
-            height: 60,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: ProfileTheme.primaryPink,
               borderRadius: BorderRadius.circular(16),
+              boxShadow: ProfileTheme.buttonShadow,
             ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3,
-              ),
+            child: const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              strokeWidth: 3,
             ),
           ),
           const SizedBox(height: 20),
@@ -168,7 +203,7 @@ Widget _buildEmptyStateWithRefresh() {
             'Loading...',
             style: TextStyle(
               fontSize: 15,
-              color: Color(0xFF666666),
+              color: ProfileTheme.textGray,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -187,12 +222,12 @@ Widget _buildEmptyStateWithRefresh() {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF4757).withOpacity(0.1),
+                color: ProfileTheme.primaryPink.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFFFF4757),
+                color: ProfileTheme.primaryPink,
                 size: 48,
               ),
             ),
@@ -202,7 +237,7 @@ Widget _buildEmptyStateWithRefresh() {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C2C2C),
+                color: ProfileTheme.textDark,
               ),
             ),
             const SizedBox(height: 8),
@@ -211,7 +246,7 @@ Widget _buildEmptyStateWithRefresh() {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF666666),
+                color: ProfileTheme.textGray,
               ),
             ),
             const SizedBox(height: 24),
@@ -232,18 +267,6 @@ Widget _buildEmptyStateWithRefresh() {
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Text(
-        'No data available',
-        style: TextStyle(
-          fontSize: 15,
-          color: Color(0xFF999999),
-        ),
-      ),
-    );
-  }
-
   Widget _buildProfileContent(EmployeeLogin employeeDetails) {
     final employeeName = employeeDetails.empName ?? "Unknown";
     final employeeId = employeeDetails.empId?.toString() ?? "N/A";
@@ -253,272 +276,267 @@ Widget _buildEmptyStateWithRefresh() {
     final joiningDate = employeeDetails.joiningDate ?? "";
     final isActive = employeeDetails.activeStatus == 1;
     final region = employeeDetails.regionName?.toString() ?? "N/A";
-final companyName =employeeDetails.companyName ?? "";
+    final companyName = employeeDetails.companyName ?? "";
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child:
-        RefreshIndicator(
-  onRefresh: _onRefresh,
-  color: Colors.white,
-  backgroundColor: const Color(0xFF667EEA),
-  displacement: 80,
-  strokeWidth: 3,
-  child: CustomScrollView(
-    physics: const AlwaysScrollableScrollPhysics(
-      parent: BouncingScrollPhysics(),
-    ),
-    slivers: [
-      SliverToBoxAdapter(
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-
-          _buildModernProfileHeader(
-  employeeName,
-  employeeId,
-  region ?? "N/A",        // region
-  joiningDate ?? "N/A", 
-   companyName,         // join date
-  imageUrl,                  // image
-  isActive, 
-  email,
-  address,
-               // status
-),
-
-
-            // const SizedBox(height: 20),
-
-            // _buildStatsRow(joiningDate, employeeDetails),
-
-            const SizedBox(height: 20),
-
-            _buildModernSection(
-              title: 'Contact',
-              child: Column(
-                children: [
-                  _ModernInfoCard(
-                    icon: Icons.phone_rounded,
-                    label: 'Phone',
-                    value: mobileNo ?? "N/A",
-                    color: const Color(0xFF667EEA),
-                  ),
-                  if (email.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    _ModernInfoCard(
-                      icon: Icons.email_rounded,
-                      label: 'Email',
-                      value: email,
-                      color: const Color(0xFFFF6B9D),
-                    ),
-                  ],
-                  if (address.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    _ModernInfoCard(
-                      icon: Icons.location_on_rounded,
-                      label: 'Address',
-                      value: address,
-                      color: const Color(0xFFFFA94D),
-                    ),
-                  ],
-                ],
-              ),
+        child: RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: ProfileTheme.primaryPink,
+          backgroundColor: Colors.white,
+          displacement: 80,
+          strokeWidth: 3,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-
-            const SizedBox(height: 20),
-
-            _buildModernSection(
-              title: 'Settings',
-              child: Column(
-                children: [
-                  _ModernSettingTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    onTap: () {},
-                  ),
-                  _ModernSettingTile(
-                    icon: Icons.language_rounded,
-                    title: 'Language',
-                    onTap: () {},
-                  ),
-                  _ModernSettingTile(
-                    icon: Icons.lock_outline_rounded,
-                    title: 'Security',
-                    onTap: () {},
-                  ),
-                  _ModernSettingTile(
-                    icon: Icons.help_outline_rounded,
-                    title: 'Help Center',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildLogoutButton(),
-            ),
-
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    ],
-  ),
-)
-
-      ),
-    );
-  }
-Widget _buildModernProfileHeader(
-  String employeeName,
-  String employeeId,
-  String region,
-  String joinDate,
-  String companyName,
-  String? imageUrl,
-  bool isActive,
-  String?empEmail,
-  String?empAddress,
-) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Stack(
-      children: [
-        // MAIN CARD
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // LEFT : AVATAR
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 42,
-                      backgroundColor: const Color(0xFFF5F5F5),
-                      child: imageUrl != null && imageUrl.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                imageUrl,
-                                width: 84,
-                                height: 84,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _buildInitialsAvatar(employeeName),
-                              ),
-                            )
-                          : _buildInitialsAvatar(employeeName),
-                    ),
-                  ),
-                  Positioned(
-                    right: 4,
-                    bottom: 4,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? const Color(0xFF2ECC71)
-                            : const Color(0xFFE74C3C),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 16),
-
-              // RIGHT : DETAILS
-              Expanded(
+            slivers: [
+              SliverToBoxAdapter(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const SizedBox(height: 16),
+
+                    _buildModernProfileHeader(
                       employeeName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2C2C2C),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    Text(
+                      employeeId,
                       region,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
+                      joiningDate,
+                      companyName,
+                      imageUrl,
+                      isActive,
+                      email,
+                      address,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    _buildModernSection(
+                      title: 'Contact',
+                      child: Column(
+                        children: [
+                          _ModernInfoCard(
+                            icon: Icons.phone_rounded,
+                            label: 'Phone',
+                            value: mobileNo ?? "N/A",
+                          ),
+                          if (email.isNotEmpty) ...[
+                            const SizedBox(height: 1),
+                            Container(
+                              height: 1,
+                              color: Colors.grey.shade100,
+                            ),
+                            _ModernInfoCard(
+                              icon: Icons.email_rounded,
+                              label: 'Email',
+                              value: email,
+                            ),
+                          ],
+                          if (address.isNotEmpty) ...[
+                            const SizedBox(height: 1),
+                            Container(
+                              height: 1,
+                              color: Colors.grey.shade100,
+                            ),
+                            _ModernInfoCard(
+                              icon: Icons.location_on_rounded,
+                              label: 'Address',
+                              value: address,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                     const SizedBox(height: 4),
 
-                    Text(
-                      'Company Name: $companyName',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
+                    const SizedBox(height: 20),
+
+                    _buildModernSection(
+                      title: 'Settings',
+                      child: Column(
+                        children: [
+                          _ModernSettingTile(
+                            icon: Icons.notifications_none_rounded,
+                            title: 'Notifications',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _ModernSettingTile(
+                            icon: Icons.language_rounded,
+                            title: 'Language',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _ModernSettingTile(
+                            icon: Icons.lock_outline_rounded,
+                            title: 'Security',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _ModernSettingTile(
+                            icon: Icons.help_outline_rounded,
+                            title: 'Help Center',
+                            onTap: () {},
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
 
-                   Text(
-  'Joined: ${_formatDate(joinDate)}',
-  style: const TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: Color(0xFF94A3B8),
-  ),
-),
+                    const SizedBox(height: 20),
 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildLogoutButton(),
+                    ),
 
-                  
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
 
-        // EDIT BUTTON
-        Positioned(
-          top: 12,
-          right: 12,
-          child: Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            elevation: 3,
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      color: Colors.grey.shade100,
+    );
+  }
+
+  Widget _buildModernProfileHeader(
+    String employeeName,
+    String employeeId,
+    String region,
+    String joinDate,
+    String companyName,
+    String? imageUrl,
+    bool isActive,
+    String? empEmail,
+    String? empAddress,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Stack(
+        children: [
+          // MAIN CARD - Simplified
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ProfileTheme.cardWhite,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: ProfileTheme.cardShadow,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // LEFT: AVATAR - Simplified
+                Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: ProfileTheme.primaryPink.withOpacity(0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 32,
+                        backgroundColor: ProfileTheme.primaryPink.withOpacity(0.1),
+                        child: imageUrl != null && imageUrl.isNotEmpty
+                            ? ClipOval(
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _buildInitialsAvatar(employeeName),
+                                ),
+                              )
+                            : _buildInitialsAvatar(employeeName),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF6B7280),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(width: 14),
+
+                // RIGHT: DETAILS - Simplified
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        employeeName,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: ProfileTheme.textDark,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        region,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: ProfileTheme.textGray,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        companyName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: ProfileTheme.textGray.withOpacity(0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Joined ${_formatDate(joinDate)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: ProfileTheme.textGray.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // EDIT BUTTON - Minimal
+          Positioned(
+            top: 12,
+            right: 12,
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               onTap: () {
                 Navigator.push(
                   context,
@@ -526,8 +544,8 @@ Widget _buildModernProfileHeader(
                     builder: (_) => EditProfilePage(
                       name: employeeName,
                       phone: mobileNo ?? "N/A",
-                      email: empEmail??"N/A",
-                      address: empAddress??"N/A",
+                      email: empEmail ?? "N/A",
+                      address: empAddress ?? "N/A",
                       onSave: (_) {
                         ref
                             .read(employeeloginViewModelProvider.notifier)
@@ -537,111 +555,64 @@ Widget _buildModernProfileHeader(
                   ),
                 );
               },
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(
-                  Icons.edit_rounded,
-                  size: 18,
-                  color: Color(0xFF667EEA),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: ProfileTheme.primaryPink.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  size: 16,
+                  color: ProfileTheme.primaryPink,
                 ),
               ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-  Widget _buildInitialsAvatar(String employeeName) {
-    return Container(
-      width: 104,
-      height: 104,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          _getInitials(employeeName),
-          style: const TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            letterSpacing: 1,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(String joiningDate, EmployeeLogin employeeDetails) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-            child:
-         _StatCard(
-  icon: Icons.calendar_today_rounded,
-  label: 'Joined',
-  value: joiningDate.isNotEmpty ? _formatDate(joiningDate) : 'N/A',
-  color: const Color(0xFF667EEA),
-),
-
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _StatCard(
-              icon: Icons.location_city_rounded,
-              label: 'Region',
-              value: employeeDetails.regionId?.toString() ?? 'N/A',
-              color: const Color(0xFF2ECC71),
             ),
           ),
         ],
       ),
     );
   }
-  
+
+  Widget _buildInitialsAvatar(String employeeName) {
+    return Center(
+      child: Text(
+        _getInitials(employeeName),
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: ProfileTheme.primaryPink,
+        ),
+      ),
+    );
+  }
 
   Widget _buildModernSection({
     required String title,
     required Widget child,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2C2C2C),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: ProfileTheme.textDark,
                 letterSpacing: -0.3,
               ),
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ProfileTheme.cardWhite,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: ProfileTheme.cardShadow,
             ),
             child: child,
           ),
@@ -656,44 +627,32 @@ Widget _buildModernProfileHeader(
       child: InkWell(
         onTap: () => _showLogoutDialog(context),
         borderRadius: BorderRadius.circular(16),
-        child: Ink(
+        child: Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF4757), Color(0xFFE84A5F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: ProfileTheme.primaryPink,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF4757).withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
+            boxShadow: ProfileTheme.buttonShadow,
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.logout_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Logout',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -705,18 +664,20 @@ Widget _buildModernProfileHeader(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: ProfileTheme.cardWhite,
         title: const Text(
           'Logout',
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: ProfileTheme.textDark,
           ),
         ),
         content: const Text(
           'Are you sure you want to logout?',
           style: TextStyle(
-            fontSize: 15,
-            color: Color(0xFF666666),
+            fontSize: 14,
+            color: ProfileTheme.textGray,
           ),
         ),
         actions: [
@@ -725,7 +686,7 @@ Widget _buildModernProfileHeader(
             child: const Text(
               'Cancel',
               style: TextStyle(
-                color: Color(0xFF666666),
+                color: ProfileTheme.textGray,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -743,7 +704,7 @@ Widget _buildModernProfileHeader(
             child: const Text(
               'Logout',
               style: TextStyle(
-                color: Color(0xFFFF4757),
+                color: ProfileTheme.primaryPink,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -753,32 +714,28 @@ Widget _buildModernProfileHeader(
     );
   }
 
-  // String _formatDate(String dateStr) {
-  //   try {
-  //     final date = DateTime.parse(dateStr);
-  //     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  //     return '${date.day} ${months[date.month - 1]} ${date.year}';
-  //   } catch (e) {
-  //     return dateStr;
-  //   }
-  // }
   String _formatDate(String dateStr) {
-  try {
-    // Parse ISO 8601 UTC string and convert to local time
-    final date = DateTime.parse(dateStr).toLocal();
-
-    // Format as "9 Feb 2026"
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  } catch (e) {
-    return 'N/A';
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (e) {
+      return 'N/A';
+    }
   }
-}
-
 
   String _getInitials(String name) {
     final parts = name.trim().split(' ');
@@ -788,62 +745,49 @@ Widget _buildModernProfileHeader(
   }
 }
 
-// Modern Info Card Widget
+// Modern Info Card Widget - Minimal Design
 class _ModernInfoCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color color;
 
   const _ModernInfoCard({
     required this.icon,
     required this.label,
     required this.value,
-    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 22,
-            ),
+          Icon(
+            icon,
+            color: ProfileTheme.textGray,
+            size: 18,
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                    color: ProfileTheme.textGray,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C2C2C),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: ProfileTheme.textDark,
                   ),
                 ),
               ],
@@ -855,7 +799,7 @@ class _ModernInfoCard extends StatelessWidget {
   }
 }
 
-// Modern Setting Tile Widget
+// Modern Setting Tile Widget - Minimal Design
 class _ModernSettingTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -873,104 +817,34 @@ class _ModernSettingTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Icon(
                 icon,
-                color: const Color(0xFF666666),
-                size: 22,
+                color: ProfileTheme.textGray,
+                size: 18,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF2C2C2C),
+                    color: ProfileTheme.textDark,
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: Colors.grey.shade400,
+                size: 14,
+                color: ProfileTheme.textGray.withOpacity(0.5),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Stat Card Widget
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 22,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2C2C2C),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
@@ -990,24 +864,31 @@ class _ModernButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: ProfileTheme.primaryPink,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: ProfileTheme.buttonShadow,
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF667EEA),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        elevation: 0,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
     );
   }

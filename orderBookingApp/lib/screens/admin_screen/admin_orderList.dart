@@ -262,54 +262,6 @@ Widget _buildFilterButton() {
   );
 }
 
-  // Widget _buildFilterButton() {
-  //   return Container(
-  //     decoration: BoxDecoration(
-  //       gradient: LinearGradient(
-  //         colors: _selectedFilter != null
-  //             ? [Colors.green.shade400, Colors.green.shade600]
-  //             : [Colors.grey.shade200, Colors.grey.shade300],
-  //       ),
-  //       borderRadius: BorderRadius.circular(12),
-  //       boxShadow: _selectedFilter != null
-  //           ? [
-  //               BoxShadow(
-  //                 color: Colors.green.withOpacity(0.3),
-  //                 blurRadius: 8,
-  //                 offset: const Offset(0, 4),
-  //               ),
-  //             ]
-  //           : null,
-  //     ),
-  //     child: PopupMenuButton<String>(
-  //       icon: Icon(
-  //         Icons.filter_list_rounded,
-  //         color: _selectedFilter != null ? Colors.white : Colors.grey[700],
-  //       ),
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(16),
-  //       ),
-  //       onSelected: (value) {
-  //         if (value == _filterAll) {
-  //           setState(() {
-  //             _selectedFilter = null;
-  //             _customRange = null;
-  //           });
-  //         } else {
-  //           _onFilterSelected(value);
-  //         }
-  //       },
-  //       itemBuilder: (_) => [
-  //         _buildPopupMenuItem(_filterAll, Icons.all_inclusive),
-  //         _buildPopupMenuItem(_filterToday, Icons.today),
-  //         _buildPopupMenuItem(_filterYesterday, Icons.history),
-  //         _buildPopupMenuItem(_filterThisMonth, Icons.calendar_month),
-  //         _buildPopupMenuItem(_filterCustom, Icons.date_range),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   PopupMenuItem<String> _buildPopupMenuItem(String value, IconData icon) {
     final isSelected = _selectedFilter == value ||
         (value == _filterAll && _selectedFilter == null);

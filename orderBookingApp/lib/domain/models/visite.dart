@@ -27,6 +27,24 @@ class VisitPayload {
     this.punchOut,
   });
 
+  static String formatForApi(DateTime dt) {
+    String two(int n) => n.toString().padLeft(2, '0');
+
+    return '${dt.year}-'
+        '${two(dt.month)}-'
+        '${two(dt.day)} '
+        '${two(dt.hour)}:'
+        '${two(dt.minute)}:'
+        '${two(dt.second)}';
+  }
+
+  static String? normalizeDateTimeForApi(String? value) {
+    if (value == null) return null;
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return value;
+    return formatForApi(parsed.toLocal());
+  }
+
   /// Payload sent to backend
   Map<String, dynamic> toJson() => {
         'shopId': shopId,
@@ -34,9 +52,9 @@ class VisitPayload {
         'lng': lng,
         'accuracy': accuracy,
         'capturedAt': capturedAt.toIso8601String(),
-        'punchIn': punchIn,
+        'punchIn': normalizeDateTimeForApi(punchIn),
         'employeeId': employeeId,
-        'punchOut': punchOut,
+        'punchOut': normalizeDateTimeForApi(punchOut),
       };
 
   /// Full JSON including localId (for SQLite)

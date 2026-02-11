@@ -5,6 +5,49 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
+// ── Brand tokens ──────────────────────────────────────────────────────────────
+const _kPrimary       = Color(0xFFE8720C);
+const _kPrimaryLight  = Color(0xFFFFF3E8);
+const _kSurface       = Color(0xFFFFFFFF);
+const _kBackground    = Color(0xFFF5F5F5);
+const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF6B6B6B);
+const _kDivider       = Color(0xFFEEEEEE);
+
+// ── Filter model ──────────────────────────────────────────────────────────────
+enum _FilterType { today, thisMonth, custom }
+
+class _ActiveFilter {
+  final _FilterType type;
+  final DateTimeRange? customRange; // only set when type == custom
+
+  const _ActiveFilter(this.type, {this.customRange});
+
+  String get label {
+    switch (type) {
+      case _FilterType.today:
+        return 'Today';
+      case _FilterType.thisMonth:
+        return 'This Month';
+      case _FilterType.custom:
+        if (customRange != null) {
+          final s = _fmt(customRange!.start);
+          final e = _fmt(customRange!.end);
+          return s == e ? s : '$s – $e';
+        }
+        return 'Custom';
+    }
+  }
+
+  static String _fmt(DateTime d) =>
+      '${d.day} ${_months[d.month - 1]}';
+
+  static const _months = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec',
+  ];
+}
+
 class OrdersListPage extends ConsumerStatefulWidget {
   const OrdersListPage({Key? key}) : super(key: key);
 
@@ -12,418 +55,544 @@ class OrdersListPage extends ConsumerStatefulWidget {
   ConsumerState<OrdersListPage> createState() => _OrdersListPageState();
 }
 
-class _OrdersListPageState extends ConsumerState<OrdersListPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+class _OrdersListPageState extends ConsumerState<OrdersListPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  // null = no filter (show all)
+  _ActiveFilter? _filter;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _animationController.forward();
-
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
+      ref.read(ordersViewModelProvider.notifier).getAllOrders(
+            ref.read(adminloginViewModelProvider).userId,
+          );
     });
+  }
+
+  Future<void> _refresh() async {
+    await ref.read(ordersViewModelProvider.notifier).getAllOrders(
+          ref.read(adminloginViewModelProvider).userId,
+        );
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
+  // ── Sort oldest→newest so #1 = first ever order ───────────────────────────
+  List<Order> _sorted(List<Order> orders) {
+    final list = List<Order>.from(orders);
+    list.sort((a, b) {
+      try {
+        return DateTime.parse(b.orderDate)
+            .compareTo(DateTime.parse(a.orderDate));
+      } catch (_) {
+        return 0;
+      }
+    });
+    return list;
+  }
+
+  // ── Apply active filter ────────────────────────────────────────────────────
+  List<Order> _filtered(List<Order> sorted) {
+    if (_filter == null) return sorted;
+    final now = DateTime.now();
+
+    switch (_filter!.type) {
+      case _FilterType.today:
+        return sorted.where((o) {
+          try {
+            final d = DateTime.parse(o.orderDate);
+            return d.year == now.year &&
+                d.month == now.month &&
+                d.day == now.day;
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+
+      case _FilterType.thisMonth:
+        return sorted.where((o) {
+          try {
+            final d = DateTime.parse(o.orderDate);
+            return d.year == now.year && d.month == now.month;
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+
+      case _FilterType.custom:
+        if (_filter!.customRange == null) return sorted;
+        final start = _filter!.customRange!.start;
+        // include the full end day
+        final end = _filter!.customRange!.end
+            .add(const Duration(days: 1))
+            .subtract(const Duration(seconds: 1));
+        return sorted.where((o) {
+          try {
+            final d = DateTime.parse(o.orderDate);
+            return d.isAfter(start.subtract(const Duration(seconds: 1))) &&
+                d.isBefore(end.add(const Duration(seconds: 1)));
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+    }
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final ordersState = ref.watch(ordersViewModelProvider);
-    final size = MediaQuery.of(context).size;
-
+    final state = ref.watch(ordersViewModelProvider);
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.deepPurple.shade50,
-              Colors.blue.shade50,
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildModernAppBar(context, ordersState),
-              Expanded(child: _buildBody(ordersState, size)),
-            ],
-          ),
+      backgroundColor: _kBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(state),
+            // Active filter chip row
+            if (_filter != null) _buildFilterChip(),
+            Expanded(child: _buildBody(state)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildModernAppBar(BuildContext context, ordersState state) {
+  // ── Header ─────────────────────────────────────────────────────────────────
+  Widget _buildHeader(ordersState state) {
+    final isFiltered = _filter != null;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      color: _kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
         children: [
-         
-        //  const SizedBox(height: 12),
-        _buildStatsWithFilter(context, state),
+          Expanded(
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _searchQuery.isNotEmpty
+                      ? Colors.green.shade300
+                      : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase().trim();
+                  });
+                },
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
+                  hintText: 'Search by order number, shop, employee...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Colors.grey[600],
+                      size: 22,
+                    ),
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
 
-        ],
-      ),
-    );
-  }
+          const SizedBox(width: 10),
 
-Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
-  int orderCount = 0;
-  double totalValue = 0.0;
-
-  if (state.orders != null) {
-    state.orders!.whenData((orders) {
-      orderCount = orders.length;
-      totalValue =
-          orders.fold(0.0, (sum, order) => sum + order.totalPrice);
-    });
-  }
-
-  return Row(
-    children: [
-      // 🔹 Stats Card - REDUCED HEIGHT
-      Expanded(
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2), // Reduced padding
-
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.deepPurple.shade400,
-                Colors.blue.shade500
+          // Filter button
+          GestureDetector(
+            onTap: () => _showFilter(context),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isFiltered ? _kPrimaryLight : _kSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isFiltered ? _kPrimary : _kDivider,
+                      width: isFiltered ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: isFiltered ? _kPrimary : _kBackground,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.filter_list_rounded,
+                            size: 18,
+                            color: isFiltered
+                                ? Colors.white
+                                : _kTextSecondary),
+                      ),
+                      // const SizedBox(height: 4),
+                      // Text(
+                      //   'Filter',
+                      //   style: TextStyle(
+                      //     fontSize: 11,
+                      //     fontWeight: FontWeight.w600,
+                      //     color:
+                      //         isFiltered ? _kPrimary : _kTextPrimary,
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+                if (isFiltered)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                          color: _kPrimary, shape: BoxShape.circle),
+                    ),
+                  ),
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  Icons.receipt_long_rounded,
-                  'Orders',
-                  orderCount.toString(),
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 35, // Reduced height
-                color: Colors.white.withOpacity(0.3),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  Icons.currency_rupee_rounded,
-                  'Value',
-                  '₹${totalValue.toStringAsFixed(0)}',
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
-
-      const SizedBox(width: 5),
-
-      // 🔹 Filter Card - REDUCED HEIGHT
-      InkWell(
-        onTap: () => _showFilterBottomSheet(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
-
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.deepPurple.withOpacity(0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8), // Reduced padding
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.filter_list_rounded,
-                  color: Colors.deepPurple.shade400,
-                  size: 20, // Reduced icon size
-                ),
-              ),
-              const SizedBox(height: 4), // Reduced spacing
-              Text(
-                'Filter',
-                style: TextStyle(
-                  fontSize: 12, // Reduced font size
-                  fontWeight: FontWeight.w600,
-                  color: Colors.deepPurple.shade700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-
-  Widget _buildStatItem(IconData icon, String label, String value) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white.withOpacity(0.9), size: 20), // Reduced icon size
-        const SizedBox(height: 4), // Reduced spacing
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18, // Reduced font size
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 11, // Reduced font size
-          ),
-        ),
-      ],
     );
   }
 
-  Widget _buildBody(ordersState state, Size size) {
-    if (state.isLoading) {
-      return _buildLoadingState();
-    }
+  // ── Active filter chip (shown below header) ────────────────────────────────
+  Widget _buildFilterChip() {
+    return Container(
+      color: _kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Row(
+        children: [
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kPrimaryLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _kPrimary.withOpacity(0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_outlined,
+                    size: 13, color: _kPrimary),
+                const SizedBox(width: 6),
+                Text(
+                  _filter!.label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _filter = null),
+                  child: const Icon(Icons.close_rounded,
+                      size: 14, color: _kPrimary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (state.errorMessage != null) {
-      return _buildErrorState(state.errorMessage!);
-    }
+  // ── Body ───────────────────────────────────────────────────────────────────
+  Widget _buildBody(ordersState state) {
+    if (state.isLoading) return _buildLoading();
+    if (state.errorMessage != null) return _buildError(state.errorMessage!);
 
     if (state.orders != null) {
       return state.orders!.when(
-        data: (orders) {
-          if (orders.isEmpty) return _buildEmptyState();
-          return _buildOrdersList(context, orders, size);
+        data: (rawOrders) {
+          final sorted = _sorted(rawOrders);
+          final visible = _filtered(sorted);
+          final filteredBySearch = _searchQuery.isEmpty
+              ? visible
+              : visible.where((order) {
+                  final orderNumber =
+                      sorted.length - sorted.indexOf(order);
+                  return _orderMatchesSearch(
+                    order,
+                    orderNumber,
+                    _searchQuery,
+                  );
+                }).toList();
+          if (filteredBySearch.isEmpty) {
+            return _buildSearchEmpty();
+          }
+          return _buildList(filteredBySearch, sorted);
         },
-        loading: () => _buildLoadingState(),
-        error: (error, stack) => _buildErrorState(error.toString()),
+        loading: _buildLoading,
+        error: (e, _) => _buildError(e.toString()),
       );
     }
-
-    return _buildEmptyState();
+    return _buildEmpty();
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildList(List<Order> orders, List<Order> allOrders) {
+    return RefreshIndicator(
+      color: _kPrimary,
+      backgroundColor: _kSurface,
+      strokeWidth: 2.5,
+      onRefresh: _refresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: orders.length,
+        itemBuilder: (_, i) => _OrderCard(
+          order: orders[i],
+          orderNumber: allOrders.length - allOrders.indexOf(orders[i]),
+        ),
+      ),
+    );
+  }
+
+  bool _orderMatchesSearch(Order order, int orderNumber, String query) {
+    if (query.isEmpty) return true;
+
+    if (orderNumber.toString().contains(query)) return true;
+    if ((order.shopNamep ?? '').toLowerCase().contains(query)) return true;
+    if ((order.empName ?? '').toLowerCase().contains(query)) return true;
+    if (order.totalPrice.toString().contains(query)) return true;
+    try {
+      if (_formatDateForSearch(DateTime.parse(order.orderDate))
+          .toLowerCase()
+          .contains(query)) {
+        return true;
+      }
+    } catch (_) {}
+
+    for (final item in order.items) {
+      if ((item.productName ?? '').toLowerCase().contains(query)) return true;
+      if (item.productId.toString().contains(query)) return true;
+      if (item.quantity.toString().contains(query)) return true;
+      if (item.price.toString().contains(query)) return true;
+    }
+
+    return false;
+  }
+
+  String _formatDateForSearch(DateTime date) {
+    const months = [
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day} ${date.year} ${date.day}/${date.month}/${date.year}';
+  }
+
+  Widget _buildSearchEmpty() {
+    if (_searchQuery.isEmpty) return _buildEmpty();
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.deepPurple.withOpacity(0.2),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple.shade400),
-            ),
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+                color: _kPrimaryLight, shape: BoxShape.circle),
+            child: const Icon(Icons.search_off_rounded,
+                size: 34, color: _kPrimary),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           const Text(
-            'Loading orders...',
+            'No results found',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black54,
-            ),
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Try a different search term.',
+            style: TextStyle(fontSize: 13, color: _kTextSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildLoading() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.deepPurple.shade100,
-                    Colors.blue.shade100,
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.receipt_long_outlined,
-                size: 80,
-                color: Colors.deepPurple.shade400,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'No Orders Yet',
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
+          const SizedBox(height: 16),
+          Text('Loading orders…',
               style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Your order list is empty.\nOrders will appear here once created.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey[600],
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 22),
-              label: const Text(
-                'Refresh Orders',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple.shade400,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                shadowColor: Colors.deepPurple.withOpacity(0.4),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String errorMessage) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: 72,
-                color: Colors.red.shade400,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Oops! Something went wrong',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                errorMessage,
-                textAlign: TextAlign.center,
-                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
+                  color: _kTextSecondary.withOpacity(0.8))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    final isFiltered = _filter != null;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+                color: _kPrimaryLight, shape: BoxShape.circle),
+            child: const Icon(Icons.receipt_long_outlined,
+                size: 34, color: _kPrimary),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFiltered ? 'No orders for this period' : 'No orders yet',
+            style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isFiltered
+                ? 'Try a different date range'
+                : 'Orders will appear here once created.',
+            style:
+                const TextStyle(fontSize: 13, color: _kTextSecondary),
+          ),
+          const SizedBox(height: 24),
+          if (isFiltered)
+            TextButton(
+              onPressed: () => setState(() => _filter = null),
+              child: const Text('Clear filter',
+                  style: TextStyle(
+                      color: _kPrimary, fontWeight: FontWeight.w600)),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Refresh',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPrimary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError(String msg) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 32, color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            const Text('Something went wrong',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: _kTextPrimary)),
+            const SizedBox(height: 8),
+            Text(msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 13, color: _kTextSecondary, height: 1.4)),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 22),
-              label: const Text(
-                'Try Again',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Try Again',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple.shade400,
+                backgroundColor: _kPrimary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                shadowColor: Colors.deepPurple.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
@@ -432,298 +601,346 @@ Widget _buildStatsWithFilter(BuildContext context, ordersState state) {
     );
   }
 
-  Widget _buildOrdersList(BuildContext context, List<Order> orders, Size size) {
-    return RefreshIndicator(
-      color: Colors.deepPurple.shade400,
-      backgroundColor: Colors.white,
-      strokeWidth: 3,
-      onRefresh: () async {
-        await ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
-      },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Responsive: Show grid on tablets/large screens
-          if (constraints.maxWidth > 600) {
-            return GridView.builder(
-           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: constraints.maxWidth > 900 ? 3 : 2,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                return FadeInAnimation(
-                  delay: index * 0, // SLOWER ANIMATION - increased from 0.1 to 0.15
-                  child: _OrderCard(
-                    order: orders[index],
-                    orderNumber: index + 1,
-                    isCompact: true,
-                  ),
-                );
-              },
-            );
-          }
-          
-          // Mobile: Show list with SLOWER ANIMATION
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              return FadeInAnimation(
-                delay: index * 0, // SLOWER ANIMATION - increased from 0.1 to 0.15
-                child: _OrderCard(
-                  order: orders[index],
-                  orderNumber: index + 1,
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  void _showFilterBottomSheet(BuildContext context) {
+  // ── Filter bottom sheet ────────────────────────────────────────────────────
+  void _showFilter(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
+      isScrollControlled: true,
+      builder: (_) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) => Container(
+          padding: EdgeInsets.fromLTRB(
+              16, 20, 16, MediaQuery.of(sheetCtx).viewInsets.bottom + 32),
+          decoration: const BoxDecoration(
+            color: _kSurface,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.filter_list_rounded,
-                      color: Colors.deepPurple.shade400),
+                      color: _kDivider,
+                      borderRadius: BorderRadius.circular(2)),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Filter Orders',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
+              const SizedBox(height: 16),
+
+              // Title + clear
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Filter by Date',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _kTextPrimary)),
+                  if (_filter != null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _filter = null);
+                        setSheet(() {});
+                        Navigator.pop(sheetCtx);
+                      },
+                      child: const Text('Clear',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: _kPrimary,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Today
+              _FilterRow(
+                icon: Icons.today_outlined,
+                label: 'Today',
+                sublabel: _todayLabel(),
+                isSelected: _filter?.type == _FilterType.today,
+                onTap: () {
+                  setState(() => _filter =
+                      const _ActiveFilter(_FilterType.today));
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // This Month
+              _FilterRow(
+                icon: Icons.calendar_month_outlined,
+                label: 'This Month',
+                sublabel: _thisMonthLabel(),
+                isSelected: _filter?.type == _FilterType.thisMonth,
+                onTap: () {
+                  setState(() => _filter =
+                      const _ActiveFilter(_FilterType.thisMonth));
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // Custom date range
+              _FilterRow(
+                icon: Icons.date_range_outlined,
+                label: 'Custom Range',
+                sublabel: _filter?.type == _FilterType.custom
+                    ? _filter!.label
+                    : 'Pick start & end date',
+                isSelected: _filter?.type == _FilterType.custom,
+                onTap: () async {
+                  // Close sheet first, then show date picker
+                  Navigator.pop(sheetCtx);
+                  await Future.delayed(
+                      const Duration(milliseconds: 200));
+                  if (!mounted) return;
+
+                  final now = DateTime.now();
+                  final picked = await showDateRangePicker(
+                    context: context,
+                    firstDate:
+                        DateTime(now.year - 2),
+                    lastDate: now,
+                    initialDateRange: _filter?.customRange ??
+                        DateTimeRange(
+                          start: now.subtract(
+                              const Duration(days: 6)),
+                          end: now,
+                        ),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: _kPrimary,
+                          onPrimary: Colors.white,
+                          surface: _kSurface,
+                          onSurface: _kTextPrimary,
+                        ),
+                        textButtonTheme: TextButtonThemeData(
+                          style: TextButton.styleFrom(
+                              foregroundColor: _kPrimary),
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+
+                  if (picked != null && mounted) {
+                    setState(() => _filter = _ActiveFilter(
+                          _FilterType.custom,
+                          customRange: picked,
+                        ));
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _todayLabel() {
+    final now = DateTime.now();
+    const months = [
+      'Jan','Feb','Mar','Apr','May','Jun',
+      'Jul','Aug','Sep','Oct','Nov','Dec',
+    ];
+    return '${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
+  String _thisMonthLabel() {
+    final now = DateTime.now();
+    const months = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December',
+    ];
+    return '${months[now.month - 1]} ${now.year}';
+  }
+}
+
+// ── Stat cell ──────────────────────────────────────────────────────────────────
+class _StatCell extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _StatCell(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white70, size: 18),
+        const SizedBox(height: 3),
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5)),
+        Text(label,
+            style:
+                const TextStyle(color: Colors.white70, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+// ── Filter row ─────────────────────────────────────────────────────────────────
+class _FilterRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterRow({
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? _kPrimaryLight : _kBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: isSelected ? _kPrimary : Colors.transparent,
+              width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isSelected ? _kPrimary : _kSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: isSelected ? Colors.transparent : _kDivider),
+              ),
+              child: Icon(icon,
+                  size: 18,
+                  color: isSelected ? Colors.white : _kTextSecondary),
             ),
-            const SizedBox(height: 24),
-            _buildFilterOption('All Orders', true),
-            _buildFilterOption('This Week', false),
-            _buildFilterOption('This Month', false),
-            _buildFilterOption('High Value (₹10k+)', false),
-            const SizedBox(height: 16),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? _kPrimary
+                              : _kTextPrimary)),
+                  const SizedBox(height: 1),
+                  Text(sublabel,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: isSelected
+                              ? _kPrimary.withOpacity(0.7)
+                              : _kTextSecondary)),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_rounded, size: 18, color: _kPrimary)
+            else
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: _kTextSecondary),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildFilterOption(String label, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.deepPurple.shade50 : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? Colors.deepPurple.shade400 : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      child: ListTile(
-        title: Text(
-          label,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? Colors.deepPurple.shade700 : Colors.black87,
-          ),
-        ),
-        trailing: isSelected
-            ? Icon(Icons.check_circle_rounded, color: Colors.deepPurple.shade400)
-            : null,
-        onTap: () {
-          Navigator.pop(context);
-        },
-      ),
-    );
-  }
 }
 
-class FadeInAnimation extends StatefulWidget {
-  final Widget child;
-  final double delay;
-
-  const FadeInAnimation({
-    Key? key,
-    required this.child,
-    this.delay = 0,
-  }) : super(key: key);
-
-  @override
-  State<FadeInAnimation> createState() => _FadeInAnimationState();
-}
-
-class _FadeInAnimationState extends State<FadeInAnimation>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700), // Slightly longer animation
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15), // Increased from 0.1 for more visible effect
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(Duration(milliseconds: (widget.delay * 1000).toInt()), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacityAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
-    );
-  }
-}
-
+// ══════════════════════════════════════════════════════════════════════════════
+// Order Card
+// ══════════════════════════════════════════════════════════════════════════════
 class _OrderCard extends StatelessWidget {
   final Order order;
   final int orderNumber;
-  final bool isCompact;
 
-  const _OrderCard({
-    required this.order,
-    required this.orderNumber,
-    this.isCompact = false,
-  });
+  const _OrderCard({required this.order, required this.orderNumber});
 
-  String _formatDate(String isoDate) {
+  String _formatDate(String iso) {
     try {
-      final date = DateTime.parse(isoDate);
-      final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      final d = DateTime.parse(iso);
+      const months = [
+        'Jan','Feb','Mar','Apr','May','Jun',
+        'Jul','Aug','Sep','Oct','Nov','Dec'
       ];
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
-    } catch (e) {
-      return isoDate;
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    } catch (_) {
+      return iso;
     }
   }
 
-  String _formatTime(String isoDate) {
+  String _formatTime(String iso) {
     try {
-      final date = DateTime.parse(isoDate);
-      final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
-      final minute = date.minute.toString().padLeft(2, '0');
-      final period = date.hour >= 12 ? 'PM' : 'AM';
-      return '$hour:$minute $period';
-    } catch (e) {
+      final d = DateTime.parse(iso);
+      final h =
+          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      final m = d.minute.toString().padLeft(2, '0');
+      final p = d.hour >= 12 ? 'PM' : 'AM';
+      return '$h:$m $p';
+    } catch (_) {
       return '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12), // Reduced from 16
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderDetailsPage(
-                  order: order,
-                  orderNumber: orderNumber,
-                ),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderDetailsPage(
+                order: order,
+                orderNumber: orderNumber,
               ),
-            );
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16), // Reduced from 20
+            ),
+          ),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _kDivider),
+            ),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Section - REDUCED HEIGHT
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8), // Reduced from 12
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.deepPurple.shade400,
-                            Colors.blue.shade400,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurple.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.receipt_long_rounded,
-                        color: Colors.white,
-                        size: 20, // Reduced from 22
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -731,186 +948,76 @@ class _OrderCard extends StatelessWidget {
                           Text(
                             'Order #$orderNumber',
                             style: const TextStyle(
-                              fontSize: 16, // Reduced from 17
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: _kTextPrimary,
                               letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 3), // Reduced from 4
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_today_rounded,
-                                  size: 11, color: Colors.grey[600]), // Reduced from 12
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatDate(order.orderDate),
-                                style: TextStyle(
-                                  fontSize: 11, // Reduced from 12
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(Icons.access_time_rounded,
-                                  size: 11, color: Colors.grey[600]), // Reduced from 12
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatTime(order.orderDate),
-                                style: TextStyle(
-                                  fontSize: 11, // Reduced from 12
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(5), // Reduced from 8
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14, // Reduced from 16
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14), // Reduced from 18
-                
-                // Divider
-                Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.grey.shade200,
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12), // Reduced from 16
-                
-                // Info Chips
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _buildModernChip(
-                      Icons.store_rounded,
-                      order.shopNamep ?? 'Unknown',
-                      Colors.orange,
-                      Colors.orange.shade50,
-                    ),
-                    _buildModernChip(
-                      Icons.shopping_bag_rounded,
-                      '${order.items.length} items',
-                      Colors.teal,
-                      Colors.teal.shade50,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14), // Reduced from 18
-                
-                // Total Amount Section - REDUCED HEIGHT
-                Container(
-padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
- // Reduced from 16
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade50,
-                        Colors.green.shade100.withOpacity(0.5),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.green.shade200,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5), // Reduced from 6
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.payments_rounded,
-                              color: Colors.green.shade700,
-                              size: 16, // Reduced from 18
-                            ),
-                          ),
-                          const SizedBox(width: 8), // Reduced from 10
+                          const SizedBox(height: 2),
                           Text(
-                            'Total Amount',
-                            style: TextStyle(
-                              fontSize: 13, // Reduced from 14
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade900,
-                            ),
+                            '${_formatDate(order.orderDate)} • ${_formatTime(order.orderDate)}',
+                            style: const TextStyle(
+                                fontSize: 11, color: _kTextSecondary),
                           ),
                         ],
                       ),
-                      Text(
-                        '₹${order.totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18, // Reduced from 20
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                          letterSpacing: -0.5,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '₹${order.totalPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _kTextPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
+                        const SizedBox(height: 2),
+                        const Icon(Icons.chevron_right_rounded,
+                            size: 16, color: _kTextSecondary),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: _kDivider),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.storefront_outlined,
+                        size: 13, color: _kTextSecondary),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        order.shopNamep ?? 'Unknown',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.shopping_bag_outlined,
+                        size: 13, color: _kTextSecondary),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildModernChip(
-      IconData icon, String label, Color iconColor, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced from 12, 8
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: iconColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor), // Reduced from 16
-          const SizedBox(width: 5), // Reduced from 6
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12, // Reduced from 13
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
-            ),
-          ),
-        ],
       ),
     );
   }

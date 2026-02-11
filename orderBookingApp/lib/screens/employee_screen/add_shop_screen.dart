@@ -4,6 +4,38 @@ import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:uuid/uuid.dart';
 
+// Theme Colors matching the booking app design
+class AddShopTheme {
+  // Primary magenta/pink from the design
+  static const primaryPink = Color(0xFFE8720C);
+  static const primaryPinkDark = Color(0xFFC01869);
+  
+  // Background colors
+  static const backgroundGray = Color(0xFFF5F5F5); // Gray100
+  
+  // Neutral colors
+  static const cardWhite = Color.fromARGB(255, 255, 255, 255);
+  static const textDark = Color(0xFF1E1E1E);
+  static const textGray = Color(0xFF6B7280);
+  
+  // Soft shadows
+  static List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
+  
+  static List<BoxShadow> buttonShadow = [
+    BoxShadow(
+      color: primaryPink.withOpacity(0.3),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
+}
+
 class AddShopScreen extends ConsumerStatefulWidget {
   const AddShopScreen({Key? key}) : super(key: key);
 
@@ -15,10 +47,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animationController;
-  late AnimationController _headerController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late Animation<double> _headerAnimation;
 
   final _shopNameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -36,37 +66,26 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 800),
     );
-    
-    _headerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
     );
-    
+
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
-    _headerAnimation = CurvedAnimation(
-      parent: _headerController,
-      curve: Curves.elasticOut,
-    );
-    
+
     _animationController.forward();
-    _headerController.forward();
   }
 
   void _saveShop() async {
@@ -107,7 +126,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (context) => const SuccessDialog(),
     );
   }
@@ -127,38 +146,22 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Error',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    message,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFFEF4444),
+        backgroundColor: AddShopTheme.primaryPink,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
-        elevation: 8,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -170,276 +173,183 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
     final isTablet = size.width > 600;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
+      backgroundColor: AddShopTheme.backgroundGray,
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Modern gradient app bar
-          _buildSliverAppBar(isTablet),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Form(
+              key: _formKey,
+              child: Padding(
+                padding: EdgeInsets.all(isTablet ? 24 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
 
-          // Form content
-          SliverToBoxAdapter(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Form(
-                  key: _formKey,
-                  child: Padding(
-                    padding: EdgeInsets.all(isTablet ? 24 : 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Shop Information Section
+                    _buildSectionCard(
+                      isTablet: isTablet,
+                      title: 'Shop Information',
                       children: [
-                        const SizedBox(height: 8),
-
-                        // Shop Information Section
-                        _buildSectionCard(
+                        _buildTextField(
+                          controller: _shopNameController,
+                          focusNode: _shopNameFocus,
+                          nextFocus: _addressFocus,
+                          label: 'Shop Name',
+                          icon: Icons.storefront_outlined,
+                          hint: 'e.g., Modern Mart',
                           isTablet: isTablet,
-                          title: 'Shop Information',
-                          subtitle: 'Basic details about the shop',
-                          icon: Icons.store_rounded,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                          ),
-                          children: [
-                            _buildTextField(
-                              controller: _shopNameController,
-                              focusNode: _shopNameFocus,
-                              nextFocus: _addressFocus,
-                              label: 'Shop Name',
-                              icon: Icons.storefront_outlined,
-                              hint: 'e.g., Modern Mart',
-                              isTablet: isTablet,
-                            ),
-                            SizedBox(height: isTablet ? 20 : 16),
-                            _buildTextField(
-                              controller: _addressController,
-                              focusNode: _addressFocus,
-                              nextFocus: _regionFocus,
-                              label: 'Complete Address',
-                              icon: Icons.location_on_outlined,
-                              hint: 'Street, Area, City, Pincode',
-                              maxLines: 3,
-                              isTablet: isTablet,
-                            ),
-                            SizedBox(height: isTablet ? 20 : 16),
-                            _buildTextField(
-                              controller: _regionController,
-                              focusNode: _regionFocus,
-                              nextFocus: _ownerNameFocus,
-                              label: 'Region ID',
-                              icon: Icons.map_outlined,
-                              hint: 'Enter region number',
-                              keyboardType: TextInputType.number,
-                              isTablet: isTablet,
-                            ),
-                          ],
                         ),
-
-                        SizedBox(height: isTablet ? 24 : 20),
-
-                        // Owner Information Section
-                        _buildSectionCard(
+                        SizedBox(height: isTablet ? 16 : 14),
+                        _buildTextField(
+                          controller: _addressController,
+                          focusNode: _addressFocus,
+                          nextFocus: _regionFocus,
+                          label: 'Complete Address',
+                          icon: Icons.location_on_outlined,
+                          hint: 'Street, Area, City, Pincode',
+                          maxLines: 3,
                           isTablet: isTablet,
-                          title: 'Owner Information',
-                          subtitle: 'Contact details of the shop owner',
-                          icon: Icons.person_outline_rounded,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          ),
-                          children: [
-                            _buildTextField(
-                              controller: _ownerNameController,
-                              focusNode: _ownerNameFocus,
-                              nextFocus: _phoneFocus,
-                              label: 'Owner Name',
-                              icon: Icons.badge_outlined,
-                              hint: 'Full name of the owner',
-                              isTablet: isTablet,
-                            ),
-                            SizedBox(height: isTablet ? 20 : 16),
-                            _buildTextField(
-                              controller: _phoneController,
-                              focusNode: _phoneFocus,
-                              label: 'Phone Number',
-                              icon: Icons.phone_outlined,
-                              hint: '+91 XXXXXXXXXX',
-                              keyboardType: TextInputType.phone,
-                              isTablet: isTablet,
-                              isLast: true,
-                            ),
-                          ],
                         ),
-
-                        SizedBox(height: isTablet ? 40 : 32),
-
-                        // Save Button
-                        _buildSaveButton(state, isTablet),
-
-                        const SizedBox(height: 24),
+                        SizedBox(height: isTablet ? 16 : 14),
+                        _buildTextField(
+                          controller: _regionController,
+                          focusNode: _regionFocus,
+                          nextFocus: _ownerNameFocus,
+                          label: 'Region ID',
+                          icon: Icons.map_outlined,
+                          hint: 'Enter region number',
+                          keyboardType: TextInputType.number,
+                          isTablet: isTablet,
+                        ),
                       ],
                     ),
-                  ),
+
+                    SizedBox(height: isTablet ? 20 : 16),
+
+                    // Owner Information Section
+                    _buildSectionCard(
+                      isTablet: isTablet,
+                      title: 'Owner Information',
+                      children: [
+                        _buildTextField(
+                          controller: _ownerNameController,
+                          focusNode: _ownerNameFocus,
+                          nextFocus: _phoneFocus,
+                          label: 'Owner Name',
+                          icon: Icons.person_outline_rounded,
+                          hint: 'Full name of the owner',
+                          isTablet: isTablet,
+                        ),
+                        SizedBox(height: isTablet ? 16 : 14),
+                        _buildTextField(
+                          controller: _phoneController,
+                          focusNode: _phoneFocus,
+                          label: 'Phone Number',
+                          icon: Icons.phone_outlined,
+                          hint: '+91 XXXXXXXXXX',
+                          keyboardType: TextInputType.phone,
+                          isTablet: isTablet,
+                          isLast: true,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: isTablet ? 32 : 28),
+
+                    // Save Button
+                    _buildSaveButton(state, isTablet),
+
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(bool isTablet) {
-  return SliverAppBar(
-    pinned: true,
-    floating: false,
-    elevation: 0,
- backgroundColor: const Color(0xFFF8F9FA),
-    toolbarHeight: kToolbarHeight + 18, // ✅ little extra for subtitle
-
-    leading: Container(
-      margin: const EdgeInsets.all(8),
-      // decoration: BoxDecoration(
-      //   color: Colors.black.withOpacity(0.2),
-      //   borderRadius: BorderRadius.circular(12),
-      // ),
-      child: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.black,
-          size: 20,
-        ),
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: AddShopTheme.cardWhite,
+      centerTitle: true,
+      leading: IconButton(
         onPressed: () => Navigator.pop(context),
-      ),
-    ),
-
-    // ✅ Title + Subtitle
-    title: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Text(
-          'Add New Shop',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        icon: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AddShopTheme.backgroundGray,
+            borderRadius: BorderRadius.circular(8),
           ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          'Register shop details',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 12,
+          child: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 16,
+            color: AddShopTheme.textDark,
           ),
-        ),
-      ],
-    ),
-
-    // ✅ Right side icon
-    actions: [
-      Container(
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IconButton(
-          icon: const Icon(
-            Icons.add_business_rounded,
-            color: Colors.black,
-            size: 22,
-          ),
-          onPressed: () {
-            // TODO: right icon action
-          },
         ),
       ),
-    ],
-  );
-}
-
+      title: const Text(
+        'Add New Shop',
+        style: TextStyle(
+          color: AddShopTheme.textDark,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+          letterSpacing: -0.3,
+        ),
+      ),
+    );
+  }
 
   Widget _buildSectionCard({
     required bool isTablet,
     required String title,
-    required String subtitle,
-    required IconData icon,
-    required Gradient gradient,
     required List<Widget> children,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AddShopTheme.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AddShopTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header
-          Container(
-            padding: EdgeInsets.all(isTablet ? 24 : 20),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+          // Section Header - Minimal
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              isTablet ? 20 : 16,
+              isTablet ? 18 : 16,
+              isTablet ? 20 : 16,
+              isTablet ? 12 : 10,
+            ),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: isTablet ? 16 : 15,
+                fontWeight: FontWeight.bold,
+                color: AddShopTheme.textDark,
+                letterSpacing: -0.3,
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(isTablet ? 12 : 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: isTablet ? 28 : 24,
-                  ),
-                ),
-                SizedBox(width: isTablet ? 16 : 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: isTablet ? 20 : 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: isTablet ? 13 : 12,
-                          color: Colors.white.withOpacity(0.9),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
-          
+
+          // Divider
+          Container(
+            height: 1,
+            margin: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+            color: Colors.grey.shade100,
+          ),
+
           // Section Content
           Padding(
-            padding: EdgeInsets.all(isTablet ? 24 : 20),
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
             child: Column(
               children: children,
             ),
@@ -475,60 +385,59 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
         }
       },
       style: TextStyle(
-        fontSize: isTablet ? 16 : 15,
+        fontSize: isTablet ? 15 : 14,
         fontWeight: FontWeight.w500,
-        color: const Color(0xFF1E293B),
+        color: AddShopTheme.textDark,
       ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: isTablet ? 22 : 20, color: const Color(0xFF6366F1)),
+        prefixIcon: Icon(
+          icon,
+          size: isTablet ? 20 : 18,
+          color: AddShopTheme.textGray,
         ),
         labelStyle: TextStyle(
-          fontSize: isTablet ? 15 : 14,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF64748B),
+          fontSize: isTablet ? 14 : 13,
+          fontWeight: FontWeight.w400,
+          color: AddShopTheme.textGray,
         ),
         hintStyle: TextStyle(
-          fontSize: isTablet ? 15 : 14,
-          color: const Color(0xFF94A3B8),
+          fontSize: isTablet ? 14 : 13,
+          color: AddShopTheme.textGray.withOpacity(0.5),
         ),
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: AddShopTheme.backgroundGray,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AddShopTheme.primaryPink,
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
         contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 20 : 16,
-          vertical: isTablet ? 20 : 16,
+          horizontal: isTablet ? 16 : 14,
+          vertical: isTablet ? 16 : 14,
         ),
         errorStyle: const TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
         ),
       ),
       validator: (value) {
@@ -544,64 +453,52 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
   }
 
   Widget _buildSaveButton(state, bool isTablet) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      height: isTablet ? 64 : 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+      child: Container(
+        decoration: BoxDecoration(
+          color: AddShopTheme.primaryPink,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AddShopTheme.buttonShadow,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+        child: ElevatedButton(
+          onPressed: state.isLoading ? null : _saveShop,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            shadowColor: Colors.transparent,
+            padding: EdgeInsets.symmetric(
+              vertical: isTablet ? 16 : 14,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: state.isLoading ? null : _saveShop,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: state.isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
+          child: state.isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_outline_rounded, size: 20),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Save Shop',
+                      style: TextStyle(
+                        fontSize: isTablet ? 16 : 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.check_circle_outline, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Save Shop',
-                    style: TextStyle(
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
+        ),
       ),
     );
   }
@@ -609,7 +506,6 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _headerController.dispose();
     _shopNameController.dispose();
     _addressController.dispose();
     _regionController.dispose();
@@ -624,7 +520,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
   }
 }
 
-// Modern Success Dialog with advanced animations
+// Minimal Success Dialog
 class SuccessDialog extends StatefulWidget {
   const SuccessDialog({Key? key}) : super(key: key);
 
@@ -633,48 +529,33 @@ class SuccessDialog extends StatefulWidget {
 }
 
 class _SuccessDialogState extends State<SuccessDialog>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late AnimationController _confettiController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _checkAnimation;
-  late Animation<double> _rotateAnimation;
 
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
     );
-    
-    _confettiController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    
+
     _scaleAnimation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,
     );
-    
+
     _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
       ),
     );
-    
-    _rotateAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ),
-    );
-    
+
     _controller.forward();
-    _confettiController.repeat();
   }
 
   @override
@@ -687,12 +568,12 @@ class _SuccessDialogState extends State<SuccessDialog>
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
+            color: AddShopTheme.cardWhite,
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.2),
-                blurRadius: 40,
+                color: AddShopTheme.primaryPink.withOpacity(0.2),
+                blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
             ],
@@ -700,114 +581,48 @@ class _SuccessDialogState extends State<SuccessDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Animated Success Icon
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Pulsing background circle
-                  AnimatedBuilder(
-                    animation: _confettiController,
-                    builder: (context, child) {
-                      return Container(
-                        width: 120 + (20 * _confettiController.value),
-                        height: 120 + (20 * _confettiController.value),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF10B981).withOpacity(
-                            0.2 * (1 - _confettiController.value),
-                          ),
-                        ),
-                      );
-                    },
+              // Success Icon - Minimal
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AddShopTheme.primaryPink,
+                  shape: BoxShape.circle,
+                  boxShadow: AddShopTheme.buttonShadow,
+                ),
+                child: ScaleTransition(
+                  scale: _checkAnimation,
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 48,
                   ),
-                  
-                  // Main circle
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF10B981),
-                          Color(0xFF059669),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: RotationTransition(
-                      turns: _rotateAnimation,
-                      child: ScaleTransition(
-                        scale: _checkAnimation,
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: 56,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // Success text
               const Text(
                 'Shop Added!',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: AddShopTheme.textDark,
+                  letterSpacing: -0.5,
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              Text(
+              const Text(
                 'The shop has been successfully\nadded to your system',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 15,
-                  color: const Color(0xFF64748B),
+                  fontSize: 14,
+                  color: AddShopTheme.textGray,
                   fontWeight: FontWeight.w400,
                   height: 1.5,
                 ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Checkmark animation indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(3, (index) {
-                  return AnimatedBuilder(
-                    animation: _confettiController,
-                    builder: (context, child) {
-                      final delay = index * 0.2;
-                      final progress = (_confettiController.value - delay).clamp(0.0, 1.0);
-                      
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF10B981).withOpacity(
-                            0.3 + (0.7 * progress),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
               ),
             ],
           ),
@@ -819,7 +634,6 @@ class _SuccessDialogState extends State<SuccessDialog>
   @override
   void dispose() {
     _controller.dispose();
-    _confettiController.dispose();
     super.dispose();
   }
 }

@@ -46,7 +46,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
     final state = ref.watch(employeeloginViewModelProvider);
     
     /// API → UI MAP
-    final employees = state.employeeList?.when(
+    final employees = state.employeeList.when(
           data: (list) => list
               .map(
                 (e) => {

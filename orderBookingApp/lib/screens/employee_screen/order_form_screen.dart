@@ -10,48 +10,47 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/employee_screen/main_navigation_screen.dart';
 import 'package:uuid/uuid.dart';
 
+// Minimal Theme Colors
+class MinimalTheme {
+  static const primaryOrange = Color(0xFFFF8C42);
+  static const backgroundGray = Color(0xFFF5F5F5);
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const textDark = Color(0xFF2D2D2D);
+  static const textGray = Color(0xFF6B7280);
+  static const iconGray = Color(0xFF9CA3AF);
+  static const successGreen = Color(0xFF10B981);
+  static const errorRed = Color(0xFFEF4444);
+}
+
 class OrderFormScreen extends ConsumerStatefulWidget {
   final ShopDetails shop;
   final VisitPayload visit;
 
   const OrderFormScreen({Key? key, required this.shop, required this.visit})
-    : super(key: key);
+      : super(key: key);
 
   @override
   ConsumerState<OrderFormScreen> createState() => _OrderFormScreenState();
 }
 
 class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
-  // Form state
   Product? _selectedProduct;
   ProductSubType? _selectedSubType;
   final TextEditingController _quantityController = TextEditingController();
   late VisitPayload _visit;
-
-  // Order items - temporary list to build the order
   final List<_TempOrderItem> _orderItems = [];
 
   @override
   void initState() {
     super.initState();
     _visit = widget.visit;
-    // Fetch products
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
+      ref.read(productViewModelProvider.notifier).fetchProductList(
+          ref.read(adminloginViewModelProvider).companyId ?? "");
     });
   }
 
-  String formatForApi(DateTime dt) {
-  String two(int n) => n.toString().padLeft(2, '0');
-
-  return '${dt.year}-'
-         '${two(dt.month)}-'
-         '${two(dt.day)} '
-         '${two(dt.hour)}:'
-         '${two(dt.minute)}:'
-         '${two(dt.second)}';
-}
-
+  String formatForApi(DateTime dt) => VisitPayload.formatForApi(dt);
 
   String _formatUnit(double? availableUnit, String? measuringUnit) {
     if (availableUnit == null || measuringUnit == null) return '';
@@ -96,7 +95,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     }
 
     setState(() {
-      // Check if same product and subtype already exists
       final existingIndex = _orderItems.indexWhere(
         (item) =>
             item.productId == _selectedProduct!.productId &&
@@ -104,7 +102,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       );
 
       if (existingIndex >= 0) {
-        // Update existing item quantity
         _orderItems[existingIndex] = _TempOrderItem(
           productId: _orderItems[existingIndex].productId,
           productName: _orderItems[existingIndex].productName,
@@ -114,7 +111,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
           quantity: _orderItems[existingIndex].quantity + quantity,
         );
       } else {
-        // Add new item
         _orderItems.add(
           _TempOrderItem(
             productId: _selectedProduct!.productId!,
@@ -130,13 +126,12 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         );
       }
 
-      // Reset form
       _selectedProduct = null;
       _selectedSubType = null;
       _quantityController.clear();
     });
 
-    _showSuccess('Product added to order');
+    _showSuccess('Product added');
   }
 
   void _removeItem(int index) {
@@ -147,11 +142,10 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
   void _submitOrder() {
     if (_orderItems.isEmpty) {
-      _showError('Please add at least one product to the order');
+      _showError('Add at least one product');
       return;
     }
 
-    // Convert temporary items to OrderItem objects
     final List<OrderItem> orderItems = _orderItems.map((item) {
       return OrderItem(
         productName: item.productName,
@@ -163,7 +157,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       );
     }).toList();
 
-    // Create Order object
     final Order order = Order(
       localOrderId: const Uuid().v4(),
       shopNamep: widget.shop.shopName,
@@ -175,7 +168,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     );
 
     ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
-    ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
 
     setState(() {
       _visit = VisitPayload(
@@ -190,45 +182,144 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         punchOut: formatForApi(DateTime.now().toLocal()),
       );
     });
-
     ref.read(visitViewModelProvider.notifier).addVisit(_visit);
 
-    // Show success dialog
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Order Submitted'),
-        content: Text(
-          'Order for ${widget.shop.shopName} submitted successfully!\n\n'
-          '${order.items.length} products\n'
-          'Total: ₹${order.totalPrice.toStringAsFixed(2)}',
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: MinimalTheme.successGreen.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: MinimalTheme.successGreen,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Order Submitted',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: MinimalTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.shop.shopName ?? '',
+              style: const TextStyle(
+                fontSize: 14,
+                color: MinimalTheme.textGray,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MinimalTheme.backgroundGray,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Items',
+                        style: TextStyle(color: MinimalTheme.textGray),
+                      ),
+                      Text(
+                        '${order.items.length}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(color: MinimalTheme.textGray),
+                      ),
+                      Text(
+                        '₹${order.totalPrice.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: MinimalTheme.successGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const MainNavigationScreen(
-                    initialIndex: 1,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const MainNavigationScreen(
+                      initialIndex: 1,
+                    ),
                   ),
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MinimalTheme.primaryOrange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                (route) => false,
-              );
-            },
-            child: const Text('OK'),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('Done'),
+            ),
           ),
         ],
       ),
     );
   }
- double _calculateTotal() {
+
+  double _calculateTotal() {
     return _orderItems.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: MinimalTheme.errorRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
@@ -236,29 +327,13 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: MinimalTheme.successGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 1),
       ),
     );
-  }
-
-  IconData _getProductIcon(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'beverage':
-        return Icons.local_drink;
-      case 'grocery':
-        return Icons.shopping_bag;
-      case 'ice cream':
-        return Icons.icecream;
-      case 'bakery & snacks':
-        return Icons.cookie;
-      case 'dairy':
-        return Icons.emoji_food_beverage;
-      case 'personal & home care':
-        return Icons.cleaning_services;
-      default:
-        return Icons.inventory_2_outlined;
-    }
   }
 
   @override
@@ -266,41 +341,63 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     final state = ref.watch(productViewModelProvider);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(title: const Text('Create Order'), elevation: 0),
+      backgroundColor: MinimalTheme.backgroundGray,
+      appBar: AppBar(
+        backgroundColor: MinimalTheme.cardWhite,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: MinimalTheme.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Create Order',
+          style: TextStyle(
+            color: MinimalTheme.textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: MinimalTheme.primaryOrange,
+                strokeWidth: 2.5,
+              ),
+            )
           : state.productList!.when(
               data: (products) => _buildOrderForm(products),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  color: MinimalTheme.primaryOrange,
+                  strokeWidth: 2.5,
+                ),
+              ),
               error: (error, _) => _buildErrorView(error),
             ),
     );
   }
 
   Widget _buildOrderForm(List<Product> products) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardOpen = bottomInset > 0;
+
     return Column(
       children: [
-        // Shop Header
         _buildShopHeader(),
-
-        // Form and Items List
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomInset + 24),
             child: Column(
               children: [
-                // Add Product Form
                 _buildAddProductForm(products),
-
-                // Order Items List
                 if (_orderItems.isNotEmpty) _buildOrderItemsList(),
+                const SizedBox(height: 100),
               ],
             ),
           ),
         ),
-
-        // Bottom Summary and Submit
-        if (_orderItems.isNotEmpty) _buildBottomBar(),
+        if (_orderItems.isNotEmpty && !isKeyboardOpen) _buildBottomBar(),
       ],
     );
   }
@@ -308,22 +405,35 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   Widget _buildShopHeader() {
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green[50],
-        border: Border(bottom: BorderSide(color: Colors.green[100]!)),
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: const Color(0xFFFFF4E6),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.store, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.store_rounded,
+              color: MinimalTheme.primaryOrange,
+              size: 24,
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,14 +441,18 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                 Text(
                   widget.shop.shopName ?? "",
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: MinimalTheme.textDark,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   widget.shop.address ?? "",
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: MinimalTheme.textGray,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -352,15 +466,15 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
   Widget _buildAddProductForm(List<Product> products) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MinimalTheme.cardWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -368,94 +482,69 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.add_circle_outline, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                'Add Product',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
+          const Text(
+            'Add Product',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: MinimalTheme.textDark,
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // Product Dropdown
           const Text(
-            'Select Product',
+            'Product',
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: MinimalTheme.textGray,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: Colors.grey[200]!),
               borderRadius: BorderRadius.circular(12),
+              color: MinimalTheme.cardWhite,
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<Product>(
                 isExpanded: true,
                 hint: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('Choose a product'),
+                  padding: EdgeInsets.symmetric(horizontal: 14),
+                  child: Text(
+                    'Select product',
+                    style: TextStyle(
+                      color: MinimalTheme.iconGray,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
                 value: _selectedProduct,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 items: products.map((product) {
                   return DropdownMenuItem(
                     value: product,
-                    child: Row(
-                      children: [
-                        Icon(
-                          _getProductIcon(product.productType),
-                          size: 20,
-                          color: Colors.green,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            product.productName ?? '',
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            product.productType ?? '',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.green[800],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      product.productName ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: MinimalTheme.textDark,
+                      ),
                     ),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedProduct = value;
-                    _selectedSubType = null; // Reset unit selection
+                    _selectedSubType = null;
                   });
                 },
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Unit and Quantity Row
           Row(
@@ -470,9 +559,9 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                     const Text(
                       'Unit & Price',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MinimalTheme.textGray,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -480,56 +569,54 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _selectedProduct == null
-                              ? Colors.grey[200]!
-                              : Colors.grey[300]!,
+                              ? Colors.grey[100]!
+                              : Colors.grey[200]!,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         color: _selectedProduct == null
                             ? Colors.grey[50]
-                            : Colors.white,
+                            : MinimalTheme.cardWhite,
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<ProductSubType>(
                           isExpanded: true,
                           hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('Select unit'),
+                            padding: EdgeInsets.symmetric(horizontal: 14),
+                            child: Text(
+                              'Select unit',
+                              style: TextStyle(
+                                color: MinimalTheme.iconGray,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                           value: _selectedSubType,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 14,
                             vertical: 4,
                           ),
                           items: _selectedProduct?.subtypes?.map((subtype) {
                             return DropdownMenuItem(
                               value: subtype,
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     _formatUnit(
                                       subtype.availableUnit,
                                       subtype.measuringUnit,
                                     ),
-                                    style: const TextStyle(fontSize: 15),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: MinimalTheme.textDark,
+                                    ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '₹${subtype.price}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                  Text(
+                                    '₹${subtype.price}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: MinimalTheme.primaryOrange,
                                     ),
                                   ),
                                 ],
@@ -549,7 +636,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
 
               // Quantity Input
               Expanded(
@@ -560,9 +647,9 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                     const Text(
                       'Quantity',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MinimalTheme.textGray,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -572,25 +659,32 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         hintText: '0',
+                        hintStyle: const TextStyle(
+                          color: MinimalTheme.iconGray,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: Colors.grey[200]!),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: Colors.grey[200]!),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                            color: Colors.green,
-                            width: 2,
+                            color: MinimalTheme.primaryOrange,
+                            width: 1.5,
                           ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                          horizontal: 14,
+                          vertical: 14,
                         ),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: MinimalTheme.textDark,
                       ),
                     ),
                   ],
@@ -598,30 +692,27 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Add Button
           SizedBox(
             width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
+            child: ElevatedButton(
               onPressed: _addToOrder,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'Add to Order',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: MinimalTheme.primaryOrange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              child: const Text('Add to Order'),
             ),
           ),
         ],
@@ -631,15 +722,15 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
   Widget _buildOrderItemsList() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MinimalTheme.cardWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -650,39 +741,32 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.shopping_cart, color: Colors.green),
-                  SizedBox(width: 8),
-                  Text(
-                    'Order Items',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
+              const Text(
+                'Order Items',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: MinimalTheme.textDark,
+                ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0xFFFFF4E6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${_orderItems.length} items',
-                  style: TextStyle(
+                  '${_orderItems.length}',
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.green[800],
+                    color: MinimalTheme.primaryOrange,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -693,18 +777,19 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
               return Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
+                      color: const Color(0xFFFFF4E6),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
-                      Icons.inventory_2,
-                      color: Colors.green,
-                      size: 24,
+                      Icons.inventory_2_outlined,
+                      color: MinimalTheme.primaryOrange,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,16 +797,17 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                         Text(
                           item.productName,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
+                            color: MinimalTheme.textDark,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
-                          '${item.quantity} × ${item.unit} @ ₹${item.price}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
+                          '${item.quantity} × ${item.unit}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: MinimalTheme.textGray,
                           ),
                         ),
                       ],
@@ -731,20 +817,21 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '₹${item.totalPrice.toStringAsFixed(2)}',
+                        '₹${item.totalPrice.toStringAsFixed(0)}',
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: MinimalTheme.textDark,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      IconButton(
-                        onPressed: () => _removeItem(index),
-                        icon: const Icon(Icons.delete, size: 20),
-                        color: Colors.red,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      InkWell(
+                        onTap: () => _removeItem(index),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: MinimalTheme.errorRed,
+                        ),
                       ),
                     ],
                   ),
@@ -761,10 +848,10 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MinimalTheme.cardWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -778,44 +865,43 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Total Amount',
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MinimalTheme.textGray,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     '₹${_calculateTotal().toStringAsFixed(2)}',
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: MinimalTheme.textDark,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 16),
-            ElevatedButton.icon(
-              onPressed: _submitOrder,
-              icon: const Icon(Icons.check_circle, color: Colors.white),
-              label: const Text(
-                'Submit and Punch Out',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _submitOrder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MinimalTheme.primaryOrange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
+                child: const Text('Submit Order'),
               ),
             ),
           ],
@@ -831,33 +917,51 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: MinimalTheme.iconGray.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             const Text(
               'Failed to load products',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: MinimalTheme.textDark,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: const TextStyle(
+                fontSize: 14,
+                color: MinimalTheme.textGray,
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            ElevatedButton(
               onPressed: () {
-                ref.read(productViewModelProvider.notifier).fetchProductList(ref.read(adminloginViewModelProvider).companyId??"");
+                ref.read(productViewModelProvider.notifier).fetchProductList(
+                    ref.read(adminloginViewModelProvider).companyId ?? "");
               },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: MinimalTheme.primaryOrange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              child: const Text('Retry'),
             ),
           ],
         ),
@@ -872,7 +976,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   }
 }
 
-// Temporary helper class to store items before converting to OrderItem
 class _TempOrderItem {
   final int productId;
   final String productName;

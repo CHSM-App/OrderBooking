@@ -68,7 +68,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
   Future<void> _editEmployee() async {
     final state = ref.read(employeeloginViewModelProvider);
-    final List<EmployeeLogin>? list = state.employeeDetails?.value;
+    final List<EmployeeLogin>? list = state.employeeDetails.value;
 
     if (list == null || list.isEmpty) return;
 
@@ -222,7 +222,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       return Scaffold(body: Center(child: Text(state.error!)));
     }
 
-    final List<EmployeeLogin>? list = state.employeeDetails?.value;
+    final List<EmployeeLogin>? list = state.employeeDetails.value;
     if (list == null || list.isEmpty) {
       return const Scaffold(
         body: Center(child: Text("No Employee Data Found")),

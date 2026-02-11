@@ -136,6 +136,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> with TickerProvider
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Order Details'),
+        
         elevation: 0,
         actions: [
           IconButton(

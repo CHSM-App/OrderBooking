@@ -97,7 +97,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
     final productState = ref.watch(productViewModelProvider);
     final orderState = ref.watch(ordersViewModelProvider);
 
-    final activeEmployeesCount = employeeState.employeeList?.when(
+    final activeEmployeesCount = employeeState.employeeList.when(
       loading: () => 0,
       error: (_, __) => 0,
       data: (employees) {

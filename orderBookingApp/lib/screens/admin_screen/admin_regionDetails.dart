@@ -87,7 +87,7 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
     }
 
     // Handle AsyncValue states
-    return regionList?.when(
+    return regionList.when(
       data: (regions) => regions.isEmpty
           ? _buildEmptyState()
           : _buildRegionList(regions),

@@ -2,6 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Theme Colors matching the booking app design with orange tones
+class EditProfileTheme {
+  // Primary orange from the design
+  static const primaryOrange = Color(0xFFE8720C);
+  static const primaryOrangeDark = Color(0xFFD66608);
+  
+  // Background colors
+  static const backgroundGray = Color(0xFFF5F5F5); // Gray100
+  
+  // Neutral colors
+  static const cardWhite = Color(0xFFFFFBFE);
+  static const textDark = Color(0xFF1E1E1E);
+  static const textGray = Color(0xFF6B7280);
+  
+  // Soft shadows
+  static List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.04),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
+  
+  static List<BoxShadow> buttonShadow = [
+    BoxShadow(
+      color: primaryOrange.withOpacity(0.3),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
+}
+
 class EditProfilePage extends ConsumerStatefulWidget {
   final String name;
   final String phone;
@@ -64,13 +96,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Row(
+        SnackBar(
+          backgroundColor: EditProfileTheme.primaryOrange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          content: const Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               SizedBox(width: 10),
-              Text("Profile updated successfully"),
+              Text(
+                "Profile updated successfully",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
         ),
@@ -81,40 +124,42 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     if (mounted) setState(() => isSaving = false);
   }
 
-  String _initial() =>
-      nameController.text.isNotEmpty ? nameController.text[0].toUpperCase() : "A";
+  String _initial() => nameController.text.isNotEmpty
+      ? nameController.text[0].toUpperCase()
+      : "A";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: EditProfileTheme.backgroundGray,
 
-      // APP BAR
+      // APP BAR - Minimal
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        // backgroundColor: EditProfileTheme.cardWhite,
         centerTitle: true,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
+              color: EditProfileTheme.backgroundGray,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              size: 18,
-              color: Color(0xFF2C2C2C),
+              size: 16,
+              color: EditProfileTheme.textDark,
             ),
           ),
         ),
         title: const Text(
           "Edit Profile",
           style: TextStyle(
-            color: Color(0xFF2C2C2C),
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            color: EditProfileTheme.textDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            letterSpacing: -0.3,
           ),
         ),
       ),
@@ -125,16 +170,26 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           children: [
             const SizedBox(height: 24),
 
-            // AVATAR
-            CircleAvatar(
-              radius: 55,
-              backgroundColor: const Color(0xFF6C63FF).withOpacity(0.15),
-              child: Text(
-                _initial(),
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6C63FF),
+            // AVATAR - Minimal
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: EditProfileTheme.primaryOrange.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 48,
+                backgroundColor:
+                    EditProfileTheme.primaryOrange.withOpacity(0.1),
+                child: Text(
+                  _initial(),
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: EditProfileTheme.primaryOrange,
+                  ),
                 ),
               ),
             ),
@@ -142,25 +197,23 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             const SizedBox(height: 12),
             Text(
               "Update profile photo",
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                color: EditProfileTheme.textGray,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // FORM CARD
+            // FORM CARD - Minimal
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                color: EditProfileTheme.cardWhite,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: EditProfileTheme.cardShadow,
               ),
               child: Form(
                 key: _formKey,
@@ -169,74 +222,88 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     _modernField(
                       controller: nameController,
                       label: "Full Name",
-                      icon: Icons.person_outline,
-                      color: const Color(0xFF4CAF50),
+                      icon: Icons.person_outline_rounded,
                       validator: (v) =>
                           v == null || v.length < 3 ? "Invalid name" : null,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     _modernField(
                       controller: phoneController,
                       label: "Phone Number",
-                      icon: Icons.phone_android,
-                      color: const Color(0xFF2196F3),
+                      icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       maxLength: 10,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(10),
                       ],
-                      validator: (v) =>
-                          v == null || v.length != 10 ? "Invalid number" : null,
+                      validator: (v) => v == null || v.length != 10
+                          ? "Invalid number"
+                          : null,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     _modernField(
                       controller: emailController,
                       label: "Email Address",
-                      icon: Icons.email,
-                      color: const Color(0xFFFF9800),
+                      icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) =>
-                          v == null || !v.contains("@") ? "Invalid email" : null,
+                      validator: (v) => v == null || !v.contains("@")
+                          ? "Invalid email"
+                          : null,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     _modernField(
                       controller: addressController,
                       label: "Address",
-                      icon: Icons.location_on,
-                      color: const Color(0xFFE91E63),
+                      icon: Icons.location_on_outlined,
                       maxLines: 2,
-                      validator: (v) =>
-                          v == null || v.length < 10 ? "Enter full address" : null,
+                      validator: (v) => v == null || v.length < 10
+                          ? "Enter full address"
+                          : null,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 24),
 
+                    // Save Button - Minimal
                     SizedBox(
                       width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: isSaving ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6C63FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: EditProfileTheme.primaryOrange,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: EditProfileTheme.buttonShadow,
                         ),
-                        child: isSaving
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              )
-                            : const Text(
-                                "Save Changes",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                        child: ElevatedButton(
+                          onPressed: isSaving ? null : _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : const Text(
+                                  "Save Changes",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
                                 ),
-                              ),
+                        ),
                       ),
                     ),
                   ],
@@ -254,7 +321,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    required Color color,
     TextInputType? keyboardType,
     int maxLines = 1,
     int? maxLength,
@@ -268,28 +334,59 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxLines: maxLines,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
+      style: const TextStyle(
+        fontSize: 14,
+        color: EditProfileTheme.textDark,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: color),
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 20),
+        labelStyle: const TextStyle(
+          color: EditProfileTheme.textGray,
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: EditProfileTheme.textGray,
+          size: 18,
         ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: EditProfileTheme.backgroundGray,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: color, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: EditProfileTheme.primaryOrange,
+            width: 1.5,
+          ),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Colors.red,
+            width: 1.5,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Colors.red,
+            width: 1.5,
+          ),
+        ),
+        counterText: '', // Hide character counter
       ),
     );
   }
