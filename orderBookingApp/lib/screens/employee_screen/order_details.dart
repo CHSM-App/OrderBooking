@@ -274,15 +274,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> with TickerProvider
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]), // Reduced from 20
         const SizedBox(width: 10), // Reduced from 12
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13, // Reduced from 14
-            color: Colors.grey[600],
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13, // Reduced from 14
+              color: Colors.grey[600],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        const Spacer(),
-        Flexible(
+        const SizedBox(width: 8),
+        Expanded(
           child: Text(
             value,
             style: const TextStyle(

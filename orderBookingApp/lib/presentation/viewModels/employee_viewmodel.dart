@@ -87,11 +87,23 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   /// -----------------------
   /// GET EMPLOYEE LIST
   /// -----------------------
-  Future<void> getEmployeeList(String companyId) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> getEmployeeList(
+    String companyId, {
+    bool useCacheFirst = true,
+  }) async {
+    var hasCached = false;
+
+    if (useCacheFirst) {
+      final cached = state.employeeList.value;
+      if (cached != null && cached.isNotEmpty) {
+        hasCached = true;
+        state = state.copyWith(isLoading: false, error: null);
+      }
+    }
+
+    state = state.copyWith(isLoading: !hasCached, error: null);
     try {
       final employees = await usecase.getEmployeeList(companyId);
-
       state = state.copyWith(
         isLoading: false,
         employeeList: AsyncValue.data(employees),
@@ -99,7 +111,10 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        employeeList: AsyncValue.error(e, StackTrace.current),
+        error: hasCached ? null : e.toString(),
+        employeeList: hasCached
+            ? state.employeeList
+            : AsyncValue.error(e, StackTrace.current),
       );
     }
   }

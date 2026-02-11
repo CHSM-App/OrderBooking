@@ -85,15 +85,36 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
   }
 
   //Get all orders by companyId
-  Future<void> getOrderList(String companyId) async {
+  Future<void> getOrderList(
+    String companyId, {
+    bool useCacheFirst = true,
+  }) async {
+    var hasCached = false;
+
+    if (useCacheFirst) {
+      try {
+        final cached = await usecase.getCachedOrderList(companyId);
+        if (cached.isNotEmpty) {
+          hasCached = true;
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: null,
+            isSuccess: true,
+            orders: AsyncValue.data(cached),
+          );
+        }
+      } catch (_) {}
+    }
+
     state = state.copyWith(
-      isLoading: true,
+      isLoading: !hasCached,
       errorMessage: null,
       isSuccess: false,
     );
 
     try {
       final result = await usecase.getOrderList(companyId);
+      await usecase.cacheOrderList(companyId, result);
       state = state.copyWith(
         isLoading: false,
         isSuccess: true,
@@ -102,7 +123,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: hasCached ? null : e.toString(),
         isSuccess: false,
       );
     }

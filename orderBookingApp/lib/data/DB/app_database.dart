@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 2, // incremented version
+      version: 3, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -40,6 +40,18 @@ class AppDatabase {
           //     name TEXT
           //   )
           // ''');
+        }
+        if (oldVersion < 3) {
+          try {
+            await db.execute(
+              "ALTER TABLE offline_orders ADD COLUMN emp_name TEXT",
+            );
+          } catch (_) {}
+          try {
+            await db.execute(
+              "ALTER TABLE offline_orders ADD COLUMN address TEXT",
+            );
+          } catch (_) {}
         }
       },
     );
@@ -146,6 +158,8 @@ static Future<void> _createRegionTable(Database db) async {
         employee_id INTEGER,
         shop_id INTEGER,
         shop_name TEXT,
+        emp_name TEXT,
+        address TEXT,
         order_date TEXT,
         total_price REAL,
         company_id TEXT,

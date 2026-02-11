@@ -6,6 +6,18 @@ import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
+// Minimal Theme Colors
+class MinimalTheme {
+  static const primaryOrange = Color(0xFFFF8C42);
+  static const backgroundGray = Color(0xFFF5F5F5);
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const textDark = Color(0xFF2D2D2D);
+  static const textGray = Color(0xFF6B7280);
+  static const iconGray = Color(0xFF9CA3AF);
+  static const successGreen = Color(0xFF10B981);
+  static const errorRed = Color(0xFFEF4444);
+}
+
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;
 
@@ -27,118 +39,129 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ref.read(adminloginViewModelProvider).mobileNo ?? "");
     });
   }
-Future<void> _onRefresh() async {
-  await ref
-      .read(adminloginViewModelProvider.notifier)
-      .fetchAdminDetails(
-        ref.read(adminloginViewModelProvider).mobileNo ?? "",
-      );
-}
+
+  Future<void> _onRefresh() async {
+    await ref
+        .read(adminloginViewModelProvider.notifier)
+        .fetchAdminDetails(
+          ref.read(adminloginViewModelProvider).mobileNo ?? "",
+          useCacheFirst: false,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     final adminState = ref.watch(adminloginViewModelProvider);
+    final detailsAsync = adminState.adminDetails;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-     
-    body: RefreshIndicator(
-  onRefresh: _onRefresh,
-  color: const Color(0xFF6C63FF),
-  child: adminState.isLoading
-      ? ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 300),
-            Center(child: CircularProgressIndicator()),
-          ],
-        )
-      : adminState.error != null
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 200),
-                Center(child: Text('Error: ${adminState.error}')),
-              ],
-            )
-          : adminState.adminDetails!.when(
-              data: (profile) => profile.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 200),
-                        Center(child: Text('No admin details found')),
-                      ],
-                    )
-                  : _buildProfileContent(profile.first),
-              loading: () => ListView(
+      backgroundColor: MinimalTheme.backgroundGray,
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: MinimalTheme.primaryOrange,
+        child: detailsAsync!.isLoading
+            ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
                   SizedBox(height: 300),
-                  Center(child: CircularProgressIndicator()),
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: MinimalTheme.primaryOrange,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
                 ],
-              ),
-              error: (e, _) => ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  const SizedBox(height: 200),
-                  Center(child: Text('Error: $e')),
-                ],
-              ),
-            ),
-),
-
+              )
+            : detailsAsync!.hasError
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      const SizedBox(height: 200),
+                      Center(child: Text('Error: ${detailsAsync.error}')),
+                    ],
+                  )
+                : detailsAsync!.when(
+                    data: (profile) => profile.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: 200),
+                              Center(child: Text('No admin details found')),
+                            ],
+                          )
+                        : _buildProfileContent(profile.first),
+                    loading: () => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 300),
+                        Center(
+                          child: CircularProgressIndicator(
+                            color: MinimalTheme.primaryOrange,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    error: (e, _) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 200),
+                        Center(child: Text('Error: $e')),
+                      ],
+                    ),
+                  ),
+      ),
     );
   }
 
   Widget _buildProfileContent(AdminLogin adminLogin) {
     return SingleChildScrollView(
-       physics: const AlwaysScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           const SizedBox(height: 20),
-          
-          // White Profile Card with Image on Left
+
+          // Profile Card
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: MinimalTheme.cardWhite,
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Row(
               children: [
-                // Profile Avatar on Left
+                // Avatar
                 Container(
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6C63FF), Color(0xFF5A52E0)],
-                    ),
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.transparent,
+                  child: Center(
                     child: Text(
-                      (adminLogin.adminName ?? "A").substring(0, 1).toUpperCase(),
+                      (adminLogin.adminName ?? "A")
+                          .substring(0, 1)
+                          .toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 36,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: MinimalTheme.primaryOrange,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                
-                // Name and Details on Right
+                const SizedBox(width: 14),
+
+                // Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,176 +169,59 @@ Future<void> _onRefresh() async {
                       Text(
                         adminLogin.adminName ?? "User",
                         style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A2E),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          // Text(
-                          //   adminLogin.companyName != null && adminLogin.companyName!.isNotEmpty
-                          //       ? adminLogin.companyName!
-                          //       : "1",
-                          //   style: TextStyle(
-                          //     fontSize: 13,
-                          //     color: Colors.grey[600],
-                          //   ),
-                          // ),
-                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "${adminLogin.companyName ?? "null"}",
-                        style: TextStyle(
+                        adminLogin.companyName ?? "",
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Colors.grey[600],
+                          color: MinimalTheme.textGray,
                         ),
                       ),
-                      // Text(
-                      //   "Joined:",
-                      //   style: TextStyle(
-                      //     fontSize: 13,
-                      //     color: Colors.grey[600],
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
-                
+
                 // Edit Icon
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditProfilePage(
-                            adminLogin: adminLogin,
-                            mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? "",
-                          ),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditProfilePage(
+                          adminLogin: adminLogin,
+                          mobileNo:
+                              ref.read(adminloginViewModelProvider).mobileNo ??
+                                  "",
                         ),
-                      );
-                    },
-                    icon: Icon(
-                      Icons.edit_outlined,
-                      color: Colors.grey[700],
-                      size: 20,
-                    ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: MinimalTheme.iconGray,
+                    size: 20,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 20),
-              
-          // Stats Cards
-          _buildStatsSection(),
-          
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // Profile Information Card
           _buildProfileInfoCard(adminLogin),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // Action Buttons
-          _buildActionButtons(adminLogin),
+          // Logout Button
+          _buildLogoutButton(),
 
-          const SizedBox(height: 30),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.store_rounded,
-              label: "Business",
-              value: "Active",
-              color: const Color(0xFF4CAF50),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.verified_user_rounded,
-              label: "Status",
-              value: "Verified",
-              color: const Color(0xFF2196F3),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.admin_panel_settings_rounded,
-              label: "Role",
-              value: "Admin",
-              color: const Color(0xFFFF9800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.15),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -323,83 +229,60 @@ Future<void> _onRefresh() async {
 
   Widget _buildProfileInfoCard(AdminLogin adminLogin) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.person_pin_rounded,
-                  color: Color(0xFF6C63FF),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                "Profile Details",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-            ],
+          const Text(
+            "Profile Details",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: MinimalTheme.textDark,
+            ),
           ),
-          const SizedBox(height: 24),
-          _buildModernInfoRow(
-            Icons.business_rounded,
+          const SizedBox(height: 16),
+          _buildInfoRow(
+            Icons.business_outlined,
             "Company Name",
             adminLogin.companyName ?? "",
-            const Color(0xFF6C63FF),
           ),
-          _buildModernInfoRow(
-            Icons.person_outline_rounded,
+          _buildInfoRow(
+            Icons.person_outline,
             "Owner Name",
             adminLogin.adminName ?? "",
-            const Color(0xFF4CAF50),
           ),
-          _buildModernInfoRow(
-            Icons.phone_android_rounded,
+          _buildInfoRow(
+            Icons.phone_outlined,
             "Mobile Number",
             adminLogin.mobileNo ?? "",
-            const Color(0xFF2196F3),
           ),
-          _buildModernInfoRow(
-            Icons.email_rounded,
+          _buildInfoRow(
+            Icons.email_outlined,
             "Email Address",
             adminLogin.email ?? "",
-            const Color(0xFFFF9800),
           ),
-          _buildModernInfoRow(
-            Icons.location_on_rounded,
+          _buildInfoRow(
+            Icons.location_on_outlined,
             "Address",
             adminLogin.address ?? "",
-            const Color(0xFFE91E63),
           ),
-          _buildModernInfoRow(
-            Icons.receipt_long_rounded,
+          _buildInfoRow(
+            Icons.receipt_long_outlined,
             "GSTIN Number",
             adminLogin.gstinNo ?? "",
-            const Color(0xFF9C27B0),
             isLast: true,
           ),
         ],
@@ -407,11 +290,10 @@ Future<void> _onRefresh() async {
     );
   }
 
-  Widget _buildModernInfoRow(
+  Widget _buildInfoRow(
     IconData icon,
     String label,
-    String value,
-    Color color, {
+    String value, {
     bool isLast = false,
   }) {
     return Column(
@@ -419,34 +301,27 @@ Future<void> _onRefresh() async {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 22, color: color),
-            ),
-            const SizedBox(width: 16),
+            Icon(icon, size: 18, color: MinimalTheme.iconGray),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: MinimalTheme.textGray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     value.isNotEmpty ? value : "Not provided",
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A2E),
+                      color: MinimalTheme.textDark,
                     ),
                   ),
                 ],
@@ -455,94 +330,48 @@ Future<void> _onRefresh() async {
           ],
         ),
         if (!isLast) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Divider(color: Colors.grey[200], height: 1),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ],
     );
   }
 
-  Widget _buildActionButtons(AdminLogin adminLogin) {
+  Widget _buildLogoutButton() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-        
-          const SizedBox(height: 12),
-          _buildModernActionTile(
-            icon: Icons.logout_rounded,
-            title: "Logout",
-            subtitle: "Sign out from account",
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF5252), Color(0xFFE91E63)],
-            ),
-            onTap: () => _showLogoutDialog(context),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        onTap: () => _showLogoutDialog(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MinimalTheme.errorRed,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: MinimalTheme.errorRed.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModernActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Gradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.logout, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -553,30 +382,52 @@ Future<void> _onRefresh() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.all(20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: MinimalTheme.errorRed.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.logout_rounded, color: Colors.red),
+              child: const Icon(
+                Icons.logout,
+                color: MinimalTheme.errorRed,
+                size: 32,
+              ),
             ),
-            const SizedBox(width: 12),
-            const Text('Logout'),
+            const SizedBox(height: 16),
+            const Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: MinimalTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isConnected
+                  ? 'Are you sure you want to logout?'
+                  : 'You are offline, logout may cause data loss. Continue?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: MinimalTheme.textGray,
+              ),
+            ),
           ],
-        ),
-        content: Text(
-          isConnected
-              ? 'Are you sure you want to logout?'
-              : 'You are offline, logout may cause data loss, still want to logout?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(isConnected ? 'Cancel' : 'No'),
+            child: Text(
+              isConnected ? 'Cancel' : 'No',
+              style: const TextStyle(color: MinimalTheme.textGray),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -589,10 +440,12 @@ Future<void> _onRefresh() async {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: MinimalTheme.errorRed,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 0,
             ),
             child: Text(isConnected ? 'Logout' : 'Yes'),
           ),
@@ -630,12 +483,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.adminLogin.adminName ?? "");
-    emailController = TextEditingController(text: widget.adminLogin.email ?? "");
-    companyController = TextEditingController(text: widget.adminLogin.companyName ?? "");
-    mobileController = TextEditingController(text: widget.adminLogin.mobileNo ?? "");
-    addressController = TextEditingController(text: widget.adminLogin.address ?? "");
-    gstinController = TextEditingController(text: widget.adminLogin.gstinNo ?? "");
+    nameController =
+        TextEditingController(text: widget.adminLogin.adminName ?? "");
+    emailController =
+        TextEditingController(text: widget.adminLogin.email ?? "");
+    companyController =
+        TextEditingController(text: widget.adminLogin.companyName ?? "");
+    mobileController =
+        TextEditingController(text: widget.adminLogin.mobileNo ?? "");
+    addressController =
+        TextEditingController(text: widget.adminLogin.address ?? "");
+    gstinController =
+        TextEditingController(text: widget.adminLogin.gstinNo ?? "");
   }
 
   @override
@@ -666,23 +525,29 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         role_id: 1,
       );
 
-      await ref.read(adminloginViewModelProvider.notifier).addAdminDetails(updatedProfile);
-      await ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(
-          ref.read(adminloginViewModelProvider).mobileNo ?? "");
+      await ref
+          .read(adminloginViewModelProvider.notifier)
+          .addAdminDetails(updatedProfile);
+      await ref
+          .read(adminloginViewModelProvider.notifier)
+          .fetchAdminDetails(
+              ref.read(adminloginViewModelProvider).mobileNo ?? "");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Colors.white, size: 18),
                 SizedBox(width: 12),
                 Text('Profile updated successfully'),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: MinimalTheme.successGreen,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.all(16),
           ),
         );
         Navigator.pop(context);
@@ -693,14 +558,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                const Icon(Icons.error, color: Colors.white, size: 18),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Error: $e')),
               ],
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: MinimalTheme.errorRed,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -742,287 +609,225 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.warning, color: Colors.white),
+            const Icon(Icons.warning, color: Colors.white, size: 18),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: MinimalTheme.errorRed,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFFAFAFA),
-
-    // ✅ WHITE APP BAR
-    appBar: AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      centerTitle: true,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF2C2C2C),
-            size: 18,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MinimalTheme.backgroundGray,
+      appBar: AppBar(
+        backgroundColor: MinimalTheme.cardWhite,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: MinimalTheme.textDark),
+        ),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: MinimalTheme.textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      title: const Text(
-        'Edit Profile',
-        style: TextStyle(
-          color: Color(0xFF2C2C2C),
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
 
-    // ✅ BODY
-    body: SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        children: [
-          const SizedBox(height: 24),
-
-          // ✅ PROFILE AVATAR
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF).withOpacity(0.25),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(4),
+            // Profile Avatar
+            Container(
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF6C63FF),
-                  width: 3,
-                ),
+                color: const Color(0xFFFFF4E6),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor:
-                    const Color(0xFF6C63FF).withOpacity(0.1),
+              child: Center(
                 child: Text(
-                  (nameController.text.isNotEmpty
-                          ? nameController.text
-                          : "A")
+                  (nameController.text.isNotEmpty ? nameController.text : "A")
                       .substring(0, 1)
                       .toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 40,
+                    fontSize: 36,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF6C63FF),
+                    color: MinimalTheme.primaryOrange,
                   ),
                 ),
               ),
             ),
-          ),
 
-          const SizedBox(height: 12),
-          Text(
-            "Update Profile Photo",
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+            const SizedBox(height: 24),
 
-          const SizedBox(height: 32),
-
-          // ✅ FORM CARD
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                _buildModernTextField(
-                  controller: companyController,
-                  label: "Company / Business Name",
-                  icon: Icons.business_rounded,
-                  color: const Color(0xFF6C63FF),
-                ),
-                const SizedBox(height: 20),
-
-                _buildModernTextField(
-                  controller: nameController,
-                  label: "Owner Name",
-                  icon: Icons.person_outline_rounded,
-                  color: const Color(0xFF4CAF50),
-                ),
-                const SizedBox(height: 20),
-
-                _buildModernTextField(
-                  controller: mobileController,
-                  label: "Mobile Number",
-                  icon: Icons.phone_android_rounded,
-                  color: const Color(0xFF2196F3),
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                _buildModernTextField(
-                  controller: emailController,
-                  label: "Email Address",
-                  icon: Icons.email_rounded,
-                  color: const Color(0xFFFF9800),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 20),
-
-                _buildModernTextField(
-                  controller: addressController,
-                  label: "Address",
-                  icon: Icons.location_on_rounded,
-                  color: const Color(0xFFE91E63),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 20),
-
-                _buildModernTextField(
-                  controller: gstinController,
-                  label: "GSTIN Number",
-                  icon: Icons.receipt_long_rounded,
-                  color: const Color(0xFF9C27B0),
-                ),
-
-                const SizedBox(height: 30),
-
-                // ✅ SAVE BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: isSaving ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C63FF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: isSaving
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          )
-                        : const Text(
-                            "Save Changes",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+            // Form Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: MinimalTheme.cardWhite,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildTextField(
+                    controller: companyController,
+                    label: "Company Name",
+                    icon: Icons.business_outlined,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: nameController,
+                    label: "Owner Name",
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: mobileController,
+                    label: "Mobile Number",
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: emailController,
+                    label: "Email Address",
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: addressController,
+                    label: "Address",
+                    icon: Icons.location_on_outlined,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: gstinController,
+                    label: "GSTIN Number",
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isSaving ? null : _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MinimalTheme.primaryOrange,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey[300],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text("Save Changes"),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 32),
-        ],
-      ),
-    ),
-  );
-}
-
-  Widget _buildModernTextField({
-  required TextEditingController controller,
-  required String label,
-  required IconData icon,
-  required Color color,
-  TextInputType? keyboardType,
-  int maxLines = 1,
-  int? maxLength,
-  List<TextInputFormatter>? inputFormatters,
-}) {
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-  maxLength: maxLength,
-  inputFormatters: inputFormatters,
-        enabled: !isSaving,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
+            const SizedBox(height: 24),
+          ],
         ),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: color),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: color, width: 2),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
+      enabled: !isSaving,
+      style: const TextStyle(
+        fontSize: 14,
+        color: MinimalTheme.textDark,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+          color: MinimalTheme.textGray,
+          fontSize: 13,
         ),
+        prefixIcon: Icon(
+          icon,
+          color: MinimalTheme.iconGray,
+          size: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[200]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[200]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: MinimalTheme.primaryOrange,
+            width: 1.5,
+          ),
+        ),
+        filled: true,
+        fillColor: MinimalTheme.cardWhite,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+        counterText: '',
       ),
     );
   }

@@ -1,10 +1,20 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
-import 'package:order_booking_app/presentation/providers/network_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+
+// Minimal Theme Colors
+class MinimalTheme {
+  static const primaryOrange = Color(0xFFFF8C42);
+  static const backgroundGray = Color(0xFFF5F5F5);
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const textDark = Color(0xFF2D2D2D);
+  static const textGray = Color(0xFF6B7280);
+  static const iconGray = Color(0xFF9CA3AF);
+  static const successGreen = Color(0xFF10B981);
+  static const errorRed = Color(0xFFEF4444);
+}
 
 class AddEmployeeForm extends ConsumerStatefulWidget {
   final bool isEdit;
@@ -16,8 +26,7 @@ class AddEmployeeForm extends ConsumerStatefulWidget {
   ConsumerState<AddEmployeeForm> createState() => _AddEmployeeFormState();
 }
 
-class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
-    with SingleTickerProviderStateMixin {
+class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController nameController;
@@ -32,10 +41,6 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
   String address = '';
   String email = '';
   int? region;
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -65,29 +70,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
         ref
             .read(regionofflineViewModelProvider.notifier)
             .fetchRegions(companyId);
-      } else {
-        debugPrint("❌ companyId is null – region API not called");
       }
     });
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
-    _animationController.forward();
   }
 
   @override
@@ -96,493 +80,408 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     mobileController.dispose();
     emailController.dispose();
     addressController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
- Future<void> submitForm() async {
-  final isConnected = await ref.read(networkServiceProvider).checkConnection();
-  if (!isConnected) {
-    // Ensure the global banner reflects the latest status.
-    ref.invalidate(networkStatusProvider);
-    
-    // Show a bottom banner for no connection
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.wifi_off, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text("No internet connection!"),
-          ],
+  Future<void> submitForm() async {
+    final isConnected = await ref.read(networkServiceProvider).checkConnection();
+    if (!isConnected) {
+      ref.invalidate(networkStatusProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.wifi_off, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text("No internet connection!"),
+            ],
+          ),
+          backgroundColor: Colors.grey[800],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: Colors.grey[800],
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(8),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-    return;
-  }
+      );
+      return;
+    }
 
-  final state = ref.read(employeeloginViewModelProvider);
-  if (state.isPhoneNoExists == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Mobile number already exists"),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  if (!_formKey.currentState!.validate()) return;
-  _formKey.currentState!.save();
-
-  // Create updated/new Employee object
-  final employeeToSave = widget.isEdit
-      ? EmployeeLogin(
-          empId: widget.employee!.empId, // important for update
-          empName: name,
-          empMobile: mobile,
-          empEmail: email,
-          empAddress: address,
-          companyId: ref.read(adminloginViewModelProvider).companyId,
-          adminId: ref.read(adminloginViewModelProvider).userId,
-          regionId: selectedRegionId!,
-          roleId: widget.employee!.roleId,
-        )
-      : EmployeeLogin(
-          empName: name,
-          empMobile: mobile,
-          empEmail: email,
-          empAddress: address,
-          regionId: selectedRegionId!,
-          companyId: ref.read(adminloginViewModelProvider).companyId,
-          adminId: ref.read(adminloginViewModelProvider).userId,
-          roleId: 2,
-        );
-
-  await ref
-      .read(employeeloginViewModelProvider.notifier)
-      .addEmployee(employeeToSave);
-
-  await ref
-      .read(employeeloginViewModelProvider.notifier)
-      .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
-
-  if (state.error != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(state.error!), backgroundColor: Colors.blue),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.isEdit
-              ? "Employee updated successfully"
-              : "Employee added successfully",
+    final state = ref.read(employeeloginViewModelProvider);
+    if (state.isPhoneNoExists == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Mobile number already exists"),
+          backgroundColor: MinimalTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
         ),
-        backgroundColor: Colors.green,
-      ),
-    );
-    Navigator.pop(context, true);
+      );
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
+
+    final employeeToSave = widget.isEdit
+        ? EmployeeLogin(
+            empId: widget.employee!.empId,
+            empName: name,
+            empMobile: mobile,
+            empEmail: email,
+            empAddress: address,
+            companyId: ref.read(adminloginViewModelProvider).companyId,
+            adminId: ref.read(adminloginViewModelProvider).userId,
+            regionId: selectedRegionId!,
+            roleId: widget.employee!.roleId,
+          )
+        : EmployeeLogin(
+            empName: name,
+            empMobile: mobile,
+            empEmail: email,
+            empAddress: address,
+            regionId: selectedRegionId!,
+            companyId: ref.read(adminloginViewModelProvider).companyId,
+            adminId: ref.read(adminloginViewModelProvider).userId,
+            roleId: 2,
+          );
+
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .addEmployee(employeeToSave);
+
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+
+    if (state.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.error!),
+          backgroundColor: MinimalTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.isEdit
+                ? "Employee updated successfully"
+                : "Employee added successfully",
+          ),
+          backgroundColor: MinimalTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      Navigator.pop(context, true);
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MinimalTheme.backgroundGray,
       appBar: AppBar(
+        backgroundColor: MinimalTheme.cardWhite,
         elevation: 0,
-        toolbarHeight: 70,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: const Icon(Icons.arrow_back, color: MinimalTheme.textDark),
           onPressed: () => Navigator.pop(context),
-          color: Colors.white,
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.isEdit ? "Edit Employee" : "Add Employee",
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.isEdit ? "Update employee details" : "Create new team member",
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.white.withOpacity(0.9),
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        title: Text(
+          widget.isEdit ? "Edit Employee" : "Add Employee",
+          style: const TextStyle(
+            color: MinimalTheme.textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF6366F1).withOpacity(0.1),
-                          const Color(0xFF8B5CF6).withOpacity(0.05),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF6366F1).withOpacity(0.2),
-                      ),
-                    ),
-                    child: Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Form Fields
+              _buildField(
+                label: "Full Name",
+                controller: nameController,
+                icon: Icons.person_outline,
+                hint: "Enter full name",
+                onSaved: (v) => name = v!,
+              ),
+
+              _buildField(
+                label: "Mobile Number",
+                controller: mobileController,
+                icon: Icons.phone_outlined,
+                hint: "10 digit mobile number",
+                keyboard: TextInputType.phone,
+                maxLength: 10,
+                formatter: FilteringTextInputFormatter.digitsOnly,
+                counterText: '',
+                onChanged: (value) {
+                  if (value.length == 10) {
+                    ref
+                        .read(employeeloginViewModelProvider.notifier)
+                        .checkMobileExists(value, companyId);
+                  } else {
+                    ref
+                        .read(employeeloginViewModelProvider.notifier)
+                        .state = employeeState.copyWith(
+                      isPhoneNoExists: null,
+                    );
+                  }
+                },
+                errorText: employeeState.isPhoneNoExists == true
+                    ? 'Mobile number already exists'
+                    : null,
+                onSaved: (v) => mobile = v!,
+              ),
+
+              _buildField(
+                label: "Email Address",
+                controller: emailController,
+                icon: Icons.email_outlined,
+                hint: "example@company.com",
+                keyboard: TextInputType.emailAddress,
+                onSaved: (v) => email = v!,
+              ),
+
+              _buildField(
+                label: "Address",
+                controller: addressController,
+                icon: Icons.location_on_outlined,
+                hint: "Enter complete address",
+                maxLines: 3,
+                onSaved: (v) => address = v!,
+              ),
+
+              // Region Dropdown
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final regionState = ref.watch(
+                      regionofflineViewModelProvider,
+                    );
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                             colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.person_add_alt_1,
-                            color: Colors.white,
-                            size: 24,
+                        const Text(
+                          "Region",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: MinimalTheme.textGray,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.isEdit ? "Modify Details" : "Employee Information",
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1F2937),
+                        const SizedBox(height: 8),
+                        regionState.regionList.when(
+                          loading: () => Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: MinimalTheme.cardWhite,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[200]!),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Fill in the required information below",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
+                              ],
+                            ),
+                            child: const Row(
+                              children: [
+                                SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: MinimalTheme.primaryOrange,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(width: 12),
+                                Text(
+                                  "Loading regions...",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: MinimalTheme.textGray,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          error: (e, _) => Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: MinimalTheme.errorRed.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: MinimalTheme.errorRed.withOpacity(0.3),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: MinimalTheme.errorRed,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  "Failed to load regions",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: MinimalTheme.errorRed,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          data: (regions) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: MinimalTheme.cardWhite,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: DropdownButtonFormField<int>(
+                                value: selectedRegionId,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(
+                                    Icons.location_on_outlined,
+                                    color: MinimalTheme.iconGray,
+                                    size: 20,
+                                  ),
+                                  hintText: "Select region",
+                                  hintStyle: const TextStyle(
+                                    color: MinimalTheme.textGray,
+                                    fontSize: 14,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: MinimalTheme.primaryOrange,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  errorBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: MinimalTheme.errorRed,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: MinimalTheme.cardWhite,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                ),
+                                items: regions.map((r) {
+                                  return DropdownMenuItem<int>(
+                                    value: r.regionId,
+                                    child: Text(
+                                      r.regionName ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: MinimalTheme.textDark,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedRegionId = value;
+                                  });
+                                },
+                                validator: (value) => value == null
+                                    ? "Please select a region"
+                                    : null,
+                                dropdownColor: MinimalTheme.cardWhite,
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: MinimalTheme.iconGray,
+                                  size: 20,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Form Fields
-                  _buildModernField(
-                    label: "Full Name",
-                    controller: nameController,
-                    icon: Icons.person_outline_rounded,
-                    hint: "Enter full name",
-                    onSaved: (v) => name = v!,
-                  ),
-
-                  _buildModernField(
-                    label: "Mobile Number",
-                    controller: mobileController,
-                    icon: Icons.phone_android_rounded,
-                    hint: "10 digit mobile number",
-                    keyboard: TextInputType.phone,
-                    maxLength: 10,
-                    formatter: FilteringTextInputFormatter.digitsOnly,
-                    counterText: '',
-                    onChanged: (value) {
-                      if (value.length == 10) {
-                        ref
-                            .read(employeeloginViewModelProvider.notifier)
-                            .checkMobileExists(value, companyId);
-                      } else {
-                        ref
-                            .read(employeeloginViewModelProvider.notifier)
-                            .state = employeeState.copyWith(
-                          isPhoneNoExists: null,
-                        );
-                      }
-                    },
-                    errorText: employeeState.isPhoneNoExists == true
-                        ? 'Mobile number already exists'
-                        : null,
-                    onSaved: (v) => mobile = v!,
-                  ),
-
-                  _buildModernField(
-                    label: "Email Address",
-                    controller: emailController,
-                    icon: Icons.email_outlined,
-                    hint: "example@company.com",
-                    keyboard: TextInputType.emailAddress,
-                    onSaved: (v) => email = v!,
-                  ),
-
-                  _buildModernField(
-                    label: "Address",
-                    controller: addressController,
-                    icon: Icons.location_on_outlined,
-                    hint: "Enter complete address",
-                    maxLines: 3,
-                    onSaved: (v) => address = v!,
-                  ),
-
-                  // Region Dropdown
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Consumer(
-                      builder: (context, ref, _) {
-                        final regionState = ref.watch(
-                          regionofflineViewModelProvider,
-                        );
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Region",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            regionState.regionList.when(
-                              loading: () => Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text("Loading regions..."),
-                                  ],
-                                ),
-                              ),
-                              error: (e, _) => Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[50],
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: Colors.red[200]!),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.error_outline, color: Colors.red[700]),
-                                    const SizedBox(width: 12),
-                                    const Text("Failed to load regions"),
-                                  ],
-                                ),
-                              ),
-                              data: (regions) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.03),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: DropdownButtonFormField<int>(
-                                    initialValue: selectedRegionId,
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(
-                                        Icons.location_on_outlined,
-                                        color: Colors.grey[600],
-                                        size: 22,
-                                      ),
-                                      hintText: "Select region",
-                                      hintStyle: TextStyle(
-                                        color: Colors.grey[400],
-                                        fontSize: 15,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFF6366F1),
-                                          width: 2,
-                                        ),
-                                      ),
-                                      errorBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFE53935),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                    ),
-                                    items: regions.map((r) {
-                                      return DropdownMenuItem<int>(
-                                        value: r.regionId,
-                                        child: Text(
-                                          r.regionName ?? '',
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        selectedRegionId = value;
-                                      });
-                                    },
-                                    validator: (value) => value == null
-                                        ? "Please select a region"
-                                        : null,
-                                    dropdownColor: Colors.white,
-                                    icon: Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: employeeState.isPhoneNoExists == true
-                          ? null
-                          : submitForm,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        disabledBackgroundColor: Colors.grey[300],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          gradient: employeeState.isPhoneNoExists == true
-                              ? null
-                              : const LinearGradient(
-                                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                widget.isEdit ? Icons.check_circle_outline : Icons.add_circle_outline,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                widget.isEdit ? "Update Employee" : "Add Employee",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
+
+              const SizedBox(height: 8),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: employeeState.isPhoneNoExists == true
+                      ? null
+                      : submitForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MinimalTheme.primaryOrange,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: Text(
+                    widget.isEdit ? "Update Employee" : "Add Employee",
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildModernField({
+  Widget _buildField({
     required String label,
     required TextEditingController controller,
     required IconData icon,
@@ -597,31 +496,31 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
     String? counterText,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: MinimalTheme.textGray,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              color: MinimalTheme.cardWhite,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: errorText != null 
-                    ? const Color(0xFFE53935) 
-                    : Colors.grey[300]!,
+                color: errorText != null
+                    ? MinimalTheme.errorRed
+                    : Colors.grey[200]!,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withOpacity(0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -637,7 +536,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
               validator: (v) {
                 if (v == null || v.isEmpty) return "This field is required";
                 if (keyboard == TextInputType.emailAddress) {
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) {
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                      .hasMatch(v)) {
                     return "Please enter a valid email";
                   }
                 }
@@ -645,61 +545,59 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm>
               },
               onSaved: onSaved,
               style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1F2937),
+                fontSize: 14,
+                color: MinimalTheme.textDark,
               ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
+                hintStyle: const TextStyle(
+                  color: MinimalTheme.textGray,
+                  fontSize: 14,
                 ),
                 prefixIcon: Icon(
                   icon,
-                  color: Colors.grey[600],
-                  size: 22,
+                  color: MinimalTheme.iconGray,
+                  size: 20,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: Color(0xFF6366F1),
-                    width: 2,
+                    color: MinimalTheme.primaryOrange,
+                    width: 1.5,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: Color(0xFFE53935),
+                    color: MinimalTheme.errorRed,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                    color: Color(0xFFE53935),
-                    width: 2,
+                    color: MinimalTheme.errorRed,
+                    width: 1.5,
                   ),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: MinimalTheme.cardWhite,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                  horizontal: 14,
+                  vertical: 14,
                 ),
                 counterText: counterText,
                 errorText: errorText,
                 errorStyle: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
               ),

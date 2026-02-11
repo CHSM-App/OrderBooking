@@ -4,6 +4,18 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
 
+// Minimal Theme Colors
+class MinimalTheme {
+  static const primaryOrange = Color(0xFFFF8C42);
+  static const backgroundGray = Color(0xFFF5F5F5);
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const textDark = Color(0xFF2D2D2D);
+  static const textGray = Color(0xFF6B7280);
+  static const iconGray = Color(0xFF9CA3AF);
+  static const successGreen = Color(0xFF10B981);
+  static const errorRed = Color(0xFFEF4444);
+}
+
 class AdminEmployeesPage extends ConsumerStatefulWidget {
   const AdminEmployeesPage({super.key});
 
@@ -14,11 +26,6 @@ class AdminEmployeesPage extends ConsumerStatefulWidget {
 class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-
-  /// ✨ MODERN GRADIENT COLORS FOR AVATARS
-  final List<List<Color>> avatarGradients = [
-    [const Color(0xFF667eea), const Color(0xFF764ba2)], // Purple
-  ];
 
   @override
   void initState() {
@@ -44,8 +51,8 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
-    
-    /// API → UI MAP
+    final listAsync = state.employeeList;
+
     final employees = state.employeeList.when(
           data: (list) => list
               .map(
@@ -65,7 +72,6 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
         ) ??
         [];
 
-    /// 🔍 SEARCH FILTER
     final filteredEmployees = employees.where((e) {
       final q = _searchQuery.toLowerCase();
       return e["name"].toLowerCase().contains(q) ||
@@ -82,29 +88,12 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
         filteredEmployees.where((e) => e["status"] == "Inactive").length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-
-      /// ✨ MODERN FAB WITH GRADIENT
+      backgroundColor: MinimalTheme.backgroundGray,
       floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF667eea).withOpacity(0.5),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
+        margin: const EdgeInsets.only(bottom: 8),
+        child: FloatingActionButton(
+          backgroundColor: MinimalTheme.primaryOrange,
+          elevation: 2,
           onPressed: () async {
             final result = await Navigator.push(
               context,
@@ -112,61 +101,31 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
             );
             if (result == true) _refreshEmployeeList();
           },
-          icon: const Icon(Icons.person_add_rounded, color: Colors.white, size: 24),
-          label: const Text(
-            'Add Employee',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-              letterSpacing: 0.5,
-            ),
-          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
-
-      body: state.isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: const Color(0xFF667eea),
-                    strokeWidth: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading employees...',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+      body: listAsync.isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: MinimalTheme.primaryOrange,
+                strokeWidth: 2.5,
               ),
             )
-          : state.error != null
+          : listAsync.hasError
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.error_outline_rounded,
-                          size: 64,
-                          color: Colors.red[400],
-                        ),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: MinimalTheme.iconGray.withOpacity(0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        state.error!,
-                        style: TextStyle(
-                          color: Colors.grey[600],
+                        listAsync.error.toString(),
+                        style: const TextStyle(
+                          color: MinimalTheme.textGray,
                           fontSize: 14,
                         ),
                       ),
@@ -175,213 +134,147 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                 )
               : Column(
                   children: [
-               Padding(
-  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-  child: Container(
-    decoration: BoxDecoration(
-      color: Colors.white, // ✅ solid white
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: Colors.grey.withOpacity(0.2), // subtle border for clarity
-        width: 1,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05), // subtle shadow only
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: TextField(
-      controller: _searchController,
-      onChanged: (v) => setState(() => _searchQuery = v),
-      style: const TextStyle(
-        fontSize: 15,
-        color: Color(0xFF2D3748),
-      ),
-      decoration: InputDecoration(
-          filled: true, // ⭐ REQUIRED
-    fillColor: Colors.white, // ⭐ FORCE WHITE
-        hintText: "Search by name, mobile, email...",
-        hintStyle: TextStyle(
-          color: Colors.grey[400],
-          fontSize: 14,
-        ),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: Colors.grey,
-        ),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-                icon: Icon(
-                  Icons.clear_rounded,
-                  color: Colors.grey[400],
-                  size: 20,
-                ),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = "");
-                },
-              )
-            : null,
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      ),
-    ),
-  ),
-),
-
-
-                    /// ✨ MODERN STATS CARDS WITH GRADIENT
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _modernStatsCard(
-                              title: "Active",
-                              count: activeCount,
-                              icon: Icons.check_circle_rounded,
-                              gradient: [
-                                const Color(0xFF11998e),
-                                const Color(0xFF38ef7d)
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _modernStatsCard(
-                              title: "Inactive",
-                              count: inactiveCount,
-                              icon: Icons.pause_circle_rounded,
-                              gradient: [
-                                const Color(0xFFff6b6b),
-                                const Color(0xFFffa372)
-                              ],
-                            ),
+                    // Compact Header with Stats
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      decoration: BoxDecoration(
+                        color: MinimalTheme.cardWhite,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-
-                    /// 👥 EMPLOYEE LIST HEADER
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
                         children: [
+                          // Title and Stats Row
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.people_rounded,
-                                  color: Colors.white,
-                                  size: 20,
+                              const Text(
+                                'Employees',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: MinimalTheme.textDark,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'All Employees',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                  letterSpacing: -0.5,
-                                ),
+                              Row(
+                                children: [
+                                  _compactStat(
+                                    label: 'Active',
+                                    count: activeCount,
+                                    color: MinimalTheme.successGreen,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _compactStat(
+                                    label: 'Inactive',
+                                    count: inactiveCount,
+                                    color: MinimalTheme.errorRed,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF667eea).withOpacity(0.15),
-                                  const Color(0xFF764ba2).withOpacity(0.15),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFF667eea).withOpacity(0.3),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Text(
-                              '${filteredEmployees.length} / ${employees.length}',
-                              style: const TextStyle(
-                                color: Color(0xFF667eea),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
 
-                    /// 👨‍💼 MODERN EMPLOYEE LIST
+                    // Search Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Container(
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: MinimalTheme.cardWhite,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (v) => setState(() => _searchQuery = v),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: MinimalTheme.textDark,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search employees...',
+                            hintStyle: const TextStyle(
+                              fontSize: 14,
+                              color: MinimalTheme.textGray,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search_rounded,
+                              size: 20,
+                              color: MinimalTheme.iconGray,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      size: 18,
+                                      color: MinimalTheme.iconGray,
+                                    ),
+                                    onPressed: () => setState(() {
+                                      _searchController.clear();
+                                      _searchQuery = "";
+                                    }),
+                                    splashRadius: 16,
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 13,
+                            ),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Employee List
                     Expanded(
                       child: filteredEmployees.isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(24),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.people_outline_rounded,
-                                      size: 80,
-                                      color: Colors.grey[400],
-                                    ),
+                                  Icon(
+                                    Icons.people_outline,
+                                    size: 64,
+                                    color: MinimalTheme.iconGray.withOpacity(0.5),
                                   ),
-                                  const SizedBox(height: 24),
-                                  Text(
+                                  const SizedBox(height: 12),
+                                  const Text(
                                     'No employees found',
                                     style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: MinimalTheme.textDark,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Try adjusting your search filters',
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Try adjusting your search',
                                     style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 14,
+                                      color: MinimalTheme.textGray,
+                                      fontSize: 13,
                                     ),
                                   ),
                                 ],
                               ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
                               itemCount: filteredEmployees.length,
                               itemBuilder: (context, index) {
                                 final emp = filteredEmployees[index];
-                                return _modernEmployeeCard(
-                                  context,
-                                  emp,
-                                  index,
-                                );
+                                return _employeeCard(context, emp);
                               },
                             ),
                     ),
@@ -389,293 +282,209 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                 ),
     );
   }
-Widget _modernStatsCard({
-  required String title,
-  required int count,
-  required IconData icon,
-  required List<Color> gradient,
-}) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmall = constraints.maxWidth < 170;
 
-      return Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isSmall ? 12 : 16,
-          vertical: isSmall ? 12 : 14,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: gradient.first.withOpacity(0.25),
-            width: 1.2,
+  Widget _compactStat({
+    required String label,
+    required int count,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.first.withOpacity(0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            /// ICON
-            Container(
-              padding: EdgeInsets.all(isSmall ? 10 : 12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: isSmall ? 20 : 24,
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            /// TEXT (flexible – prevents overflow)
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: isSmall ? 12 : 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF64748B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    count.toString(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: isSmall ? 20 : 26,
-                      fontWeight: FontWeight.bold,
-                      color: gradient.first,
-                      height: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-  Widget _modernEmployeeCard(
-  BuildContext context,
-  Map<String, dynamic> employee,
-  int index,
-) {
-  final isActive = employee["status"] == "Active";
-  final name = employee["name"].toString().trim();
-
-  /// Responsive sizing
-  final screenWidth = MediaQuery.of(context).size.width;
-  final isSmall = screenWidth < 360;
-  final avatarSize = isSmall ? 56.0 : 70.0;
-
-  /// Initials
-  String initials = "NA";
-  if (name.isNotEmpty) {
-    final parts =
-        name.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
-    if (parts.isNotEmpty) {
-      initials = parts.map((e) => e[0]).take(2).join().toUpperCase();
-    }
+          ),
+        ],
+      ),
+    );
   }
 
-  final gradientColors = avatarGradients[index % avatarGradients.length];
+  Widget _employeeCard(BuildContext context, Map<String, dynamic> employee) {
+    final isActive = employee["status"] == "Active";
+    final name = employee["name"].toString().trim();
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 24,
-          offset: const Offset(0, 6),
-        ),
-      ],
-      border: Border.all(
-        color: Colors.grey.withOpacity(0.1),
-        width: 1,
+    // Generate initials
+    String initials = "NA";
+    if (name.isNotEmpty) {
+      final parts = name.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+      if (parts.isNotEmpty) {
+        initials = parts.map((e) => e[0]).take(2).join().toUpperCase();
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => EmployeeDetailsPage(empId: employee["id"]),
-            ),
-          );
-        },
-        child: Padding(
-          padding: EdgeInsets.all(isSmall ? 14 : 18),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// AVATAR
-                  Container(
-                    width: avatarSize,
-                    height: avatarSize,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: gradientColors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: isSmall ? 16 : 20,
-                          letterSpacing: 1,
-                        ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmployeeDetailsPage(empId: employee["id"]),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: MinimalTheme.primaryOrange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(width: 14),
+                const SizedBox(width: 12),
 
-                  /// DETAILS
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// NAME (overflow safe)
-                        Text(
-                          name.isEmpty ? "N/A" : name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.isEmpty ? "N/A" : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
                         ),
-
-                        const SizedBox(height: 6),
-
-                        /// REGION
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_rounded,
-                                size: 14, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (employee["mobile"].toString().isNotEmpty) ...[
+                            const Icon(
+                              Icons.phone_outlined,
+                              size: 13,
+                              color: MinimalTheme.iconGray,
+                            ),
                             const SizedBox(width: 4),
-                            Expanded(
+                            Text(
+                              employee["mobile"].toString(),
+                              style: const TextStyle(
+                                color: MinimalTheme.textGray,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                          if (employee["region"].toString().isNotEmpty &&
+                              employee["mobile"].toString().isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            const Text(
+                              "•",
+                              style: TextStyle(
+                                color: MinimalTheme.iconGray,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (employee["region"].toString().isNotEmpty)
+                            Flexible(
                               child: Text(
                                 employee["region"].toString(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 13,
+                                style: const TextStyle(
+                                  color: MinimalTheme.textGray,
+                                  fontSize: 12,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-
-                        /// PHONE
-                        if (employee["mobile"].toString().isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(Icons.phone_rounded,
-                                  size: 14, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  employee["mobile"].toString(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? MinimalTheme.successGreen.withOpacity(0.1)
+                        : MinimalTheme.errorRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isActive ? 'Active' : 'Inactive',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isActive
+                          ? MinimalTheme.successGreen
+                          : MinimalTheme.errorRed,
                     ),
                   ),
+                ),
 
-                  const SizedBox(width: 10),
+                const SizedBox(width: 6),
 
-                  /// STATUS BADGE (flexible – NO OVERFLOW)
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isSmall ? 10 : 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? const Color(0xFF10B981).withOpacity(0.12)
-                            : const Color(0xFFEF4444).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isActive
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Text(
-                        employee["status"],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isActive
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+                // Arrow
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: MinimalTheme.iconGray,
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }
