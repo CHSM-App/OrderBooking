@@ -45,19 +45,21 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
         .read(adminloginViewModelProvider.notifier)
         .fetchAdminDetails(
           ref.read(adminloginViewModelProvider).mobileNo ?? "",
+          useCacheFirst: false,
         );
   }
 
   @override
   Widget build(BuildContext context) {
     final adminState = ref.watch(adminloginViewModelProvider);
+    final detailsAsync = adminState.adminDetails;
 
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         color: MinimalTheme.primaryOrange,
-        child: adminState.isLoading
+        child: detailsAsync!.isLoading
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
@@ -70,15 +72,15 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                   ),
                 ],
               )
-            : adminState.error != null
+            : detailsAsync!.hasError
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       const SizedBox(height: 200),
-                      Center(child: Text('Error: ${adminState.error}')),
+                      Center(child: Text('Error: ${detailsAsync.error}')),
                     ],
                   )
-                : adminState.adminDetails!.when(
+                : detailsAsync!.when(
                     data: (profile) => profile.isEmpty
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),

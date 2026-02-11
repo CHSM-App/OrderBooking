@@ -1,4 +1,5 @@
 import 'package:order_booking_app/data/DB/app_database.dart';
+import 'package:order_booking_app/domain/models/order_item.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -12,6 +13,8 @@ class OfflineOrderDao {
       'employee_id': order.employeeId,
       'shop_id': order.shopId,
       'shop_name': order.shopNamep,
+      'emp_name': order.empName,
+      'address': order.address,
       'order_date': order.orderDate,
       'total_price': order.totalPrice,
       'status': 'pending',
@@ -107,8 +110,11 @@ class OfflineOrderDao {
       'employee_id': order.employeeId,
       'shop_id': order.shopId,
       'shop_name': order.shopNamep,
+      'emp_name': order.empName,
+      'address': order.address,
       'order_date': order.orderDate,
       'total_price': order.totalPrice,
+      'company_id': order.companyId,
       'status': 'synced',
       'created_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
@@ -129,6 +135,130 @@ class OfflineOrderDao {
     await batch.commit(noResult: true);
   }
 
+  Future<List<Order>> fetchCachedCompanyOrders(String companyId) async {
+    final db = await AppDatabase.database;
+    final rows = await db.query(
+      'offline_orders',
+      where: 'company_id = ? AND status = ?',
+      whereArgs: [companyId, 'synced'],
+      orderBy: 'order_date DESC',
+    );
+    return _mapOrdersWithItems(rows);
+  }
+
+  Future<void> replaceCachedCompanyOrders(
+    String companyId,
+    List<Order> orders,
+  ) async {
+    final db = await AppDatabase.database;
+    await db.transaction((txn) async {
+      final existing = await txn.query(
+        'offline_orders',
+        columns: ['local_order_id'],
+        where: 'company_id = ? AND status = ? AND local_order_id LIKE ?',
+        whereArgs: [companyId, 'synced', 'server-%'],
+      );
+
+      for (final row in existing) {
+        final localId = row['local_order_id'] as String?;
+        if (localId == null) continue;
+        await txn.delete(
+          'offline_order_items',
+          where: 'local_order_id = ?',
+          whereArgs: [localId],
+        );
+      }
+
+      await txn.delete(
+        'offline_orders',
+        where: 'company_id = ? AND status = ? AND local_order_id LIKE ?',
+        whereArgs: [companyId, 'synced', 'server-%'],
+      );
+
+      final batch = txn.batch();
+      for (final o in orders) {
+        final serverOrderId = o.serverOrderId;
+        if (serverOrderId == null) continue;
+        final localId = 'server-$serverOrderId';
+        batch.insert(
+          'offline_orders',
+          {
+            'local_order_id': localId,
+            'server_order_id': serverOrderId,
+            'employee_id': o.employeeId,
+            'shop_id': o.shopId,
+            'shop_name': o.shopNamep,
+            'emp_name': o.empName,
+            'address': o.address,
+            'order_date': o.orderDate,
+            'total_price': o.totalPrice,
+            'company_id': o.companyId ?? companyId,
+            'status': 'synced',
+            'created_at': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        for (final item in o.items) {
+          batch.insert(
+            'offline_order_items',
+            {
+              'local_order_id': localId,
+              'product_id': item.productId,
+              'product_name': item.productName,
+              'sub_item_id': item.subItemId,
+              'product_unit': item.productUnit,
+              'price': item.price,
+              'quantity': item.quantity,
+              'total_price': item.totalPrice,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<List<Order>> _mapOrdersWithItems(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final result = <Order>[];
+    for (final row in rows) {
+      final localOrderId = row['local_order_id'] as String;
+      final itemRows = await fetchItems(localOrderId);
+      final items = itemRows.map(_mapRowToOrderItem).toList();
+      result.add(
+        Order(
+          localOrderId: localOrderId,
+          serverOrderId: row['server_order_id'] as int?,
+          employeeId: row['employee_id'] as int,
+          shopId: row['shop_id'] as int,
+          shopNamep: row['shop_name'] as String?,
+          empName: row['emp_name'] as String?,
+          address: row['address'] as String?,
+          orderDate: row['order_date'] as String,
+          items: items,
+          totalPrice: (row['total_price'] as num).toDouble(),
+          companyId: row['company_id'] as String?,
+        ),
+      );
+    }
+    return result;
+  }
+
+  OrderItem _mapRowToOrderItem(Map<String, dynamic> row) {
+    return OrderItem(
+      productId: row['product_id'] as int,
+      productName: row['product_name'] as String?,
+      subItemId: row['sub_item_id'] as int,
+      productUnit: row['product_unit'] as String,
+      price: (row['price'] as num).toDouble(),
+      quantity: row['quantity'] as int,
+      totalPrice: (row['total_price'] as num).toDouble(),
+    );
+  }
 
   
 }

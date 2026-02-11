@@ -51,6 +51,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
+    final listAsync = state.employeeList;
 
     final employees = state.employeeList.when(
           data: (list) => list
@@ -103,14 +104,14 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
-      body: state.isLoading
+      body: listAsync.isLoading
           ? const Center(
               child: CircularProgressIndicator(
                 color: MinimalTheme.primaryOrange,
                 strokeWidth: 2.5,
               ),
             )
-          : state.error != null
+          : listAsync.hasError
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -122,7 +123,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        state.error!,
+                        listAsync.error.toString(),
                         style: const TextStyle(
                           color: MinimalTheme.textGray,
                           fontSize: 14,

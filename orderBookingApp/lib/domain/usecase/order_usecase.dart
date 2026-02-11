@@ -24,9 +24,17 @@ class OrderUsecase {
     return ordersRepository.syncServerOrdersToLocal(empId);
   }
 
-    Future<List<Order>> getOrderList(String companyId) {
+  Future<List<Order>> getOrderList(String companyId) {
      return ordersRepository.getOrderList(companyId);
    }
+ 
+  Future<List<Order>> getCachedOrderList(String companyId) {
+    return ordersRepository.getCachedOrderList(companyId);
+  }
+
+  Future<void> cacheOrderList(String companyId, List<Order> orders) {
+    return ordersRepository.cacheOrderList(companyId, orders);
+  }
 
   Future<List<Order>> getEmployeeOrders(int empId) async {
     return ordersRepository.getEmployeeOrders(empId);

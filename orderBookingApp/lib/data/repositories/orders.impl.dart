@@ -94,9 +94,12 @@ class OrdersRepositoryImpl implements OrdersRepository {
         employeeId: row['employee_id'],
         shopId: row['shop_id'],
         shopNamep: row['shop_name'],
+        empName: row['emp_name'],
+        address: row['address'],
         orderDate: row['order_date'],
         items: items,
         totalPrice: (row['total_price'] as num).toDouble(),
+        companyId: row['company_id'],
       ),
     );
   }
@@ -105,7 +108,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
 }
 
 
-Future<void> syncServerOrdersToLocal(int employeeId) async {
+  Future<void> syncServerOrdersToLocal(int employeeId) async {
 
   // 1️⃣ Fetch from server
   final serverOrders = await _apiService.getOrders(employeeId);
@@ -129,9 +132,12 @@ Future<void> syncServerOrdersToLocal(int employeeId) async {
       employeeId: serverOrder.employeeId,
       shopId: serverOrder.shopId,
       shopNamep: serverOrder.shopNamep,
+      empName: serverOrder.empName,
+      address: serverOrder.address,
       orderDate: serverOrder.orderDate,
       items: serverOrder.items,
       totalPrice: serverOrder.totalPrice,
+      companyId: serverOrder.companyId,
     );
 
     // 4️⃣ Save to local DB
@@ -149,5 +155,13 @@ Future<void> syncServerOrdersToLocal(int employeeId) async {
 
   Future<List<Order>> getEmployeeOrders(int empId){
      return _apiService.getOrders(empId);
+  }
+
+  Future<List<Order>> getCachedOrderList(String companyId) async {
+    return offlineOrderDao.fetchCachedCompanyOrders(companyId);
+  }
+
+  Future<void> cacheOrderList(String companyId, List<Order> orders) async {
+    await offlineOrderDao.replaceCachedCompanyOrders(companyId, orders);
   }
 }

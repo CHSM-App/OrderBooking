@@ -73,6 +73,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   Future<void> _refresh() async {
     await ref.read(ordersViewModelProvider.notifier).getOrderList(
           ref.read(adminloginViewModelProvider).companyId ?? '',
+          useCacheFirst: false,
         );
   }
 

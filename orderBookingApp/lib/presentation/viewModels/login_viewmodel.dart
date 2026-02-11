@@ -122,8 +122,20 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     }
   }
 
-  Future<void> fetchAdminDetails(String mobileNo) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> fetchAdminDetails(
+    String mobileNo, {
+    bool useCacheFirst = true,
+  }) async {
+    var hasCached = false;
+    if (useCacheFirst) {
+      final cached = state.adminDetails?.value;
+      if (cached != null && cached.isNotEmpty) {
+        hasCached = true;
+        state = state.copyWith(isLoading: false, error: null);
+      }
+    }
+
+    state = state.copyWith(isLoading: !hasCached, error: null);
     try {
       final admindetails = await usecase.fetchAdminDetails(mobileNo);
       state = state.copyWith(
@@ -131,7 +143,13 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
         adminDetails: AsyncValue.data(admindetails),
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: hasCached ? null : e.toString(),
+        adminDetails: hasCached
+            ? state.adminDetails
+            : AsyncValue.error(e, StackTrace.current),
+      );
     }
   }
 
