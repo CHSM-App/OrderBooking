@@ -76,7 +76,6 @@ class _AdminSignupState extends ConsumerState<AdminSignup> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminloginViewModelProvider);
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: backgroundColor,

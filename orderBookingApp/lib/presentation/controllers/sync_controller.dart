@@ -17,10 +17,11 @@ final syncControllerProvider = Provider<void>((ref) {
 
           final companyId = ref.read(adminloginViewModelProvider).companyId??"";
           final userId = ref.read(adminloginViewModelProvider).userId;
+          final regionId = ref.read(adminloginViewModelProvider).regionId?? 0;
 
           // Call sync methods for all offline data
           await ref.read(visitViewModelProvider.notifier).sync();
-          await ref.read(shopViewModelProvider.notifier).getShopList(companyId);
+          await ref.read(shopViewModelProvider.notifier).getEmpShopList(companyId, regionId);
           await ref.read(productViewModelProvider.notifier).fetchProductList(companyId);
           await ref.read(ordersViewModelProvider.notifier).getAllOrders(userId);
           await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);

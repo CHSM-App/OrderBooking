@@ -104,18 +104,46 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  // ── Search ─────────────────────────────────────────────────────────────────
+  // ── Enhanced Search ────────────────────────────────────────────────────────
   bool _passesSearch(Order o, int number, String q) {
     if (q.isEmpty) return true;
-    if (number.toString().contains(q.replaceAll(RegExp(r'[^0-9]'), ''))) {
-      return true;
+    final qLower = q.toLowerCase();
+
+    final orderMap = <String, String>{
+      'orderNo': number.toString(),
+      'serverOrderId': o.serverOrderId?.toString() ?? '',
+      'employeeId': o.employeeId.toString(),
+      'shopId': o.shopId.toString(),
+      'employee': o.empName ?? '',
+      'shop': o.shopNamep ?? '',
+      'address': o.address ?? '',
+      'total': o.totalPrice.toString(),
+      'orderDate': o.orderDate,
+      'itemsCount': o.items.length.toString(),
+      'itemsCountText':
+          '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
+      'formattedDate': _fmt(o.orderDate),
+    };
+
+    for (final v in orderMap.values) {
+      if (v.toLowerCase().contains(qLower)) return true;
     }
-    if ((o.shopNamep ?? '').toLowerCase().contains(q)) return true;
-    if ((o.empName  ?? '').toLowerCase().contains(q)) return true;
-    if (o.totalPrice.toString().contains(q)) return true;
+
     for (final item in o.items) {
-      if (item.productName?.toLowerCase().contains(q) ?? false) return true;
+      final itemMap = <String, String>{
+        'productName': item.productName ?? '',
+        'productUnit': item.productUnit,
+        'productId': item.productId.toString(),
+        'subItemId': item.subItemId.toString(),
+        'quantity': item.quantity.toString(),
+        'price': item.price.toString(),
+        'totalPrice': item.totalPrice.toString(),
+      };
+      for (final v in itemMap.values) {
+        if (v.toLowerCase().contains(qLower)) return true;
+      }
     }
+
     return false;
   }
 
@@ -124,6 +152,21 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return ['network','internet','connection','socket',
             'failed host','no address','timeout','unreachable']
         .any((k) => msg.toLowerCase().contains(k));
+  }
+
+  String _fmt(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                      'Jul','Aug','Sep','Oct','Nov','Dec'];
+      final h =
+          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      final min = d.minute.toString().padLeft(2, '0');
+      final p = d.hour >= 12 ? 'PM' : 'AM';
+      return '${months[d.month - 1]} ${d.day}, ${d.year} • $h:$min $p';
+    } catch (_) {
+      return iso;
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -164,7 +207,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               child: TextField(
                 controller: _searchCtrl,
                 onChanged: (v) =>
-                    setState(() => _searchQuery = v.toLowerCase()),
+                    setState(() => _searchQuery = v.toLowerCase().trim()),
                 style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,

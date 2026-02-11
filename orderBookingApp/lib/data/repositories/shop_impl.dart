@@ -17,9 +17,9 @@ class ShopImpl implements ShopRepository {
   }
 
   @override
-  Future<List<ShopDetails>> getShopList(String companyId) async{
+  Future<List<ShopDetails>> getEmpShopList(String companyId, int regionId) async{
     await syncLocalToServer();
-    await syncServerToLocal(companyId);
+    await syncServerToLocal(companyId, regionId);
     return await local.getAll();
   }
 
@@ -39,9 +39,9 @@ class ShopImpl implements ShopRepository {
   }
 
   /// ⬇️ Pull server shops
-  Future<void> syncServerToLocal(String company_id) async {
+  Future<void> syncServerToLocal(String company_id, int regionId) async {
     try {
-      final serverShops = await apiService.getShopList(company_id);
+      final serverShops = await apiService.getEmpShopList(company_id, regionId);
 
       for (final shop in serverShops) {
         final exists = await local.existsByServerId(shop.shopId!);
@@ -59,5 +59,10 @@ class ShopImpl implements ShopRepository {
       debugPrint("Error in looop $e");
     }
   }
+
+  Future<List<ShopDetails>> getShopList(String companyId) async {
+    return  await apiService.getShopList(companyId);
+  }
+
 
 }

@@ -217,8 +217,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   }
 
   bool _passesVisitPayloadFilter(VisitPayload visit) {
-    final tsString = visit.punchIn ?? visit.punchOut;
-    if (tsString == null || tsString.isEmpty) return false;
+    final tsString = visit.punchIn ;
+    // if (tsString == null || tsString.isEmpty) return false;
 
     final date = _toIstDateOnly(DateTime.parse(tsString));
     final today = _toIstDateOnly(DateTime.now());
@@ -901,11 +901,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       data: (visits) {
         final filteredVisits = visits.where(_passesVisitPayloadFilter).toList()
           ..sort((a, b) {
-            final aDateStr = a.punchIn ?? a.punchOut;
-            final bDateStr = b.punchIn ?? b.punchOut;
-            if (aDateStr == null && bDateStr == null) return 0;
-            if (aDateStr == null) return 1;
-            if (bDateStr == null) return -1;
+            final aDateStr = a.punchIn;
+            final bDateStr = b.punchIn ;
+
             return DateTime.parse(bDateStr).compareTo(DateTime.parse(aDateStr));
           });
 

@@ -35,7 +35,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopViewModelProvider.notifier)
-          .getShopList(ref.read(adminloginViewModelProvider).companyId ?? '');
+          .getEmpShopList(ref.read(adminloginViewModelProvider).companyId ?? '', ref.read(adminloginViewModelProvider).regionId ?? 0);
     });
 
     _searchController.addListener(() {
@@ -50,7 +50,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   Future<void> _onRefresh() async {
     await ref
         .read(shopViewModelProvider.notifier)
-        .getShopList(ref.read(adminloginViewModelProvider).companyId ?? '');
+        .getEmpShopList(ref.read(adminloginViewModelProvider).companyId ?? '', ref.read(adminloginViewModelProvider).regionId ?? 0);
   }
 
   @override
@@ -440,8 +440,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         if (result == true && mounted) {
           ref
               .read(shopViewModelProvider.notifier)
-              .getShopList(
-                ref.read(adminloginViewModelProvider).companyId ?? '',
+              .getEmpShopList(
+                ref.read(adminloginViewModelProvider).companyId ?? '',ref.read(adminloginViewModelProvider).regionId ?? 0
               );
         }
       },
@@ -609,8 +609,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
             ElevatedButton.icon(
               onPressed: () => ref
                   .read(shopViewModelProvider.notifier)
-                  .getShopList(
-                    ref.read(adminloginViewModelProvider).companyId ?? '',
+                  .getEmpShopList(
+                    ref.read(adminloginViewModelProvider).companyId ?? '',ref.read(adminloginViewModelProvider).regionId ?? 0
                   ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text(

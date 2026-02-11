@@ -766,36 +766,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 }
 
-// ── Stat cell ──────────────────────────────────────────────────────────────────
-class _StatCell extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatCell(
-      {required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white70, size: 18),
-        const SizedBox(height: 3),
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5)),
-        Text(label,
-            style:
-                const TextStyle(color: Colors.white70, fontSize: 11)),
-      ],
-    );
-  }
-}
-
 // ── Filter row ─────────────────────────────────────────────────────────────────
 class _FilterRow extends StatelessWidget {
   final IconData icon;

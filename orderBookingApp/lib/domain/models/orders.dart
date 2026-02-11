@@ -55,8 +55,21 @@ class Order {
   }) : totalPrice =
           totalPrice ?? items.fold(0, (sum, i) => sum + i.totalPrice);
 
-  factory Order.fromJson(Map<String, dynamic> json) =>
-      _$OrderFromJson(json);
+  factory Order.fromJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    normalized['order_id'] ??= json['orderId'];
+    normalized['employee_id'] ??= json['employeeId'];
+    normalized['shop_id'] ??= json['shopId'];
+    normalized['shop_name'] ??= json['shopName'];
+    normalized['emp_name'] ??=
+        json['employee_name'] ?? json['employeeName'] ?? json['empName'];
+    normalized['address'] ??= json['shop_address'] ?? json['shopAddress'];
+    normalized['order_date'] ??= json['orderDate'];
+    normalized['total_price'] ??= json['totalPrice'];
+    normalized['company_id'] ??= json['companyId'];
+
+    return _$OrderFromJson(normalized);
+  }
 
   Map<String, dynamic> toJson() => _$OrderToJson(this);
 }

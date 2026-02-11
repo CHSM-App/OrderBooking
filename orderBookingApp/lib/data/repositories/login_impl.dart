@@ -37,7 +37,8 @@ class AdminloginImpl implements AdminloginRepository {
       await TokenStorage.saveValue('company_name', response[0].companyName.toString());
       await TokenStorage.saveValue('token', response[0].Token.toString());
       await TokenStorage.saveValue('isCheckedIn', response[0].isCheckedIn.toString());
-        await TokenStorage.saveValue('company_id', response[0].companyId.toString());
+      await TokenStorage.saveValue('company_id', response[0].companyId.toString());
+      await TokenStorage.saveValue('region_id', response[0].regionId.toString());
     }
     return response;
   }

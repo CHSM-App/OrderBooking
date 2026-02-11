@@ -11,6 +11,9 @@ class ShopUsecase {
     return shoprepository.addShop(shopDetails);
   }
 
+     Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID) {
+    return shoprepository.getEmpShopList(companyId, regionID );
+  }
      Future<List<ShopDetails>> getShopList(String companyId) {
     return shoprepository.getShopList(companyId );
   }

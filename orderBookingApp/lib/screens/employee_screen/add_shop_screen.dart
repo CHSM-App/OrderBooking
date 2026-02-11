@@ -118,8 +118,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen>
       _showErrorSnackbar(state.error!);
     }
 
-    await ref.read(shopViewModelProvider.notifier).getShopList(
-        ref.read(adminloginViewModelProvider).companyId ?? "");
+    await ref.read(shopViewModelProvider.notifier).getEmpShopList(
+        ref.read(adminloginViewModelProvider).companyId ?? "", ref.read(adminloginViewModelProvider).regionId ?? 0);
   }
 
   void _showSuccessDialog() {

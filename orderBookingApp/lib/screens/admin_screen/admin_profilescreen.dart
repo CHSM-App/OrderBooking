@@ -72,7 +72,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                   ),
                 ],
               )
-            : detailsAsync!.hasError
+            : detailsAsync.hasError
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
@@ -80,7 +80,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                       Center(child: Text('Error: ${detailsAsync.error}')),
                     ],
                   )
-                : detailsAsync!.when(
+                : detailsAsync.when(
                     data: (profile) => profile.isEmpty
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
