@@ -95,13 +95,21 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
       try {
         final cached = await usecase.getCachedOrderList(companyId);
         if (cached.isNotEmpty) {
-          hasCached = true;
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: null,
-            isSuccess: true,
-            orders: AsyncValue.data(cached),
-          );
+          final hasDetailFields = cached.any((o) {
+            final empOk = (o.empName ?? '').trim().isNotEmpty;
+            final shopOk = (o.shopNamep ?? '').trim().isNotEmpty;
+            final addrOk = (o.address ?? '').trim().isNotEmpty;
+            return empOk || shopOk || addrOk;
+          });
+          if (hasDetailFields) {
+            hasCached = true;
+            state = state.copyWith(
+              isLoading: false,
+              errorMessage: null,
+              isSuccess: true,
+              orders: AsyncValue.data(cached),
+            );
+          }
         }
       } catch (_) {}
     }

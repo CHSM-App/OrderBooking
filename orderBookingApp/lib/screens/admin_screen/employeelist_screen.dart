@@ -69,8 +69,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
               .toList(),
           loading: () => <Map<String, dynamic>>[],
           error: (_, __) => <Map<String, dynamic>>[],
-        ) ??
-        [];
+        ) ;
 
     final filteredEmployees = employees.where((e) {
       final q = _searchQuery.toLowerCase();

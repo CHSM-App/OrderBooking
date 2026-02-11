@@ -41,18 +41,7 @@ class AppDatabase {
           //   )
           // ''');
         }
-        if (oldVersion < 3) {
-          try {
-            await db.execute(
-              "ALTER TABLE offline_orders ADD COLUMN emp_name TEXT",
-            );
-          } catch (_) {}
-          try {
-            await db.execute(
-              "ALTER TABLE offline_orders ADD COLUMN address TEXT",
-            );
-          } catch (_) {}
-        }
+
       },
     );
   }
@@ -166,13 +155,10 @@ static Future<void> _createRegionTable(Database db) async {
         status TEXT,                
         retry_count INTEGER DEFAULT 0,
         created_at TEXT
-
-      
-
     )
   ''');
   }
-
+          
   static Future<void> _createOfflineOrdersItemsTable(Database db) async {
     await db.execute('''
       CREATE TABLE offline_order_items (

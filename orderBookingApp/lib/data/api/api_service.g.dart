@@ -458,6 +458,38 @@ class _ApiService implements ApiService {
   }
 
   @override
+  Future<List<ShopDetails>> getEmpShopList(
+    String companyId,
+    int regionID,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<List<ShopDetails>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'users/employeeShopList/${companyId}/${regionID}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<ShopDetails> _value;
+    try {
+      _value = _result.data!
+          .map((dynamic i) => ShopDetails.fromJson(i as Map<String, dynamic>))
+          .toList();
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<List<Region>> fetchRegionList(String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

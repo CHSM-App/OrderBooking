@@ -239,6 +239,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                   } else {
                     ref
                         .read(employeeloginViewModelProvider.notifier)
+                        // ignore: invalid_use_of_protected_member
                         .state = employeeState.copyWith(
                       isPhoneNoExists: null,
                     );

@@ -169,11 +169,6 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
     return '$h:$m';
   }
 
-  String _getDuration() {
-    if (_punchInTime == null) return '--';
-    final d = DateTime.now().difference(_punchInTime!);
-    return '${d.inHours}h ${d.inMinutes % 60}m';
-  }
 
   Future<void> _callShop() async {
     final raw = widget.shop.mobileNo?.trim() ?? '';

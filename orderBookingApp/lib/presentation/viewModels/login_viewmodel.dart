@@ -15,11 +15,13 @@ class AdminloginState {
   final String? token;
   final String? isCheckedIn;
   final String? companyId;
+  final int? regionId;
 
   final AsyncValue<List<AdminLogin>>? adminDetails;
   final AsyncValue<List<LoginInfo>> phoneCheckResult;
   final int userId;
   const AdminloginState({
+    this.regionId,
     this.isLoading = false,
     this.error,
     this.adminDetails = const AsyncValue.loading(),
@@ -36,6 +38,7 @@ class AdminloginState {
   });
 
   AdminloginState copyWith({
+    int? regionId,
     bool? isLoading,
     String? error,
     AsyncValue<List<AdminLogin>>? adminDetails,
@@ -51,6 +54,7 @@ class AdminloginState {
     String? companyId,
   }) {
     return AdminloginState(
+      regionId: regionId?? this.regionId,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       adminDetails: adminDetails ?? this.adminDetails,
@@ -87,6 +91,8 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
   final userIdStr = await TokenStorage.getValue('user_id');
   final userId = int.tryParse(userIdStr ?? '0') ?? 0;
      final companyId = await TokenStorage.getValue('company_id');
+     final regionIdStr = await TokenStorage.getValue('region_id');
+     final regionId = int.tryParse(regionIdStr ?? '');
     state = state.copyWith(
           userId: userId,
       name: name,
@@ -97,6 +103,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       token: token,
       isCheckedIn: isCheckedIn,
       companyId: companyId,
+      regionId: regionId,
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
