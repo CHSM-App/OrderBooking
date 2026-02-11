@@ -120,6 +120,8 @@ Future<dynamic> addOrder(
 
 
 
+@GET("users/getEmployeeVisits/{emp_id}")
+  Future<List<VisitPayload>>getEmployeeVisit(@Path("emp_id") int empId);
 }
 
 

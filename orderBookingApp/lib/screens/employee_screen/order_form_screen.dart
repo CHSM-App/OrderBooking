@@ -178,7 +178,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         lng: _visit.lng,
         accuracy: _visit.accuracy,
         capturedAt: _visit.capturedAt,
-        punchIn: formatForApi(_visit.capturedAt),
+        punchIn: formatForApi(_visit.capturedAt ?? DateTime.now()),
         punchOut: formatForApi(DateTime.now().toLocal()),
       );
     });

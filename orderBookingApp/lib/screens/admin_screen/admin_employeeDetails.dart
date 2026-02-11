@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
+import 'package:order_booking_app/screens/admin_screen/attendence.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'dart:math';
@@ -25,9 +27,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  String selectedFilter = "All";
-  DateTimeRange? _customRange;
-
+  // Orders filter
+  String orderFilter = "Today";
+  DateTimeRange? orderCustomRange;
+  // Visited shops filter
+  String visitFilter = "Today";
+  DateTimeRange? visitCustomRange;
   final List<String> filters = ["All", "Today", "Month", "Year", "Custom"];
 
   @override
@@ -44,6 +49,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       await ref
           .read(ordersViewModelProvider.notifier)
           .getEmployeeOrders(widget.empId);
+      await ref
+          .read(employeeloginViewModelProvider.notifier)
+          .getEmployeeVisit(widget.empId);
     });
 
     _controller = AnimationController(
@@ -172,41 +180,93 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
         "${date.year.toString().padLeft(2, '0')}";
   }
 
-  //filter orders
+  //filter Orders (Today, Month, Year, Custom)
   bool _passesOrderFilter(Order order) {
-    final date = _parseOrderDate(order.orderDate);
-    if (date == null) return false;
+    final raw = _parseOrderDate(order.orderDate);
+    if (raw == null) return false;
 
-    final now = DateTime.now();
+    final date = _toIstDateOnly(raw);
+    final today = _toIstDateOnly(DateTime.now());
 
-    switch (selectedFilter) {
+    final orderDate = parseSqlServerDate(order.orderDate!);
+    final orderKey = dateKey(orderDate);
+
+    switch (orderFilter) {
       case "All":
         return true;
 
       case "Today":
-        return !date.isBefore(_startOfDay(now)) &&
-            !date.isAfter(_endOfDay(now));
+        return date == today;
 
       case "Month":
-        return date.year == now.year && date.month == now.month;
+        return date.year == today.year && date.month == today.month;
 
       case "Year":
-        return date.year == now.year;
+        return date.year == today.year;
 
       case "Custom":
-        if (_customRange == null) return true;
-        return !date.isBefore(_startOfDay(_customRange!.start)) &&
-            !date.isAfter(_endOfDay(_customRange!.end));
+        if (orderCustomRange == null) return true;
 
+        final startKey = dateKey(orderCustomRange!.start);
+        final endKey = dateKey(orderCustomRange!.end);
+
+        return orderKey >= startKey && orderKey <= endKey;
       default:
         return true;
     }
   }
 
-  DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
+  String _formatTime(DateTime? time) {
+    if (time == null) return "--";
 
-  DateTime _endOfDay(DateTime d) =>
-      DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
+    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? "PM" : "AM";
+
+    return "$hour:$minute $period";
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.day.toString().padLeft(2, '0')}/"
+        "${date.month.toString().padLeft(2, '0')}/"
+        "${date.year}";
+  }
+
+  bool _passesVisitPayloadFilter(VisitPayload visit) {
+    final tsString = visit.punchIn ?? visit.punchOut;
+    if (tsString == null || tsString.isEmpty) return false;
+
+    final date = _toIstDateOnly(DateTime.parse(tsString));
+    final today = _toIstDateOnly(DateTime.now());
+
+    final visitDate = parseSqlServerDate(tsString);
+    final visitKey = dateKey(visitDate);
+
+    switch (visitFilter) {
+      case "All":
+        return true;
+
+      case "Today":
+        return date == today;
+
+      case "Month":
+        return date.year == today.year && date.month == today.month;
+
+      case "Year":
+        return date.year == today.year;
+
+      case "Custom":
+        if (visitCustomRange == null) return true;
+
+        final startKey = dateKey(visitCustomRange!.start);
+        final endKey = dateKey(visitCustomRange!.end);
+
+        return visitKey >= startKey && visitKey <= endKey;
+
+      default:
+        return true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -245,11 +305,59 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       data: (orders) => orders,
       orElse: () => null,
     );
-    final avgOrdersPerDayText = _calculateAvgOrdersPerDay(
-      employeeOrdersForAvg,
-    );
+    final avgOrdersPerDayText = _calculateAvgOrdersPerDay(employeeOrdersForAvg);
 
     final ordersAsync = ordersState.orders;
+
+
+
+  Widget _styledFilterDropdown({
+  required String value,
+  required List<String> items,
+  required ValueChanged<String> onChanged,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey[300]!),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: DropdownButton<String>(
+      value: value,
+      underline: const SizedBox(),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF2196F3),
+      ),
+      items: items
+          .map(
+            (f) => DropdownMenuItem(
+              value: f,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(f),
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    ),
+  );
+}
+
+
 
     Widget ordersWidget() {
       if (ordersAsync == null) {
@@ -295,8 +403,183 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                 order: order,
                 orderNumber: filteredOrders.length - index,
                 amount: order.totalPrice.toInt(),
-                filter: selectedFilter,
+                filter: orderFilter,
                 delay: index * 100,
+              );
+            },
+          );
+        },
+      );
+    }
+
+    Widget _timeChip(String label, String time, Color color) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Text(
+              "$label:",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildTimeChip(String label, String? value, Color color) {
+      if (value == null || value.isEmpty) {
+        return _timeChip(label, "--", Colors.grey);
+      }
+
+      try {
+        return _timeChip(label, _formatTime(DateTime.parse(value)), color);
+      } catch (_) {
+        return _timeChip(label, "--", Colors.grey);
+      }
+    }
+
+    String _getPunchInDate(String? punchIn) {
+      if (punchIn == null || punchIn.isEmpty) {
+        return "--/--/----";
+      }
+
+      try {
+        return _formatDate(DateTime.parse(punchIn));
+      } catch (_) {
+        return "--/--/----";
+      }
+    }
+
+    Widget _visitedShopsWidget() {
+      final visitsAsync = ref
+          .watch(employeeloginViewModelProvider)
+          .employeeVisits;
+
+      return visitsAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(e.toString()),
+        ),
+        data: (visits) {
+          final filteredVisits =
+              visits.where(_passesVisitPayloadFilter).toList()..sort((a, b) {
+                final aDateStr = a.punchIn ?? a.punchOut;
+                final bDateStr = b.punchIn ?? b.punchOut;
+
+                if (aDateStr == null && bDateStr == null) return 0;
+                if (aDateStr == null) return 1;
+                if (bDateStr == null) return -1;
+
+                final aDate = DateTime.parse(aDateStr);
+                final bDate = DateTime.parse(bDateStr);
+                return bDate.compareTo(aDate);
+              });
+
+          if (filteredVisits.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text("No shop visits found for this filter"),
+            );
+          }
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filteredVisits.length,
+            itemBuilder: (_, index) {
+              final v = filteredVisits[index];
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      v.shopName ?? "Unknown Shop",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            v.regionName ?? "—",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // LEFT: Punch-in date
+                        Text(
+                          _getPunchInDate(v.punchIn),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // MIDDLE: Time chips
+                        _buildTimeChip("In", v.punchIn, Colors.green),
+                        const SizedBox(width: 8),
+                        _buildTimeChip("Out", v.punchOut, Colors.red),
+                      ],
+                    ),
+                  ],
+                ),
               );
             },
           );
@@ -466,67 +749,95 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                 ),
 
                 // 🧾 BASIC INFO
-                _sectionTitle("Basic Information", Icons.info_outline),
-                _infoCard([
-                  _infoRow(
-                    Icons.phone,
-                    "Mobile No.",
-                    employee.empMobile ?? "N/A",
-                  ),
-                  _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
-                  _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
+                // _sectionTitle("Basic Information", Icons.info_outline),
+                // _infoCard([
+                //   _infoRow(
+                //     Icons.phone,
+                //     "Mobile No.",
+                //     employee.empMobile ?? "N/A",
+                //   ),
+                //   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
+                //   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
 
-                  _infoRow(
-                    Icons.calendar_today,
-                    "Joining Date",
-                    formatJoiningDate(employee.joiningDate),
-                  ),
-                ]),
-
+                //   _infoRow(
+                //     Icons.calendar_today,
+                //     "Joining Date",
+                //     formatJoiningDate(employee.joiningDate),
+                //   ),
+                // ]),
                 const SizedBox(height: 24),
 
                 // 🗺️ EMPLOYEE VISITS MAP
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0A3D62).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.map_outlined,
-                            color: Color(0xFF0A3D62),
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            'View Employee Visits Map',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                  child: Row(
+                    children: [
+                      /// View Attendance
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AttendanceCalendarPage(
+                                  empId: employee.empId ?? widget.empId,
+                                  joiningDate: employee.joiningDate
+                                ), 
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.event_available_outlined,
+                                    color: Colors.green,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    'Attendance',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        ElevatedButton(
-                          onPressed: () {
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      /// Open Map
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
                             final empId = employee.empId ?? widget.empId;
                             Navigator.push(
                               context,
@@ -538,17 +849,52 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                               ),
                             );
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0A3D62),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF0A3D62,
+                                    ).withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.map_outlined,
+                                    color: Color(0xFF0A3D62),
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    'Open Map',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: const Text('Open Map'),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -597,10 +943,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
-                // 📦 RECENT ORDERS
+
+                // ====================RECENT ORDERS========================
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
@@ -624,83 +970,102 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: DropdownButton<String>(
-                          value: selectedFilter,
-                          underline: const SizedBox(),
-                          icon: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2196F3),
-                          ),
-                          items: filters
-                              .map(
-                                (f) => DropdownMenuItem(
-                                  value: f,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(f),
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                      _styledFilterDropdown(
+                        value: orderFilter,
+                        items: filters,
+                        onChanged: (value) async {
+                          if (value == "Custom") {
+                            final now = DateTime.now();
+                            final range = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(now.year - 5),
+                              lastDate: DateTime(now.year + 1),
+                              initialDateRange:
+                                  orderCustomRange ??
+                                  DateTimeRange(start: now, end: now),
+                            );
 
-                          onChanged: (value) async {
-                            if (value == "Custom") {
-                              final now = DateTime.now();
+                            if (range == null) return;
 
-                              final range = await showDateRangePicker(
-                                context: context,
-                                firstDate: DateTime(now.year - 5),
-                                lastDate: DateTime(now.year + 1),
-                                initialDateRange:
-                                    _customRange ??
-                                    DateTimeRange(start: now, end: now),
-                              );
-
-                              if (range == null) return;
-
-                              setState(() {
-                                selectedFilter = value!;
-                                _customRange = range;
-                              });
-                            } else {
-                              setState(() {
-                                selectedFilter = value!;
-                                _customRange = null;
-                              });
-                            }
-                          },
-                        ),
+                            setState(() {
+                              orderFilter = value;
+                              orderCustomRange = range;
+                            });
+                          } else {
+                            setState(() {
+                              orderFilter = value;
+                              orderCustomRange = null;
+                            });
+                          }
+                        },
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 ordersWidget(),
-
                 const SizedBox(height: 24),
+
+                //====================Visited shops=========================
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.store_rounded,
+                            color: Color(0xFF4CAF50),
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Visited Shops",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      _styledFilterDropdown(
+                        value: visitFilter,
+                        items: filters,
+                        onChanged: (value) async {
+                          if (value == "Custom") {
+                            final now = DateTime.now();
+                            final range = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(now.year - 5),
+                              lastDate: DateTime(now.year + 1),
+                              initialDateRange:
+                                  visitCustomRange ??
+                                  DateTimeRange(start: now, end: now),
+                            );
+
+                            if (range == null) return;
+
+                            setState(() {
+                              visitFilter = value;
+                              visitCustomRange = range;
+                            });
+                          } else {
+                            setState(() {
+                              visitFilter = value;
+                              visitCustomRange = null;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _visitedShopsWidget(),
+
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -710,6 +1075,20 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   }
 
   // ================= HELPER WIDGETS =================
+
+  DateTime parseSqlServerDate(String raw) {
+    // Treat SQL datetime2 as LOCAL date, strip time
+    final dt = DateTime.parse(raw);
+    return DateTime(dt.year, dt.month, dt.day);
+  }
+
+  int dateKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
+
+  DateTime _toIstDateOnly(DateTime dt) {
+    final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
+    return DateTime(ist.year, ist.month, ist.day);
+  }
 
   Widget _sectionTitle(String title, IconData icon) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),

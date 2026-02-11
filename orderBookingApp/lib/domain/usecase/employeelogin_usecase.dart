@@ -1,4 +1,5 @@
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 
 class EmployeeloginUsecase {
@@ -28,5 +29,9 @@ class EmployeeloginUsecase {
 
   Future<dynamic> checkMobileExists(String mobileNo, String companyId) async {
       return employeeloginRepository.checkMobileExists(mobileNo, companyId);
+  }
+
+  Future<List<VisitPayload>> getEmployeeVisit(int empId) async {
+      return employeeloginRepository.getEmployeeVisit(empId);
   }
 }
