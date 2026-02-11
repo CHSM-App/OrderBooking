@@ -45,6 +45,10 @@ class ShopDetails {
   @JsonKey(name: 'company_id')
   final String companyId;
 
+  @JsonKey(name: 'region_name')
+  final String? regionName;
+
+
   ShopDetails({
     this.localId,
     this.shopId,
@@ -54,6 +58,7 @@ class ShopDetails {
     this.mobileNo,
     this.email,
     this.regionId,
+    this.regionName,
     this.createdBy,
     this.latitude,
     this.longitude,
@@ -79,6 +84,7 @@ class ShopDetails {
     String? mobileNo,
     String? email,
     int? regionId,
+    String? regionName,
     int? createdBy,
     double? latitude,
     double? longitude,
@@ -94,6 +100,7 @@ class ShopDetails {
       mobileNo: mobileNo ?? this.mobileNo,
       email: email ?? this.email,
       regionId: regionId ?? this.regionId,
+      regionName: regionName ?? this.regionName,
       createdBy: createdBy ?? this.createdBy,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,

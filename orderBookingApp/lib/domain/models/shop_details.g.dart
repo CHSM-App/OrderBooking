@@ -15,6 +15,7 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
   mobileNo: json['mobile_no'] as String?,
   email: json['email'] as String?,
   regionId: (json['region_id'] as num?)?.toInt(),
+  regionName: json['region_name'] as String?,
   createdBy: (json['created_by'] as num?)?.toInt(),
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
@@ -41,4 +42,5 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'isSynced': instance.isSynced,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'company_id': instance.companyId,
+      'region_name': instance.regionName,
     };
