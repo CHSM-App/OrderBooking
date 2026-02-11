@@ -5,6 +5,43 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
+// ── Brand tokens ──────────────────────────────────────────────────────────────
+const _kPrimary       = Color(0xFFE8720C);
+const _kPrimaryLight  = Color(0xFFFFF3E8);
+const _kSurface       = Color(0xFFFFFFFF);
+const _kBackground    = Color(0xFFF5F5F5);
+const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kTextSecondary = Color(0xFF6B6B6B);
+const _kDivider       = Color(0xFFEEEEEE);
+
+// ── Filter model ──────────────────────────────────────────────────────────────
+enum _FilterType { today, yesterday, thisMonth, custom }
+
+class _ActiveFilter {
+  final _FilterType type;
+  final DateTimeRange? customRange;
+  const _ActiveFilter(this.type, {this.customRange});
+
+  String get label {
+    switch (type) {
+      case _FilterType.today:     return 'Today';
+      case _FilterType.yesterday: return 'Yesterday';
+      case _FilterType.thisMonth: return 'This Month';
+      case _FilterType.custom:
+        if (customRange != null) {
+          return '${_d(customRange!.start)} – ${_d(customRange!.end)}';
+        }
+        return 'Custom';
+    }
+  }
+
+  static String _d(DateTime d) {
+    const m = ['Jan','Feb','Mar','Apr','May','Jun',
+                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${m[d.month - 1]}';
+  }
+}
+
 class OrdersListPage extends ConsumerStatefulWidget {
   const OrdersListPage({Key? key}) : super(key: key);
 
@@ -12,323 +49,230 @@ class OrdersListPage extends ConsumerStatefulWidget {
   ConsumerState<OrdersListPage> createState() => _OrdersListPageState();
 }
 
-class _OrdersListPageState extends ConsumerState<OrdersListPage>
-    with SingleTickerProviderStateMixin {
-  final TextEditingController _searchController = TextEditingController();
+class _OrdersListPageState extends ConsumerState<OrdersListPage> {
+  final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  late AnimationController _animationController;
-
-  // ===== DATE FILTER =====
-  static const _filterToday = 'Today';
-  static const _filterYesterday = 'Yesterday';
-  static const _filterThisMonth = 'This Month';
-  static const _filterCustom = 'Custom';
-  static const _filterAll = 'All';
-
-  String? _selectedFilter;
-  DateTimeRange? _customRange;
+  _ActiveFilter? _filter;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _animationController.forward();
-
-    // Fetch orders when page loads
     Future.microtask(() {
-      ref
-          .read(ordersViewModelProvider.notifier)
-          .getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '');
+      ref.read(ordersViewModelProvider.notifier).getOrderList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+          );
     });
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
-    _animationController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
-  // Check if error is network-related
-  bool _isNetworkError(String? errorMessage) {
-    if (errorMessage == null) return false;
-    
-    final networkKeywords = [
-      'network',
-      'internet',
-      'connection',
-      'socket',
-      'failed host lookup',
-      'no address associated',
-      'timeout',
-      'unreachable',
-      'failed to connect',
-    ];
-    
-    final lowerError = errorMessage.toLowerCase();
-    return networkKeywords.any((keyword) => lowerError.contains(keyword));
+  Future<void> _refresh() async {
+    await ref.read(ordersViewModelProvider.notifier).getOrderList(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+        );
   }
 
+  // ── Date filter ────────────────────────────────────────────────────────────
+  bool _passesFilter(Order o) {
+    if (_filter == null) return true;
+    DateTime d;
+    try {
+      d = _day(DateTime.parse(o.orderDate));
+    } catch (_) {
+      return false;
+    }
+    final today = _day(DateTime.now());
+    switch (_filter!.type) {
+      case _FilterType.today:
+        return d == today;
+      case _FilterType.yesterday:
+        return d == today.subtract(const Duration(days: 1));
+      case _FilterType.thisMonth:
+        return d.year == today.year && d.month == today.month;
+      case _FilterType.custom:
+        if (_filter!.customRange == null) return true;
+        final s = _day(_filter!.customRange!.start);
+        final e = _day(_filter!.customRange!.end);
+        return !d.isBefore(s) && !d.isAfter(e);
+    }
+  }
+
+  DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  // ── Search ─────────────────────────────────────────────────────────────────
+  bool _passesSearch(Order o, int number, String q) {
+    if (q.isEmpty) return true;
+    if (number.toString().contains(q.replaceAll(RegExp(r'[^0-9]'), ''))) {
+      return true;
+    }
+    if ((o.shopNamep ?? '').toLowerCase().contains(q)) return true;
+    if ((o.empName  ?? '').toLowerCase().contains(q)) return true;
+    if (o.totalPrice.toString().contains(q)) return true;
+    for (final item in o.items) {
+      if (item.productName?.toLowerCase().contains(q) ?? false) return true;
+    }
+    return false;
+  }
+
+  bool _isNetworkError(String? msg) {
+    if (msg == null) return false;
+    return ['network','internet','connection','socket',
+            'failed host','no address','timeout','unreachable']
+        .any((k) => msg.toLowerCase().contains(k));
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final ordersState = ref.watch(ordersViewModelProvider);
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width > 600;
-
+    final state = ref.watch(ordersViewModelProvider);
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.green.shade50,
-              Colors.white,
-              Colors.blue.shade50,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildModernAppBar(context, isTablet),
-              Expanded(child: _buildBody(ordersState, isTablet)),
-            ],
-          ),
+      backgroundColor: _kBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            if (_filter != null) _buildFilterChip(),
+            Expanded(child: _buildBody(state)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildModernAppBar(BuildContext context, bool isTablet) {
+  // ── Header: search + filter ────────────────────────────────────────────────
+  Widget _buildHeader() {
+    final isFiltered = _filter != null;
     return Container(
-      padding: EdgeInsets.all(isTablet ? 24 : 16),
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      color: _kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Row(
         children: [
-         
-       Row(
-  children: [
-    // 🔍 Search bar (UNCHANGED)
-    Expanded(
-      child: Container(
-        height: isTablet ? 56 : 50,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _searchQuery.isNotEmpty
-                ? Colors.green.shade300
-                : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value.toLowerCase();
-            });
-          },
-          style: TextStyle(fontSize: isTablet ? 16 : 14),
-          decoration: InputDecoration(
-              filled: true, // ⭐ REQUIRED
-    fillColor: Colors.white, // ⭐ FORCE WHITE
-            hintText: 'Search by order number, shop, employee...',
-            hintStyle: TextStyle(
-              color: Colors.grey[400],
-              fontSize: isTablet ? 16 : 14,
-            ),
-            prefixIcon: Container(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                Icons.search_rounded,
-                color: Colors.grey[600],
-                size: isTablet ? 24 : 22,
+          // Search
+          Expanded(
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                color: _kBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _kDivider),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase()),
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: _kTextPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search orders, shops, employees…',
+                  hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: _kTextSecondary,
+                      fontWeight: FontWeight.w400),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      size: 20, color: _kTextSecondary),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              size: 18, color: _kTextSecondary),
+                          onPressed: () => setState(() {
+                            _searchCtrl.clear();
+                            _searchQuery = '';
+                          }),
+                          splashRadius: 16,
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 13),
+                  isDense: true,
+                ),
               ),
             ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 20 : 16,
-              vertical: isTablet ? 18 : 14,
-            ),
-          ),
-        ),
-      ),
-    ),
-
-              const SizedBox(width: 12),
-
-              // 🎛 Filter button
-              _buildFilterButton(),
-            ],
           ),
 
-          // Active filter chip
-          if (_selectedFilter != null) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
+          const SizedBox(width: 10),
+
+          // Filter button
+          GestureDetector(
+            onTap: () => _showFilter(context),
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                _buildActiveFilterChip(),
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: isFiltered ? _kPrimaryLight : _kSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isFiltered ? _kPrimary : _kDivider,
+                      width: isFiltered ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Icon(Icons.filter_list_rounded,
+                      size: 20,
+                      color:
+                          isFiltered ? _kPrimary : _kTextSecondary),
+                ),
+                if (isFiltered)
+                  Positioned(
+                    top: -3,
+                    right: -3,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: const BoxDecoration(
+                          color: _kPrimary, shape: BoxShape.circle),
+                    ),
+                  ),
               ],
             ),
-          ],
-        ],
-      ),
-    );
-  }
-Widget _buildFilterButton() {
-  final bool isActive = _selectedFilter != null;
-
-  return Container(
-    height: 50,
-    width: 50,
-    decoration: BoxDecoration(
-      color: Colors.white, // ✅ PURE WHITE BACKGROUND
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: isActive ? Colors.green.shade400 : Colors.grey.shade300,
-        width: 1.5,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: PopupMenuButton<String>(
-      icon: Icon(
-        Icons.filter_list_rounded,
-        color: Colors.black, // ✅ BLACK ICON
-        size: 24,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      onSelected: (value) {
-        if (value == _filterAll) {
-          setState(() {
-            _selectedFilter = null;
-            _customRange = null;
-          });
-        } else {
-          _onFilterSelected(value);
-        }
-      },
-      itemBuilder: (_) => [
-        _buildPopupMenuItem(_filterAll, Icons.all_inclusive),
-        _buildPopupMenuItem(_filterToday, Icons.today),
-        _buildPopupMenuItem(_filterYesterday, Icons.history),
-        _buildPopupMenuItem(_filterThisMonth, Icons.calendar_month),
-        _buildPopupMenuItem(_filterCustom, Icons.date_range),
-      ],
-    ),
-  );
-}
-
-  PopupMenuItem<String> _buildPopupMenuItem(String value, IconData icon) {
-    final isSelected = _selectedFilter == value ||
-        (value == _filterAll && _selectedFilter == null);
-
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: isSelected ? Colors.green : Colors.grey[600],
-          ),
-          const SizedBox(width: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.green : Colors.grey[800],
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActiveFilterChip() {
-    String label = _selectedFilter!;
-    if (_selectedFilter == _filterCustom && _customRange != null) {
-      label =
-          '${_formatDateShort(_customRange!.start)} - ${_formatDateShort(_customRange!.end)}';
-    }
-
+  // ── Active filter chip ─────────────────────────────────────────────────────
+  Widget _buildFilterChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green.shade100, Colors.green.shade50],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.green.shade300),
-      ),
+      color: _kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.filter_alt, size: 16, color: Colors.green.shade700),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.green.shade700,
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kPrimaryLight,
+              borderRadius: BorderRadius.circular(20),
+              border:
+                  Border.all(color: _kPrimary.withOpacity(0.4)),
             ),
-          ),
-          const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedFilter = null;
-                _customRange = null;
-              });
-            },
-            child: Icon(
-              Icons.close,
-              size: 16,
-              color: Colors.green.shade700,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_outlined,
+                    size: 13, color: _kPrimary),
+                const SizedBox(width: 6),
+                Text(_filter!.label,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _kPrimary)),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _filter = null),
+                  child: const Icon(Icons.close_rounded,
+                      size: 14, color: _kPrimary),
+                ),
+              ],
             ),
           ),
         ],
@@ -336,186 +280,399 @@ Widget _buildFilterButton() {
     );
   }
 
-  String _formatDateShort(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  // ── Body ───────────────────────────────────────────────────────────────────
+  Widget _buildBody(ordersState state) {
+    if (state.isLoading) return _buildLoading();
 
-  Widget _buildBody(ordersState state, bool isTablet) {
-    if (state.isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.2),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Loading orders...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Check if error is network-related
     if (state.errorMessage != null) {
-      if (_isNetworkError(state.errorMessage)) {
-        return _buildNoInternetWidget(isTablet);
-      } else {
-        return _buildErrorState(state.errorMessage!, isTablet);
-      }
+      return _isNetworkError(state.errorMessage)
+          ? _buildNoInternet()
+          : _buildError(state.errorMessage!);
     }
 
     if (state.orders != null) {
       return state.orders!.when(
         data: (orders) {
-          if (orders.isEmpty) {
-            return _buildEmptyState(isTablet);
-          }
-          return _buildOrdersList(context, orders, isTablet);
+          // Sort newest→oldest for display
+          final sorted = List<Order>.from(orders)
+            ..sort((a, b) => DateTime.parse(b.orderDate)
+                .compareTo(DateTime.parse(a.orderDate)));
+
+          // Stable number: oldest = #1
+          final numberMap = {
+            for (var i = 0; i < sorted.length; i++)
+              sorted[i].serverOrderId: sorted.length - i,
+          };
+
+          final visible = sorted
+              .where((o) =>
+                  _passesFilter(o) &&
+                  _passesSearch(
+                      o, numberMap[o.serverOrderId] ?? 0, _searchQuery))
+              .toList();
+
+          if (visible.isEmpty) return _buildEmpty();
+          return _buildList(visible, numberMap);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) {
-          // Check if this error is network-related
-          if (_isNetworkError(error.toString())) {
-            return _buildNoInternetWidget(isTablet);
-          }
-          return _buildErrorState(error.toString(), isTablet);
-        },
+        loading: _buildLoading,
+        error: (e, _) => _isNetworkError(e.toString())
+            ? _buildNoInternet()
+            : _buildError(e.toString()),
       );
     }
 
-    return _buildEmptyState(isTablet);
+    return _buildEmpty();
   }
 
-  Widget _buildNoInternetWidget(bool isTablet) {
+  // ── List ───────────────────────────────────────────────────────────────────
+  Widget _buildList(List<Order> orders, Map<dynamic, int> numberMap) {
+    return RefreshIndicator(
+      color: _kPrimary,
+      backgroundColor: _kSurface,
+      strokeWidth: 2.5,
+      onRefresh: _refresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: orders.length,
+        itemBuilder: (_, i) => _OrderCard(
+          order: orders[i],
+          orderNumber: numberMap[orders[i].serverOrderId] ?? (i + 1),
+        ),
+      ),
+    );
+  }
+
+  // ── Loading ────────────────────────────────────────────────────────────────
+  Widget _buildLoading() {
     return Center(
-      child: FadeTransition(
-        opacity: _animationController,
-        child: Padding(
-          padding: EdgeInsets.all(isTablet ? 48 : 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Animated WiFi Icon
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.orange.shade50, Colors.red.shade50],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orange.withOpacity(0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.wifi_off_rounded,
-                  size: isTablet ? 100 : 80,
-                  color: Colors.orange.shade400,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Title
-              Text(
-                'No Internet Connection',
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+              color: _kPrimary, strokeWidth: 2.5),
+          const SizedBox(height: 16),
+          Text('Loading orders…',
+              style: TextStyle(
+                  fontSize: 14,
+                  color: _kTextSecondary.withOpacity(0.8))),
+        ],
+      ),
+    );
+  }
+
+  // ── Empty ──────────────────────────────────────────────────────────────────
+  Widget _buildEmpty() {
+    final isFiltered =
+        _filter != null || _searchQuery.isNotEmpty;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+                color: _kPrimaryLight, shape: BoxShape.circle),
+            child: Icon(
+              isFiltered
+                  ? Icons.search_off_rounded
+                  : Icons.receipt_long_outlined,
+              size: 34,
+              color: _kPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isFiltered ? 'No matching orders' : 'No orders yet',
+            style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isFiltered
+                ? 'Try a different search or filter'
+                : 'Orders will appear here once created.',
+            style: const TextStyle(
+                fontSize: 13, color: _kTextSecondary),
+          ),
+          if (isFiltered) ...[
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () => setState(() {
+                _filter = null;
+                _searchCtrl.clear();
+                _searchQuery = '';
+              }),
+              child: const Text('Clear all',
+                  style: TextStyle(
+                      color: _kPrimary,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── No internet ────────────────────────────────────────────────────────────
+  Widget _buildNoInternet() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.wifi_off_rounded,
+                  size: 34, color: Colors.orange),
+            ),
+            const SizedBox(height: 16),
+            const Text('No Internet Connection',
                 style: TextStyle(
-                  fontSize: isTablet ? 28 : 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: _kTextPrimary)),
+            const SizedBox(height: 8),
+            const Text(
+              'Check your WiFi or mobile data\nand try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: _kTextSecondary,
+                  height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _refresh,
+              icon:
+                  const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Retry',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPrimary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              const SizedBox(height: 12),
-              
-              // Subtitle
-              Text(
-                'Please check your internet connection\nand try again',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Error ──────────────────────────────────────────────────────────────────
+  Widget _buildError(String msg) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.error_outline_rounded,
+                  size: 32, color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            const Text('Something went wrong',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: _kTextPrimary)),
+            const SizedBox(height: 8),
+            Text(msg,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isTablet ? 18 : 16,
-                  color: Colors.grey[600],
-                  height: 1.5,
-                ),
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: _kTextSecondary,
+                    height: 1.4)),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _refresh,
+              icon:
+                  const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Try Again',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPrimary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              const SizedBox(height: 40),
-              
-              // Retry Button
-              _buildModernButton(
-                onPressed: () {
-                  ref.read(ordersViewModelProvider.notifier).getOrderList(
-                        ref.read(adminloginViewModelProvider).companyId ?? '',
-                      );
-                },
-                icon: Icons.refresh_rounded,
-                label: 'Retry',
-                isTablet: isTablet,
-                color: Colors.orange,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Filter bottom sheet ────────────────────────────────────────────────────
+  void _showFilter(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) => Container(
+          padding: EdgeInsets.fromLTRB(16, 20, 16,
+              MediaQuery.of(sheetCtx).viewInsets.bottom + 32),
+          decoration: const BoxDecoration(
+            color: _kSurface,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: _kDivider,
+                      borderRadius: BorderRadius.circular(2)),
+                ),
               ),
               const SizedBox(height: 16),
-              
-              // Tips Card
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.blue.shade100,
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Quick Tips',
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Filter by Date',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _kTextPrimary)),
+                  if (_filter != null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _filter = null);
+                        setSheet(() {});
+                        Navigator.pop(sheetCtx);
+                      },
+                      child: const Text('Clear',
                           style: TextStyle(
-                            fontSize: isTablet ? 16 : 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
-                        ),
-                      ],
+                              fontSize: 13,
+                              color: _kPrimary,
+                              fontWeight: FontWeight.w600)),
                     ),
-                    const SizedBox(height: 12),
-                    _buildTipItem('Check your WiFi or mobile data', isTablet),
-                    _buildTipItem('Try turning airplane mode on/off', isTablet),
-                    _buildTipItem('Restart your router if using WiFi', isTablet),
-                  ],
-                ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _FilterSheetRow(
+                icon: Icons.today_outlined,
+                label: 'Today',
+                sublabel: _todayLabel(),
+                isSelected: _filter?.type == _FilterType.today,
+                onTap: () {
+                  setState(() => _filter =
+                      const _ActiveFilter(_FilterType.today));
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+              _FilterSheetRow(
+                icon: Icons.history_outlined,
+                label: 'Yesterday',
+                sublabel: _yesterdayLabel(),
+                isSelected:
+                    _filter?.type == _FilterType.yesterday,
+                onTap: () {
+                  setState(() => _filter =
+                      const _ActiveFilter(
+                          _FilterType.yesterday));
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+              _FilterSheetRow(
+                icon: Icons.calendar_month_outlined,
+                label: 'This Month',
+                sublabel: _thisMonthLabel(),
+                isSelected:
+                    _filter?.type == _FilterType.thisMonth,
+                onTap: () {
+                  setState(() => _filter =
+                      const _ActiveFilter(
+                          _FilterType.thisMonth));
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+              _FilterSheetRow(
+                icon: Icons.date_range_outlined,
+                label: 'Custom Range',
+                sublabel: _filter?.type == _FilterType.custom
+                    ? _filter!.label
+                    : 'Pick start & end date',
+                isSelected:
+                    _filter?.type == _FilterType.custom,
+                onTap: () async {
+                  Navigator.pop(sheetCtx);
+                  await Future.delayed(
+                      const Duration(milliseconds: 200));
+                  if (!mounted) return;
+
+                  final now = DateTime.now();
+                  final picked = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(now.year - 5),
+                    lastDate: now,
+                    initialDateRange:
+                        _filter?.customRange ??
+                            DateTimeRange(
+                              start: now.subtract(
+                                  const Duration(days: 6)),
+                              end: now,
+                            ),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: _kPrimary,
+                          onPrimary: Colors.white,
+                          surface: _kSurface,
+                          onSurface: _kTextPrimary,
+                        ),
+                        textButtonTheme: TextButtonThemeData(
+                          style: TextButton.styleFrom(
+                              foregroundColor: _kPrimary),
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+
+                  if (picked != null && mounted) {
+                    setState(() => _filter = _ActiveFilter(
+                          _FilterType.custom,
+                          customRange: picked,
+                        ));
+                  }
+                },
               ),
             ],
           ),
@@ -524,810 +681,277 @@ Widget _buildFilterButton() {
     );
   }
 
-  Widget _buildTipItem(String text, bool isTablet) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade400,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: isTablet ? 14 : 13,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _todayLabel() {
+    final d = DateTime.now();
+    const m = ['Jan','Feb','Mar','Apr','May','Jun',
+                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${m[d.month - 1]} ${d.year}';
   }
 
-  Widget _buildEmptyState(bool isTablet) {
-    return Center(
-      child: FadeTransition(
-        opacity: _animationController,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green.shade50, Colors.blue.shade50],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.receipt_long_outlined,
-                size: isTablet ? 100 : 80,
-                color: Colors.green.shade300,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No Orders Yet',
-              style: TextStyle(
-                fontSize: isTablet ? 28 : 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Orders will appear here once created',
-              style: TextStyle(
-                fontSize: isTablet ? 18 : 16,
-                color: Colors.grey[500],
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildModernButton(
-              onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getOrderList(
-                      ref.read(adminloginViewModelProvider).companyId ?? '',
-                    );
-              },
-              icon: Icons.refresh_rounded,
-              label: 'Refresh',
-              isTablet: isTablet,
-            ),
-          ],
-        ),
-      ),
-    );
+  String _yesterdayLabel() {
+    final d =
+        DateTime.now().subtract(const Duration(days: 1));
+    const m = ['Jan','Feb','Mar','Apr','May','Jun',
+                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${m[d.month - 1]} ${d.year}';
   }
 
-  Widget _buildErrorState(String errorMessage, bool isTablet) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(isTablet ? 48 : 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline_rounded,
-                size: isTablet ? 80 : 64,
-                color: Colors.red.shade300,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Oops! Something went wrong',
-              style: TextStyle(
-                fontSize: isTablet ? 24 : 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              errorMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildModernButton(
-              onPressed: () {
-                ref.read(ordersViewModelProvider.notifier).getOrderList(
-                      ref.read(adminloginViewModelProvider).companyId ?? '',
-                    );
-              },
-              icon: Icons.refresh_rounded,
-              label: 'Try Again',
-              isTablet: isTablet,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModernButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required bool isTablet,
-    Color color = Colors.green,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.blueGrey, Colors.grey],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: isTablet ? 24 : 20),
-        label: Text(
-          label,
-          style: TextStyle(
-            fontSize: isTablet ? 18 : 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          shadowColor: Colors.transparent,
-          padding: EdgeInsets.symmetric(
-            horizontal: isTablet ? 32 : 24,
-            vertical: isTablet ? 18 : 14,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
-    );
-  }
-
-  bool _orderMatchesSearch(Order order, int orderNumber, String query) {
-    if (query.isEmpty) return true;
-
-    final numericQuery = query.replaceAll(RegExp(r'[^0-9]'), '');
-    if (numericQuery.isNotEmpty &&
-        orderNumber.toString().contains(numericQuery)) {
-      return true;
-    }
-
-    final shopName = (order.shopNamep ?? '').toLowerCase();
-    if (shopName.contains(query)) return true;
-
-    final empName = (order.empName ?? '').toLowerCase();
-    if (empName.contains(query)) return true;
-
-    final totalPrice = order.totalPrice.toString();
-    if (totalPrice.contains(query)) return true;
-
-    try {
-      final date = DateTime.parse(order.orderDate);
-      final formattedDate = _formatDateForSearch(date).toLowerCase();
-      if (formattedDate.contains(query)) return true;
-    } catch (e) {
-      if (order.orderDate.toLowerCase().contains(query)) return true;
-    }
-
-    for (var item in order.items) {
-      if (item.productName?.toLowerCase().contains(query) ?? false) {
-        return true;
-      }
-      if (item.quantity.toString().contains(query)) {
-        return true;
-      }
-      if (item.price.toString().contains(query)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  Future<void> _onFilterSelected(String label) async {
-    if (label == _filterCustom) {
-      final now = DateTime.now();
-      final initialStart =
-          _customRange?.start ?? DateTime(now.year, now.month, now.day);
-      final initialEnd =
-          _customRange?.end ?? DateTime(now.year, now.month, now.day);
-
-      final range = await showDateRangePicker(
-        context: context,
-        firstDate: DateTime(now.year - 5),
-        lastDate: DateTime(now.year + 1),
-        initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
-                primary: Colors.green.shade600,
-                onPrimary: Colors.white,
-                surface: Colors.white,
-                onSurface: Colors.grey.shade800,
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
-
-      if (range == null) return;
-
-      setState(() {
-        _selectedFilter = label;
-        _customRange = range;
-      });
-      return;
-    }
-
-    setState(() {
-      _selectedFilter = label;
-    });
-  }
-
-  bool _passesDateFilter(Order order) {
-    if (_selectedFilter == null || _selectedFilter == _filterAll) {
-      return true;
-    }
-
-    DateTime orderDate;
-    try {
-      orderDate = _dateOnly(DateTime.parse(order.orderDate));
-    } catch (_) {
-      return false;
-    }
-
-    final today = _dateOnly(DateTime.now());
-
-    if (_selectedFilter == _filterToday) {
-      return orderDate == today;
-    }
-
-    if (_selectedFilter == _filterYesterday) {
-      final yesterday = today.subtract(const Duration(days: 1));
-      return orderDate == yesterday;
-    }
-
-    if (_selectedFilter == _filterThisMonth) {
-      return orderDate.year == today.year && orderDate.month == today.month;
-    }
-
-    if (_selectedFilter == _filterCustom) {
-      if (_customRange == null) return true;
-
-      final start = _dateOnly(_customRange!.start);
-      final end = _dateOnly(_customRange!.end);
-
-      return !orderDate.isBefore(start) && !orderDate.isAfter(end);
-    }
-
-    return true;
-  }
-
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  String _formatDateForSearch(DateTime date) {
-    final months = [
-      'jan',
-      'feb',
-      'mar',
-      'apr',
-      'may',
-      'jun',
-      'jul',
-      'aug',
-      'sep',
-      'oct',
-      'nov',
-      'dec',
-    ];
-
-    return '${months[date.month - 1]} ${date.day} ${date.year} ${date.day}/${date.month}/${date.year}';
-  }
-
-  Widget _buildOrdersList(BuildContext context, List<Order> orders, bool isTablet) {
-    orders.sort(
-      (a, b) =>
-          DateTime.parse(b.orderDate).compareTo(DateTime.parse(a.orderDate)),
-    );
-
-    final List<Order> filteredOrders = [];
-
-    for (int i = 0; i < orders.length; i++) {
-      final order = orders[i];
-      final orderNumber = orders.length - i;
-
-      if (!_passesDateFilter(order)) continue;
-
-      if (_orderMatchesSearch(order, orderNumber, _searchQuery)) {
-        filteredOrders.add(order);
-      }
-    }
-
-    if (filteredOrders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.search_off_rounded,
-                size: isTablet ? 100 : 80,
-                color: Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No results found',
-              style: TextStyle(
-                fontSize: isTablet ? 24 : 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try searching with different keywords',
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 14,
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        await ref.read(ordersViewModelProvider.notifier).getOrderList(
-              ref.read(adminloginViewModelProvider).companyId ?? '',
-            );
-      },
-      color: Colors.green,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Responsive grid
-          int crossAxisCount = 1;
-          if (constraints.maxWidth > 1200) {
-            crossAxisCount = 3;
-          } else if (constraints.maxWidth > 800) {
-            crossAxisCount = 2;
-          }
-
-          if (crossAxisCount == 1) {
-            // List view for mobile
-            return ListView.builder(
-              padding: EdgeInsets.all(isTablet ? 24 : 16),
-              itemCount: filteredOrders.length,
-              itemBuilder: (context, index) {
-                final order = filteredOrders[index];
-                final orderNumber = orders.length - orders.indexOf(order);
-                return _OrderCard(
-                  order: order,
-                  orderNumber: orderNumber,
-                  isTablet: isTablet,
-                  animationDelay: index * 50,
-                );
-              },
-            );
-          } else {
-            // Grid view for tablet/desktop
-            return GridView.builder(
-              padding: const EdgeInsets.all(24),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: 1.3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: filteredOrders.length,
-              itemBuilder: (context, index) {
-                final order = filteredOrders[index];
-                final orderNumber = orders.length - orders.indexOf(order);
-                return _OrderCard(
-                  order: order,
-                  orderNumber: orderNumber,
-                  isTablet: true,
-                  animationDelay: index * 50,
-                );
-              },
-            );
-          }
-        },
-      ),
-    );
+  String _thisMonthLabel() {
+    final d = DateTime.now();
+    const m = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+    return '${m[d.month - 1]} ${d.year}';
   }
 }
 
-class _OrderCard extends StatefulWidget {
-  final Order order;
-  final int orderNumber;
-  final bool isTablet;
-  final int animationDelay;
+// ── Filter sheet row ──────────────────────────────────────────────────────────
+class _FilterSheetRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const _OrderCard({
-    required this.order,
-    required this.orderNumber,
-    required this.isTablet,
-    this.animationDelay = 0,
+  const _FilterSheetRow({
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
-  State<_OrderCard> createState() => _OrderCardState();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? _kPrimaryLight : _kBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color:
+                  isSelected ? _kPrimary : Colors.transparent,
+              width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isSelected ? _kPrimary : _kSurface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: isSelected
+                        ? Colors.transparent
+                        : _kDivider),
+              ),
+              child: Icon(icon,
+                  size: 18,
+                  color: isSelected
+                      ? Colors.white
+                      : _kTextSecondary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? _kPrimary
+                              : _kTextPrimary)),
+                  const SizedBox(height: 1),
+                  Text(sublabel,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: isSelected
+                              ? _kPrimary.withOpacity(0.7)
+                              : _kTextSecondary)),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected
+                  ? Icons.check_rounded
+                  : Icons.chevron_right_rounded,
+              size: 18,
+              color: isSelected ? _kPrimary : _kTextSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _OrderCardState extends State<_OrderCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<Offset> _slideAnimation;
+// ══════════════════════════════════════════════════════════════════════════════
+// Order Card
+// ══════════════════════════════════════════════════════════════════════════════
+class _OrderCard extends StatelessWidget {
+  final Order order;
+  final int orderNumber;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
+  const _OrderCard(
+      {required this.order, required this.orderNumber});
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(Duration(milliseconds: widget.animationDelay), () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  String _formatDate(String isoDate) {
+  String _fmt(String iso) {
     try {
-      final date = DateTime.parse(isoDate);
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-
-      return '${months[date.month - 1]} ${date.day}, ${date.year} at ${_formatTime(date)}';
-    } catch (e) {
-      return isoDate;
+      final d = DateTime.parse(iso);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                      'Jul','Aug','Sep','Oct','Nov','Dec'];
+      final h =
+          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      final min = d.minute.toString().padLeft(2, '0');
+      final p = d.hour >= 12 ? 'PM' : 'AM';
+      return '${months[d.month - 1]} ${d.day}, ${d.year} • $h:$min $p';
+    } catch (_) {
+      return iso;
     }
-  }
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour > 12
-        ? date.hour - 12
-        : (date.hour == 0 ? 12 : date.hour);
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
   }
 
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-                spreadRadius: -5,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderDetailsPage(
+                order: order,
+                orderNumber: orderNumber,
               ),
-            ],
+            ),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OrderDetailsPage(
-                      order: widget.order,
-                      orderNumber: widget.orderNumber,
-                    ),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: EdgeInsets.all(widget.isTablet ? 20 : 16),
-                child: Column(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _kDivider),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Row 1: order number + price + chevron
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Order Header with gradient badge
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.green.shade400,
-                                Colors.green.shade600,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.receipt_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Order',
-                                    style: TextStyle(
-                                      fontSize: widget.isTablet ? 14 : 12,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.green.shade100,
-                                          Colors.green.shade200,
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '#${widget.orderNumber}',
-                                      style: TextStyle(
-                                        fontSize: widget.isTablet ? 14 : 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDate(widget.order.orderDate),
-                                style: TextStyle(
-                                  fontSize: widget.isTablet ? 13 : 11,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Divider with gradient
-                    Container(
-                      height: 1,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.grey.shade200,
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Order Info Chips
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildModernInfoChip(
-                          Icons.person_rounded,
-                          widget.order.empName ?? 'Unknown',
-                          Colors.blue,
-                        ),
-                        _buildModernInfoChip(
-                          Icons.store_rounded,
-                          widget.order.shopNamep ?? 'Unknown',
-                          Colors.purple,
-                        ),
-                        _buildModernInfoChip(
-                          Icons.shopping_bag_rounded,
-                          '${widget.order.items.length} items',
-                          Colors.orange,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Total Price with gradient background
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.green.shade50,
-                            Colors.green.shade100,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.green.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.payments_rounded,
-                                color: Colors.green.shade700,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Total Amount',
-                                style: TextStyle(
-                                  fontSize: widget.isTablet ? 15 : 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '₹${widget.order.totalPrice.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 20 : 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
+                          Text('Order #$orderNumber',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: _kTextPrimary,
+                                  letterSpacing: -0.3)),
+                          const SizedBox(height: 2),
+                          Text(_fmt(order.orderDate),
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: _kTextSecondary)),
                         ],
                       ),
                     ),
+                    Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '₹${order.totalPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: _kTextPrimary,
+                              letterSpacing: -0.5),
+                        ),
+                        const SizedBox(height: 2),
+                        const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: _kTextSecondary),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildModernInfoChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color.withOpacity(0.7)),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: widget.isTablet ? 13 : 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
-              ),
-              overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: _kDivider),
+                const SizedBox(height: 10),
+
+                // Row 2: employee | shop | items
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline_rounded,
+                        size: 13, color: _kTextSecondary),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        order.empName ?? 'Unknown',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 12,
+                        color: _kDivider,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 8)),
+                    const Icon(Icons.storefront_outlined,
+                        size: 13, color: _kTextSecondary),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        order.shopNamep ?? 'Unknown',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 12,
+                        color: _kDivider,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 8)),
+                    const Icon(Icons.shopping_bag_outlined,
+                        size: 13, color: _kTextSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

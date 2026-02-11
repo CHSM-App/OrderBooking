@@ -11,6 +11,18 @@ import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'dart:math';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
+// Minimal Theme Colors
+class MinimalTheme {
+  static const primaryOrange = Color(0xFFFF8C42);
+  static const backgroundGray = Color(0xFFF5F5F5);
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const textDark = Color(0xFF2D2D2D);
+  static const textGray = Color(0xFF6B7280);
+  static const iconGray = Color(0xFF9CA3AF);
+  static const successGreen = Color(0xFF10B981);
+  static const errorRed = Color(0xFFEF4444);
+}
+
 class EmployeeDetailsPage extends ConsumerStatefulWidget {
   final int empId;
 
@@ -21,19 +33,13 @@ class EmployeeDetailsPage extends ConsumerStatefulWidget {
       _EmployeeDetailsPageState();
 }
 
-class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  // Orders filter
+class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   String orderFilter = "Today";
   DateTimeRange? orderCustomRange;
-  // Visited shops filter
   String visitFilter = "Today";
   DateTimeRange? visitCustomRange;
   final List<String> filters = ["All", "Today", "Month", "Year", "Custom"];
+
 
   @override
   void initState() {
@@ -47,31 +53,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           .read(visitViewModelProvider.notifier)
           .fetchEmployeeVisits(widget.empId);
       await ref
-          .read(ordersViewModelProvider.notifier)
-          .getEmployeeOrders(widget.empId);
-      await ref
           .read(employeeloginViewModelProvider.notifier)
           .getEmployeeVisit(widget.empId);
     });
-
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   Future<void> _editEmployee() async {
@@ -89,7 +73,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       ),
     );
 
-    // Refresh employee details if updated
     if (result == true) {
       ref
           .read(employeeloginViewModelProvider.notifier)
@@ -102,16 +85,41 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        contentPadding: const EdgeInsets.all(20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text('Delete Employee'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MinimalTheme.errorRed.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_rounded,
+                color: MinimalTheme.errorRed,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Delete Employee?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: MinimalTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: MinimalTheme.textGray,
+              ),
+            ),
           ],
-        ),
-        content: const Text(
-          'Are you sure you want to delete this employee? This action cannot be undone.',
-          style: TextStyle(fontSize: 15),
         ),
         actions: [
           TextButton(
@@ -121,11 +129,12 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: MinimalTheme.errorRed,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 0,
             ),
             child: const Text('Delete'),
           ),
@@ -140,7 +149,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           .read(employeeloginViewModelProvider.notifier)
           .deleteEmployee(widget.empId);
 
-      // ✅ AWAIT the refresh so the list updates BEFORE popping
       await ref
           .read(employeeloginViewModelProvider.notifier)
           .getEmployeeList(
@@ -150,13 +158,15 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Employee deleted successfully"),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text("Employee deleted successfully"),
+          backgroundColor: MinimalTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
         ),
       );
 
-      // ✅ Small delay so the snackbar is visible before navigating
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
@@ -166,21 +176,17 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: MinimalTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
+        ),
       );
     }
   }
 
-  String formatJoiningDate(String? isoDate) {
-    if (isoDate == null || isoDate.isEmpty) return "N/A";
-
-    final date = DateTime.parse(isoDate).toLocal();
-    return "${date.day.toString().padLeft(2, '0')}-"
-        "${date.month.toString().padLeft(2, '0')}-"
-        "${date.year.toString().padLeft(2, '0')}";
-  }
-
-  //filter Orders (Today, Month, Year, Custom)
   bool _passesOrderFilter(Order order) {
     final raw = _parseOrderDate(order.orderDate);
     if (raw == null) return false;
@@ -188,48 +194,26 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final date = _toIstDateOnly(raw);
     final today = _toIstDateOnly(DateTime.now());
 
-    final orderDate = parseSqlServerDate(order.orderDate!);
+    final orderDate = parseSqlServerDate(order.orderDate);
     final orderKey = dateKey(orderDate);
 
     switch (orderFilter) {
       case "All":
         return true;
-
       case "Today":
         return date == today;
-
       case "Month":
         return date.year == today.year && date.month == today.month;
-
       case "Year":
         return date.year == today.year;
-
       case "Custom":
         if (orderCustomRange == null) return true;
-
         final startKey = dateKey(orderCustomRange!.start);
         final endKey = dateKey(orderCustomRange!.end);
-
         return orderKey >= startKey && orderKey <= endKey;
       default:
         return true;
     }
-  }
-
-  String _formatTime(DateTime? time) {
-    if (time == null) return "--";
-
-    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? "PM" : "AM";
-
-    return "$hour:$minute $period";
-  }
-
-  String _formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}/"
-        "${date.month.toString().padLeft(2, '0')}/"
-        "${date.year}";
   }
 
   bool _passesVisitPayloadFilter(VisitPayload visit) {
@@ -245,24 +229,17 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     switch (visitFilter) {
       case "All":
         return true;
-
       case "Today":
         return date == today;
-
       case "Month":
         return date.year == today.year && date.month == today.month;
-
       case "Year":
         return date.year == today.year;
-
       case "Custom":
         if (visitCustomRange == null) return true;
-
         final startKey = dateKey(visitCustomRange!.start);
         final endKey = dateKey(visitCustomRange!.end);
-
         return visitKey >= startKey && visitKey <= endKey;
-
       default:
         return true;
     }
@@ -271,20 +248,32 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
-
     final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
+    final detailsAsync = state.employeeDetails;
 
-    if (state.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (detailsAsync.isLoading) {
+      return const Scaffold(
+        backgroundColor: MinimalTheme.backgroundGray,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: MinimalTheme.primaryOrange,
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
     }
 
-    if (state.error != null) {
-      return Scaffold(body: Center(child: Text(state.error!)));
+    if (detailsAsync.hasError) {
+      return Scaffold(
+        backgroundColor: MinimalTheme.backgroundGray,
+        body: Center(child: Text(detailsAsync.error.toString())),
+      );
     }
 
-    final List<EmployeeLogin>? list = state.employeeDetails.value;
+    final List<EmployeeLogin>? list = detailsAsync.value;
     if (list == null || list.isEmpty) {
       return const Scaffold(
+        backgroundColor: MinimalTheme.backgroundGray,
         body: Center(child: Text("No Employee Data Found")),
       );
     }
@@ -297,7 +286,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     final avgShopTimeText = _calculateAvgShopTime(
       ref.watch(visitViewModelProvider).visits?.value,
     );
-
     final avgShopsPerDayText = _calculateAvgShopsPerDay(
       ref.watch(visitViewModelProvider).visits?.value,
     );
@@ -306,766 +294,587 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
       orElse: () => null,
     );
     final avgOrdersPerDayText = _calculateAvgOrdersPerDay(employeeOrdersForAvg);
-
     final ordersAsync = ordersState.orders;
 
-
-
-  Widget _styledFilterDropdown({
-  required String value,
-  required List<String> items,
-  required ValueChanged<String> onChanged,
-}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[300]!),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
+    return Scaffold(
+      backgroundColor: MinimalTheme.backgroundGray,
+      appBar: AppBar(
+        backgroundColor: MinimalTheme.primaryOrange,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-      ],
-    ),
-    child: DropdownButton<String>(
-      value: value,
-      underline: const SizedBox(),
-      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF2196F3),
+        title: const Text(
+          "Employee Details",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            onPressed: _editEmployee,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            onPressed: _deleteEmployee,
+          ),
+        ],
       ),
-      items: items
-          .map(
-            (f) => DropdownMenuItem(
-              value: f,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(f),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Compact Header Card
+            Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: MinimalTheme.cardWhite,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF4E6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (employee.empName?.isNotEmpty ?? false)
+                            ? employee.empName![0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: MinimalTheme.primaryOrange,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          employee.empName ?? "N/A",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: MinimalTheme.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (employee.regionName != null)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: MinimalTheme.iconGray,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  employee.regionName ?? '',
+                                  style: const TextStyle(
+                                    color: MinimalTheme.textGray,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? MinimalTheme.successGreen.withOpacity(0.1)
+                          : MinimalTheme.errorRed.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isActive ? "Active" : "Inactive",
+                      style: TextStyle(
+                        color: isActive
+                            ? MinimalTheme.successGreen
+                            : MinimalTheme.errorRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          )
-          .toList(),
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
-    ),
-  );
-}
 
+            // Action Buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.event_available_outlined,
+                      label: 'Attendance',
+                      color: MinimalTheme.successGreen,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AttendanceCalendarPage(
+                              empId: employee.empId ?? widget.empId,
+                              joiningDate: employee.joiningDate,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _actionButton(
+                      icon: Icons.map_outlined,
+                      label: 'View Map',
+                      color: MinimalTheme.primaryOrange,
+                      onTap: () {
+                        final empId = employee.empId ?? widget.empId;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EmployeeVisitsMapPage(
+                              empId: empId,
+                              empName: employee.empName ?? 'Employee',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
+            const SizedBox(height: 12),
 
-    Widget ordersWidget() {
-      if (ordersAsync == null) {
-        return const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text("No orders found for this employee"),
-        );
-      }
+            // Performance Stats
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 1.4,
+                children: [
+                  _statCard(
+                    title: "Avg Time/Shop",
+                    value: avgShopTimeText,
+                    icon: Icons.timer_outlined,
+                  ),
+                  _statCard(
+                    title: "Avg Distance",
+                    value: avgDistanceText,
+                    icon: Icons.route_outlined,
+                  ),
+                  _statCard(
+                    title: "Shops/Day",
+                    value: avgShopsPerDayText,
+                    icon: Icons.store_outlined,
+                  ),
+                  _statCard(
+                    title: "Orders/Day",
+                    value: avgOrdersPerDayText,
+                    icon: Icons.shopping_cart_outlined,
+                  ),
+                ],
+              ),
+            ),
 
-      return ordersAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(16),
-          child: CircularProgressIndicator(),
+            const SizedBox(height: 12),
+
+            // Recent Orders Section
+            _sectionHeader(
+              title: 'Recent Orders',
+              icon: Icons.receipt_long_outlined,
+              filter: orderFilter,
+              onFilterChanged: (value) async {
+                if (value == "Custom") {
+                  final now = DateTime.now();
+                  final range = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(now.year - 5),
+                    lastDate: DateTime(now.year + 1),
+                    initialDateRange:
+                        orderCustomRange ?? DateTimeRange(start: now, end: now),
+                  );
+                  if (range == null) return;
+                  setState(() {
+                    orderFilter = value;
+                    orderCustomRange = range;
+                  });
+                } else {
+                  setState(() {
+                    orderFilter = value;
+                    orderCustomRange = null;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildOrdersList(ordersAsync),
+
+            const SizedBox(height: 12),
+
+            // Visited Shops Section
+            _sectionHeader(
+              title: 'Visited Shops',
+              icon: Icons.store_outlined,
+              filter: visitFilter,
+              onFilterChanged: (value) async {
+                if (value == "Custom") {
+                  final now = DateTime.now();
+                  final range = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(now.year - 5),
+                    lastDate: DateTime(now.year + 1),
+                    initialDateRange:
+                        visitCustomRange ?? DateTimeRange(start: now, end: now),
+                  );
+                  if (range == null) return;
+                  setState(() {
+                    visitFilter = value;
+                    visitCustomRange = range;
+                  });
+                } else {
+                  setState(() {
+                    visitFilter = value;
+                    visitCustomRange = null;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildVisitsList(),
+
+            const SizedBox(height: 20),
+          ],
         ),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(e.toString()),
-        ),
-        data: (orders) {
-          // ✅ FILTER HERE — EVERY BUILD
-          final filteredOrders = orders.where(_passesOrderFilter).toList()
-            ..sort(
-              (a, b) => _parseOrderDate(
-                b.orderDate,
-              )!.compareTo(_parseOrderDate(a.orderDate)!),
-            );
+      ),
+    );
+  }
 
-          if (filteredOrders.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text("No orders found for this filter"),
-            );
-          }
-
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: filteredOrders.length,
-            itemBuilder: (_, index) {
-              final order = filteredOrders[index];
-              return _AnimatedOrderCard(
-                order: order,
-                orderNumber: filteredOrders.length - index,
-                amount: order.totalPrice.toInt(),
-                filter: orderFilter,
-                delay: index * 100,
-              );
-            },
-          );
-        },
-      );
-    }
-
-    Widget _timeChip(String label, String time, Color color) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          color: MinimalTheme.cardWhite,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
             Text(
-              "$label:",
+              label,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              time,
-              style: TextStyle(
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
             ),
           ],
         ),
-      );
-    }
-
-    Widget _buildTimeChip(String label, String? value, Color color) {
-      if (value == null || value.isEmpty) {
-        return _timeChip(label, "--", Colors.grey);
-      }
-
-      try {
-        return _timeChip(label, _formatTime(DateTime.parse(value)), color);
-      } catch (_) {
-        return _timeChip(label, "--", Colors.grey);
-      }
-    }
-
-    String _getPunchInDate(String? punchIn) {
-      if (punchIn == null || punchIn.isEmpty) {
-        return "--/--/----";
-      }
-
-      try {
-        return _formatDate(DateTime.parse(punchIn));
-      } catch (_) {
-        return "--/--/----";
-      }
-    }
-
-    Widget _visitedShopsWidget() {
-      final visitsAsync = ref
-          .watch(employeeloginViewModelProvider)
-          .employeeVisits;
-
-      return visitsAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(16),
-          child: CircularProgressIndicator(),
-        ),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(e.toString()),
-        ),
-        data: (visits) {
-          final filteredVisits =
-              visits.where(_passesVisitPayloadFilter).toList()..sort((a, b) {
-                final aDateStr = a.punchIn ?? a.punchOut;
-                final bDateStr = b.punchIn ?? b.punchOut;
-
-                if (aDateStr == null && bDateStr == null) return 0;
-                if (aDateStr == null) return 1;
-                if (bDateStr == null) return -1;
-
-                final aDate = DateTime.parse(aDateStr);
-                final bDate = DateTime.parse(bDateStr);
-                return bDate.compareTo(aDate);
-              });
-
-          if (filteredVisits.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text("No shop visits found for this filter"),
-            );
-          }
-
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: filteredVisits.length,
-            itemBuilder: (_, index) {
-              final v = filteredVisits[index];
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      v.shopName ?? "Unknown Shop",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            v.regionName ?? "—",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // LEFT: Punch-in date
-                        Text(
-                          _getPunchInDate(v.punchIn),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // MIDDLE: Time chips
-                        _buildTimeChip("In", v.punchIn, Colors.green),
-                        const SizedBox(width: 8),
-                        _buildTimeChip("Out", v.punchOut, Colors.red),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          "Employee Details",
-          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFFF57C00),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: false,
-        titleSpacing: 0,
-        elevation: 0,
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            child: Column(
+    );
+  }
+
+  Widget _statCard({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    // Assign colors based on title
+    Color color;
+    switch (title) {
+      case "Avg Time/Shop":
+        color = Colors.orange;
+        break;
+      case "Avg Distance":
+        color = Colors.purple;
+        break;
+      case "Shops/Day":
+        color = Colors.teal;
+        break;
+      case "Orders/Day":
+        color = Colors.blue;
+        break;
+      default:
+        color = MinimalTheme.primaryOrange;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(
+              color: MinimalTheme.textGray,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader({
+    required String title,
+    required IconData icon,
+    required String filter,
+    required Function(String) onFilterChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: MinimalTheme.primaryOrange, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: MinimalTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: MinimalTheme.cardWhite,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: DropdownButton<String>(
+              value: filter,
+              underline: const SizedBox(),
+              isDense: true,
+              icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: MinimalTheme.primaryOrange,
+              ),
+              items: filters
+                  .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) onFilterChanged(v);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersList(AsyncValue<List<Order>>? ordersAsync) {
+    if (ordersAsync == null) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text("No orders found", style: TextStyle(color: MinimalTheme.textGray)),
+      );
+    }
+
+    return ordersAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: CircularProgressIndicator(
+          color: MinimalTheme.primaryOrange,
+          strokeWidth: 2.5,
+        ),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(e.toString(), style: const TextStyle(color: MinimalTheme.textGray)),
+      ),
+      data: (orders) {
+        final filteredOrders = orders.where(_passesOrderFilter).toList()
+          ..sort((a, b) => _parseOrderDate(b.orderDate)!
+              .compareTo(_parseOrderDate(a.orderDate)!));
+
+        if (filteredOrders.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("No orders for this filter", style: TextStyle(color: MinimalTheme.textGray)),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: filteredOrders.length,
+          itemBuilder: (_, index) {
+            final order = filteredOrders[index];
+            return _orderCard(order, filteredOrders.length - index);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _orderCard(Order order, int orderNumber) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OrderDetailsPage(
+                  orderNumber: orderNumber,
+                  order: order,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: [
-                // 👤 HEADER CARD WITH DELETE ICON
                 Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(20),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0A3D62), Color(0xFF0A3D62)],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0A3D62).withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Stack(
-                    children: [
-                      // EDIT AND DELETE ICONS - TOP RIGHT CORNER
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Row(
-                          children: [
-                            // EDIT ICON
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                onPressed: _editEmployee,
-                                tooltip: 'Edit Employee',
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // DELETE ICON
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                onPressed: _deleteEmployee,
-                                tooltip: 'Delete Employee',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // MAIN CONTENT
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 42,
-                            backgroundColor: Colors.white,
-                            child: Text(
-                              (employee.empName?.isNotEmpty ?? false)
-                                  ? employee.empName![0]
-                                  : '?',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2196F3),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  employee.empName ?? "N/A",
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on,
-                                      size: 16,
-                                      color: Colors.white70,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        employee.regionName?.toString() ?? '',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? Colors.green
-                                        : Colors.redAccent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    isActive ? "Active" : "Inactive",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: MinimalTheme.primaryOrange,
+                    size: 20,
                   ),
                 ),
-
-                // 🧾 BASIC INFO
-                // _sectionTitle("Basic Information", Icons.info_outline),
-                // _infoCard([
-                //   _infoRow(
-                //     Icons.phone,
-                //     "Mobile No.",
-                //     employee.empMobile ?? "N/A",
-                //   ),
-                //   _infoRow(Icons.email, "Email", employee.empEmail ?? "N/A"),
-                //   _infoRow(Icons.home, "Address", employee.empAddress ?? "N/A"),
-
-                //   _infoRow(
-                //     Icons.calendar_today,
-                //     "Joining Date",
-                //     formatJoiningDate(employee.joiningDate),
-                //   ),
-                // ]),
-                const SizedBox(height: 24),
-
-                // 🗺️ EMPLOYEE VISITS MAP
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// View Attendance
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AttendanceCalendarPage(
-                                  empId: employee.empId ?? widget.empId,
-                                  joiningDate: employee.joiningDate
-                                ), 
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.event_available_outlined,
-                                    color: Colors.green,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Expanded(
-                                  child: Text(
-                                    'Attendance',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      Text(
+                        "Order #$orderNumber",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
                         ),
                       ),
-
-                      const SizedBox(width: 12),
-
-                      /// Open Map
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            final empId = employee.empId ?? widget.empId;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => EmployeeVisitsMapPage(
-                                  empId: empId,
-                                  empName: employee.empName ?? 'Employee',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF0A3D62,
-                                    ).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.map_outlined,
-                                    color: Color(0xFF0A3D62),
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Expanded(
-                                  child: Text(
-                                    'Open Map',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "₹${order.totalPrice.toStringAsFixed(0)}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: MinimalTheme.textGray,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // 📊 PERFORMANCE SUMMARY
-                _sectionTitle("Performance Summary", Icons.bar_chart_rounded),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GridView.count(
-                    shrinkWrap: true,
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 1.3,
-                    children: [
-                      _AnimatedStatCard(
-                        title: "Avg Time / Shop",
-                        value: avgShopTimeText,
-                        icon: Icons.timer_outlined,
-                        color: Colors.orange,
-                        delay: 0,
-                      ),
-                      _AnimatedStatCard(
-                        title: "Avg Distance / Day",
-                        value: avgDistanceText,
-                        icon: Icons.route_outlined,
-                        color: Colors.purple,
-                        delay: 100,
-                      ),
-                      _AnimatedStatCard(
-                        title: "Avg Shops / Day",
-                        value: avgShopsPerDayText,
-                        icon: Icons.store_outlined,
-                        color: Colors.teal,
-                        delay: 200,
-                      ),
-                      _AnimatedStatCard(
-                        title: "Avg Orders / Day",
-                        value: avgOrdersPerDayText,
-                        icon: Icons.shopping_cart_outlined,
-                        color: Colors.blue,
-                        delay: 300,
-                      ),
-                    ],
-                  ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: MinimalTheme.iconGray,
                 ),
-                const SizedBox(height: 24),
-
-
-                // ====================RECENT ORDERS========================
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.receipt_long_rounded,
-                            color: Color(0xFF2196F3),
-                            size: 24,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Recent Orders",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      _styledFilterDropdown(
-                        value: orderFilter,
-                        items: filters,
-                        onChanged: (value) async {
-                          if (value == "Custom") {
-                            final now = DateTime.now();
-                            final range = await showDateRangePicker(
-                              context: context,
-                              firstDate: DateTime(now.year - 5),
-                              lastDate: DateTime(now.year + 1),
-                              initialDateRange:
-                                  orderCustomRange ??
-                                  DateTimeRange(start: now, end: now),
-                            );
-
-                            if (range == null) return;
-
-                            setState(() {
-                              orderFilter = value;
-                              orderCustomRange = range;
-                            });
-                          } else {
-                            setState(() {
-                              orderFilter = value;
-                              orderCustomRange = null;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ordersWidget(),
-                const SizedBox(height: 24),
-
-                //====================Visited shops=========================
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.store_rounded,
-                            color: Color(0xFF4CAF50),
-                            size: 24,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Visited Shops",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      _styledFilterDropdown(
-                        value: visitFilter,
-                        items: filters,
-                        onChanged: (value) async {
-                          if (value == "Custom") {
-                            final now = DateTime.now();
-                            final range = await showDateRangePicker(
-                              context: context,
-                              firstDate: DateTime(now.year - 5),
-                              lastDate: DateTime(now.year + 1),
-                              initialDateRange:
-                                  visitCustomRange ??
-                                  DateTimeRange(start: now, end: now),
-                            );
-
-                            if (range == null) return;
-
-                            setState(() {
-                              visitFilter = value;
-                              visitCustomRange = range;
-                            });
-                          } else {
-                            setState(() {
-                              visitFilter = value;
-                              visitCustomRange = null;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _visitedShopsWidget(),
-
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -1074,92 +883,159 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
     );
   }
 
-  // ================= HELPER WIDGETS =================
+  Widget _buildVisitsList() {
+    final visitsAsync = ref.watch(employeeloginViewModelProvider).employeeVisits;
 
+    return visitsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: CircularProgressIndicator(
+          color: MinimalTheme.primaryOrange,
+          strokeWidth: 2.5,
+        ),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(e.toString(), style: const TextStyle(color: MinimalTheme.textGray)),
+      ),
+      data: (visits) {
+        final filteredVisits = visits.where(_passesVisitPayloadFilter).toList()
+          ..sort((a, b) {
+            final aDateStr = a.punchIn ?? a.punchOut;
+            final bDateStr = b.punchIn ?? b.punchOut;
+            if (aDateStr == null && bDateStr == null) return 0;
+            if (aDateStr == null) return 1;
+            if (bDateStr == null) return -1;
+            return DateTime.parse(bDateStr).compareTo(DateTime.parse(aDateStr));
+          });
+
+        if (filteredVisits.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("No visits for this filter", style: TextStyle(color: MinimalTheme.textGray)),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: filteredVisits.length,
+          itemBuilder: (_, index) {
+            final v = filteredVisits[index];
+            return _visitCard(v);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _visitCard(VisitPayload visit) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MinimalTheme.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            visit.shopName ?? "Unknown Shop",
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: MinimalTheme.textDark,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _timeChip("In", visit.punchIn, MinimalTheme.successGreen),
+              const SizedBox(width: 8),
+              _timeChip("Out", visit.punchOut, MinimalTheme.errorRed),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _timeChip(String label, String? time, Color color) {
+    String formattedTime = "--";
+    if (time != null && time.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(time);
+        final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final period = dt.hour >= 12 ? "PM" : "AM";
+        formattedTime = "$hour:$minute $period";
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "$label:",
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            formattedTime,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods
   DateTime parseSqlServerDate(String raw) {
-    // Treat SQL datetime2 as LOCAL date, strip time
     final dt = DateTime.parse(raw);
     return DateTime(dt.year, dt.month, dt.day);
   }
 
   int dateKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
-
   DateTime _toIstDateOnly(DateTime dt) {
     final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
     return DateTime(ist.year, ist.month, ist.day);
   }
 
-  Widget _sectionTitle(String title, IconData icon) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-    child: Row(
-      children: [
-        Icon(icon, color: const Color(0xFF2196F3)),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ],
-    ),
-  );
+  DateTime _toIst(DateTime dt) {
+    return dt.toUtc().add(const Duration(hours: 5, minutes: 30));
+  }
 
-  Widget _infoCard(List<Widget> children) => Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(children: children),
-  );
-
-  Widget _infoRow(IconData icon, String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2196F3).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: const Color(0xFF2196F3)),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+  DateTime? _parseOrderDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
 
   String _calculateAvgDistance(List<EmployeeVisit>? visits) {
     if (visits == null || visits.isEmpty) return "0 km";
-
     final byDay = <String, List<EmployeeVisit>>{};
     for (final v in visits) {
       final ts = v.punchIn ?? v.punchOut;
@@ -1169,12 +1045,17 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
       byDay.putIfAbsent(key, () => []).add(v);
     }
-
     if (byDay.isEmpty) return "0 km";
-
     double totalKm = 0.0;
     for (final dayVisits in byDay.values) {
-      dayVisits.sort(_compareVisitsByPunchIn);
+      dayVisits.sort((a, b) {
+        final aDate = a.punchIn ?? a.punchOut;
+        final bDate = b.punchIn ?? b.punchOut;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
       for (var i = 1; i < dayVisits.length; i++) {
         final prev = dayVisits[i - 1];
         final curr = dayVisits[i];
@@ -1186,31 +1067,15 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
         );
       }
     }
-
     final avg = totalKm / byDay.length;
     return _formatDistance(avg);
-  }
-
-  int _compareVisitsByPunchIn(EmployeeVisit a, EmployeeVisit b) {
-    final aDate = a.punchIn ?? a.punchOut;
-    final bDate = b.punchIn ?? b.punchOut;
-    if (aDate == null && bDate == null) return 0;
-    if (aDate == null) return 1;
-    if (bDate == null) return -1;
-    return aDate.compareTo(bDate);
-  }
-
-  DateTime _toIst(DateTime dt) {
-    return dt.toUtc().add(const Duration(hours: 5, minutes: 30));
   }
 
   double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
     const earthRadiusKm = 6371.0;
     final dLat = _degToRad(lat2 - lat1);
     final dLon = _degToRad(lon2 - lon1);
-
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
+    final a = sin(dLat / 2) * sin(dLat / 2) +
         cos(_degToRad(lat1)) *
             cos(_degToRad(lat2)) *
             sin(dLon / 2) *
@@ -1231,7 +1096,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
 
   String _calculateAvgShopTime(List<EmployeeVisit>? visits) {
     if (visits == null || visits.isEmpty) return "0 min";
-
     final durations = <Duration>[];
     for (final v in visits) {
       if (v.punchIn != null && v.punchOut != null) {
@@ -1242,18 +1106,20 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
         }
       }
     }
-
     if (durations.isEmpty) return "0 min";
-
     final totalSeconds = durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
     final avgSeconds = totalSeconds ~/ durations.length;
     final avgDuration = Duration(seconds: avgSeconds);
-    return _formatDuration(avgDuration);
+    final hours = avgDuration.inHours;
+    final minutes = avgDuration.inMinutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes} min';
   }
 
   String _calculateAvgShopsPerDay(List<EmployeeVisit>? visits) {
     if (visits == null || visits.isEmpty) return "0";
-
     final byDay = <String, Set<int>>{};
     for (final v in visits) {
       final ts = v.punchIn ?? v.punchOut;
@@ -1263,30 +1129,14 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
       byDay.putIfAbsent(key, () => <int>{}).add(v.shopId);
     }
-
     if (byDay.isEmpty) return "0";
-
-    final totalShops = byDay.values.fold<int>(
-      0,
-      (sum, set) => sum + set.length,
-    );
+    final totalShops = byDay.values.fold<int>(0, (sum, set) => sum + set.length);
     final avg = totalShops / byDay.length;
-    return avg.toStringAsFixed(1);
-  }
-
-  String _formatDuration(Duration d) {
-    final hours = d.inHours;
-    final minutes = d.inMinutes % 60;
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    }
-    return '${minutes} min';
+    return avg.round().toString();
   }
 
   String _calculateAvgOrdersPerDay(List<Order>? orders) {
-    print('total orders ${orders?.length}');
     if (orders == null || orders.isEmpty) return "0";
-
     final byDay = <String, int>{};
     for (final o in orders) {
       final ts = _parseOrderDate(o.orderDate);
@@ -1296,312 +1146,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage>
           '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
       byDay[key] = (byDay[key] ?? 0) + 1;
     }
-
     if (byDay.isEmpty) return "0";
-
     final totalOrders = byDay.values.fold<int>(0, (sum, count) => sum + count);
     final avg = totalOrders / byDay.length;
-    return avg.toStringAsFixed(1);
-  }
-
-  DateTime? _parseOrderDate(String? value) {
-    if (value == null || value.isEmpty) return null;
-    return DateTime.tryParse(value);
-  }
-}
-
-// ============================================
-// 🎯 Animated Stat Card
-// ============================================
-class _AnimatedStatCard extends StatefulWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final int delay;
-
-  const _AnimatedStatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.delay,
-  });
-
-  @override
-  State<_AnimatedStatCard> createState() => _AnimatedStatCardState();
-}
-
-class _AnimatedStatCardState extends State<_AnimatedStatCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(widget.icon, color: widget.color, size: 24),
-              ),
-              const Spacer(),
-              Text(
-                widget.value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: widget.color,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                widget.title,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================
-// 🎯 Animated Order Card
-// ============================================
-class _AnimatedOrderCard extends StatefulWidget {
-  final int orderNumber;
-  final int amount;
-  final String filter;
-  final int delay;
-  final Order order;
-
-  const _AnimatedOrderCard({
-    required this.order,
-    required this.orderNumber,
-    required this.amount,
-    required this.filter,
-    required this.delay,
-  });
-
-  @override
-  State<_AnimatedOrderCard> createState() => _AnimatedOrderCardState();
-}
-
-class _AnimatedOrderCardState extends State<_AnimatedOrderCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailsPage(
-                      orderNumber: widget.orderNumber,
-                      order: widget.order,
-                    ),
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.shopping_bag_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Order#${widget.orderNumber}",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  widget.filter,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF2196F3),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "₹${widget.amount}",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return avg.round().toString();
   }
 }
