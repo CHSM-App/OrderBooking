@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
@@ -39,5 +41,11 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   @override
   Future<List<VisitPayload>> getEmployeeVisit(int empId) {
     return apiService.getEmployeeVisit(empId);
+  }
+
+  
+  @override
+  Future  uploadEmployeeIdProof(File image, String empId) {
+    return apiService.uploadEmployeeIdProof(image, empId);
   }
 }

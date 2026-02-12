@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 
@@ -15,5 +17,6 @@ abstract class EmployeeloginRepository {
    Future<dynamic> checkMobileExists(String mobileNo, String companyId);
 
   Future<List<VisitPayload>> getEmployeeVisit(int empId);
-
+   Future<dynamic> uploadEmployeeIdProof(File image, String empId);
+   
 }

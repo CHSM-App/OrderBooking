@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/region.dart';
@@ -75,27 +76,35 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     await ref.read(shopViewModelProvider.notifier).addShop(shop);
  final state = ref.read(shopViewModelProvider);
     if (!mounted) return;
+if (state.error == null) {
+  await _showSuccessDialog();
+  if (!mounted) return;
+  Navigator.pop(context); // back to list page
+}
 
-    if (state.error == null) {
-      _showSuccessDialog();
-      await Future.delayed(const Duration(milliseconds: 1800));
-      if (mounted) Navigator.pop(context, shop);
-    } else {
-      _showErrorSnackbar(state.error!);
-    }
+
 
     await ref.read(shopViewModelProvider.notifier).getEmpShopList(
         ref.read(adminloginViewModelProvider).companyId ?? "", ref.read(adminloginViewModelProvider).regionId ?? 0);
   }
+Future<void> _showSuccessDialog() async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context); // close dialog
+        }
+      });
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
-      builder: (context) => const SuccessDialog(),
-    );
-  }
+      return const SuccessDialog();
+    },
+  );
+
+  await Future.delayed(const Duration(milliseconds: 1600));
+}
+
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -236,11 +245,13 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                             controller: _ownerNameController,
                             label: "Owner Name"),
                         const SizedBox(height: 14),
-                        _buildTextField(
-                            controller: _phoneController,
-                            label: "Phone Number",
-                            keyboardType:
-                                TextInputType.phone),
+                    _buildTextField(
+  controller: _phoneController,
+  label: "Phone Number",
+  keyboardType: TextInputType.number,
+  maxLength: 10,
+),
+
                       ],
                     ),
 
@@ -312,17 +323,26 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    int maxLines = 1,
-    TextInputType keyboardType =
-        TextInputType.text,
-  }) {
+Widget _buildTextField({
+  required TextEditingController controller,
+  required String label,
+  int maxLines = 1,
+  TextInputType keyboardType = TextInputType.text,
+  int? maxLength,
+})
+ {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+        maxLength: maxLength,
+
+  inputFormatters: label == "Phone Number"
+      ? [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(10),
+        ]
+      : null,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return "$label is required";
