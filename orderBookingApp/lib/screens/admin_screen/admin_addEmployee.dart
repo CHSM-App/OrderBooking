@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -28,6 +32,7 @@ class AddEmployeeForm extends ConsumerStatefulWidget {
 
 class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _imagePicker = ImagePicker();
 
   late TextEditingController nameController;
   late TextEditingController mobileController;
@@ -41,6 +46,15 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
   String address = '';
   String email = '';
   int? region;
+
+  // ID Proof
+  File? idProofFile;
+  String? idProofFileName;
+  String? idProofType; // 'image' or 'pdf' or 'other'
+  
+  // Existing ID Proof (from server when editing)
+  String? existingIdProofUrl;
+  bool hasExistingIdProof = false;
 
   @override
   void initState() {
@@ -63,6 +77,26 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
 
     selectedRegionId = widget.employee?.regionId;
 
+    // Load existing ID proof if in edit mode
+    if (widget.isEdit && widget.employee?.idProof != null && widget.employee!.idProof!.isNotEmpty) {
+      existingIdProofUrl = widget.employee!.idProof;
+      hasExistingIdProof = true;
+      
+      // Determine type from URL
+      if (existingIdProofUrl!.toLowerCase().endsWith('.pdf')) {
+        idProofType = 'pdf';
+        idProofFileName = existingIdProofUrl!.split('/').last;
+      } else if (existingIdProofUrl!.toLowerCase().contains('.jpg') ||
+                 existingIdProofUrl!.toLowerCase().contains('.jpeg') ||
+                 existingIdProofUrl!.toLowerCase().contains('.png')) {
+        idProofType = 'image';
+        idProofFileName = existingIdProofUrl!.split('/').last;
+      } else {
+        idProofType = 'other';
+        idProofFileName = existingIdProofUrl!.split('/').last;
+      }
+    }
+
     Future.microtask(() {
       final companyId = ref.read(adminloginViewModelProvider).companyId;
 
@@ -83,26 +117,556 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     super.dispose();
   }
 
+  // Pick from Camera
+  Future<void> _pickFromCamera() async {
+    try {
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+
+      if (photo != null) {
+        setState(() {
+          idProofFile = File(photo.path);
+          idProofFileName = photo.name;
+          idProofType = 'image';
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar("Failed to capture image: $e");
+    }
+  }
+
+  // Pick from Gallery
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          idProofFile = File(image.path);
+          idProofFileName = image.name;
+          idProofType = 'image';
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar("Failed to pick image: $e");
+    }
+  }
+
+  // Pick PDF
+  Future<void> _pickPDF() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          idProofFile = File(result.files.single.path!);
+          idProofFileName = result.files.single.name;
+          idProofType = 'pdf';
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar("Failed to pick PDF: $e");
+    }
+  }
+
+  // Pick from Files
+  Future<void> _pickFromFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          idProofFile = File(result.files.single.path!);
+          idProofFileName = result.files.single.name;
+          
+          String extension = result.files.single.extension?.toLowerCase() ?? '';
+          if (['jpg', 'jpeg', 'png'].contains(extension)) {
+            idProofType = 'image';
+          } else if (extension == 'pdf') {
+            idProofType = 'pdf';
+          } else {
+            idProofType = 'other';
+          }
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar("Failed to pick file: $e");
+    }
+  }
+
+  // Show Full Preview of ID Proof
+  void _showIdProofPreview() {
+    if (idProofFile == null && !hasExistingIdProof) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: MinimalTheme.cardWhite,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        idProofFileName ?? 'ID Proof',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      color: MinimalTheme.iconGray,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Preview Content
+              if (idProofType == 'image')
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: idProofFile != null
+                            ? Image.file(
+                                idProofFile!,
+                                fit: BoxFit.contain,
+                              )
+                            : Image.network(
+                                existingIdProofUrl!,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                      color: MinimalTheme.primaryOrange,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(32),
+                                    child: const Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline,
+                                          size: 48,
+                                          color: MinimalTheme.errorRed,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Failed to load image',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: MinimalTheme.errorRed,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ),
+                )
+              else if (idProofType == 'pdf')
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: MinimalTheme.errorRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf,
+                          size: 64,
+                          color: MinimalTheme.errorRed,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        idProofFileName ?? 'PDF Document',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'PDF preview not available',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: MinimalTheme.textGray,
+                        ),
+                      ),
+                      if (hasExistingIdProof && existingIdProofUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: TextButton.icon(
+                            onPressed: () {
+                              // You can add URL launcher here if needed
+                              // launch(existingIdProofUrl!);
+                            },
+                            icon: const Icon(Icons.open_in_browser, size: 18),
+                            label: const Text('Open in Browser'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: MinimalTheme.primaryOrange,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: MinimalTheme.iconGray.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.insert_drive_file,
+                          size: 64,
+                          color: MinimalTheme.iconGray,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        idProofFileName ?? 'Document',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'File preview not available',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: MinimalTheme.textGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showIdProofOptions();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: MinimalTheme.primaryOrange,
+                          side: const BorderSide(
+                            color: MinimalTheme.primaryOrange,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text('Change File'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            idProofFile = null;
+                            idProofFileName = null;
+                            idProofType = null;
+                            existingIdProofUrl = null;
+                            hasExistingIdProof = false;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MinimalTheme.errorRed,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openIdProofViewer() async {
+    if (idProofType == 'image') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _ImageViewerPage(
+            title: idProofFileName ?? 'Image Preview',
+            file: idProofFile,
+            imageUrl: existingIdProofUrl,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (idProofType == 'pdf') {
+      if (idProofFile != null) {
+        final opened = await launchUrl(
+          Uri.file(idProofFile!.path),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && mounted) {
+          _showErrorSnackBar('Unable to open PDF file');
+        }
+        return;
+      }
+
+      if (existingIdProofUrl != null && existingIdProofUrl!.isNotEmpty) {
+        final uri = Uri.tryParse(existingIdProofUrl!);
+        if (uri == null) {
+          if (mounted) _showErrorSnackBar('Invalid PDF URL');
+          return;
+        }
+        final opened = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!opened && mounted) {
+          _showErrorSnackBar('Unable to open PDF link');
+        }
+      }
+      return;
+    }
+
+    _showIdProofPreview();
+  }
+
+  // Show ID Proof Picker Options
+  void _showIdProofOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: MinimalTheme.cardWhite,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Upload ID Proof",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: MinimalTheme.textDark,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildOptionTile(
+              icon: Icons.camera_alt_outlined,
+              title: "Camera",
+              subtitle: "Take a photo",
+              onTap: () {
+                Navigator.pop(context);
+                _pickFromCamera();
+              },
+            ),
+            _buildOptionTile(
+              icon: Icons.photo_library_outlined,
+              title: "Gallery",
+              subtitle: "Choose from gallery",
+              onTap: () {
+                Navigator.pop(context);
+                _pickFromGallery();
+              },
+            ),
+            _buildOptionTile(
+              icon: Icons.picture_as_pdf_outlined,
+              title: "PDF Document",
+              subtitle: "Select PDF file",
+              onTap: () {
+                Navigator.pop(context);
+                _pickPDF();
+              },
+            ),
+            _buildOptionTile(
+              icon: Icons.folder_outlined,
+              title: "Files",
+              subtitle: "Browse files",
+              onTap: () {
+                Navigator.pop(context);
+                _pickFromFiles();
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MinimalTheme.primaryOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: MinimalTheme.primaryOrange,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: MinimalTheme.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: MinimalTheme.textGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: MinimalTheme.iconGray,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: MinimalTheme.errorRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   Future<void> submitForm() async {
     final isConnected = await ref.read(networkServiceProvider).checkConnection();
     if (!isConnected) {
-      ref.invalidate(networkStatusProvider);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.wifi_off, color: Colors.white, size: 16),
-              SizedBox(width: 8),
-              Text("No internet connection!"),
-            ],
-          ),
-          backgroundColor: Colors.grey[800],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
+        const SnackBar(content: Text("No internet connection!")),
       );
       return;
     }
@@ -110,13 +674,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     final state = ref.read(employeeloginViewModelProvider);
     if (state.isPhoneNoExists == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Mobile number already exists"),
-          backgroundColor: MinimalTheme.errorRed,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
-        ),
+        const SnackBar(content: Text("Mobile number already exists")),
       );
       return;
     }
@@ -147,39 +705,40 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
             roleId: 2,
           );
 
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .addEmployee(employeeToSave);
+    try {
+      // Step 1: Add or update employee
+      final empId = widget.isEdit
+          ? widget.employee!.empId!
+          : await ref.read(employeeloginViewModelProvider.notifier)
+              .addEmployee(employeeToSave);
 
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+      // Step 2: Upload ID proof if available
+      if (idProofFile != null) {
+        await ref.read(employeeloginViewModelProvider.notifier)
+            .uploadEmployeeIdProof(idProofFile!, empId);
+      }
 
-    if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.error!),
-          backgroundColor: MinimalTheme.errorRed,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    } else {
+      // Step 3: Refresh employee list
+      await ref.read(employeeloginViewModelProvider.notifier)
+          .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            widget.isEdit
-                ? "Employee updated successfully"
-                : "Employee added successfully",
+            widget.isEdit ? "Employee updated successfully" : "Employee added successfully",
           ),
           backgroundColor: MinimalTheme.successGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          margin: const EdgeInsets.all(16),
         ),
       );
+
       Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: MinimalTheme.errorRed,
+        ),
+      );
     }
   }
 
@@ -445,6 +1004,202 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                 ),
               ),
 
+              // ID Proof Upload Section
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "ID Proof",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: MinimalTheme.textGray,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Upload Button or Preview Card (Clickable)
+                    (idProofFile == null && !hasExistingIdProof)
+                        ? InkWell(
+                            onTap: _showIdProofOptions,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: MinimalTheme.cardWhite,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey[200]!,
+                                  style: BorderStyle.solid,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: MinimalTheme.primaryOrange.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.cloud_upload_outlined,
+                                      color: MinimalTheme.primaryOrange,
+                                      size: 32,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    "Upload ID Proof",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: MinimalTheme.textDark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    "Camera, Gallery, PDF or Files",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: MinimalTheme.textGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : InkWell(
+                            onTap: _openIdProofViewer,
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: MinimalTheme.cardWhite,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  // File Icon/Thumbnail
+                                  if (idProofType == 'image')
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: idProofFile != null
+                                          ? Image.file(
+                                              idProofFile!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.network(
+                                              existingIdProofUrl!,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  decoration: BoxDecoration(
+                                                    color: MinimalTheme.successGreen.withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.image,
+                                                    color: MinimalTheme.successGreen,
+                                                    size: 24,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                    )
+                                  else
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: MinimalTheme.successGreen.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        idProofType == 'pdf'
+                                            ? Icons.picture_as_pdf
+                                            : Icons.insert_drive_file,
+                                        color: MinimalTheme.successGreen,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  const SizedBox(width: 12),
+                                  
+                                  // File Name and Action
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          idProofFileName ?? 'File uploaded',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                            color: MinimalTheme.textDark,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        const Text(
+                                          "Tap to view",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: MinimalTheme.primaryOrange,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Delete Button
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        idProofFile = null;
+                                        idProofFileName = null;
+                                        idProofType = null;
+                                        existingIdProofUrl = null;
+                                        hasExistingIdProof = false;
+                                      });
+                                    },
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: MinimalTheme.errorRed,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 8),
 
               // Submit Button
@@ -536,6 +1291,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
               onChanged: onChanged,
               validator: (v) {
                 if (v == null || v.isEmpty) return "This field is required";
+
                 if (keyboard == TextInputType.emailAddress) {
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                       .hasMatch(v)) {
@@ -605,6 +1361,70 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ImageViewerPage extends StatelessWidget {
+  final String title;
+  final File? file;
+  final String? imageUrl;
+
+  const _ImageViewerPage({
+    required this.title,
+    this.file,
+    this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget body;
+    if (file != null) {
+      body = InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(
+          child: Image.file(file!, fit: BoxFit.contain),
+        ),
+      );
+    } else if (imageUrl != null && imageUrl!.isNotEmpty) {
+      body = InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(
+          child: Image.network(
+            imageUrl!,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Center(child: CircularProgressIndicator());
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(
+                child: Text(
+                  'Failed to load image',
+                  style: TextStyle(color: MinimalTheme.errorRed),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      body = const Center(
+        child: Text(
+          'Image not available',
+          style: TextStyle(color: MinimalTheme.textGray),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: body,
       ),
     );
   }

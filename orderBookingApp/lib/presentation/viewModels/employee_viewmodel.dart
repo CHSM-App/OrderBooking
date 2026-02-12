@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
@@ -110,9 +112,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  /// -----------------------
-  /// FETCH EMPLOYEE DETAILS BY ID
-  /// -----------------------
   Future<void> fetchEmployeeDetails(int empId) async {
     state = state.copyWith(
       isLoading: true,
@@ -135,9 +134,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  /// -----------------------
-  /// FETCH EMPLOYEE INFO (LOGIN / PROFILE)
-  /// 🔥 FIXED FIRST-TIME ERROR
   Future<void> fetchEmployeeInfo(String mobile) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -205,4 +201,8 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
       );
     }
   }
+void resetPhoneExistStatus() {
+  state = state.copyWith(isPhoneNoExists: null);
+}
+
 }

@@ -10,6 +10,7 @@ import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart'
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'dart:math';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -39,7 +40,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   String visitFilter = "Today";
   DateTimeRange? visitCustomRange;
   final List<String> filters = ["All", "Today", "Month", "Year", "Custom"];
-
 
   @override
   void initState() {
@@ -162,7 +162,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
           content: const Text("Employee deleted successfully"),
           backgroundColor: MinimalTheme.successGreen,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -180,11 +181,414 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
           content: Text(e.toString()),
           backgroundColor: MinimalTheme.errorRed,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           margin: const EdgeInsets.all(16),
         ),
       );
     }
+  }
+
+  /// Shows a dialog with full employee details
+  void _showEmployeeDetailsDialog(EmployeeLogin employee) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+              decoration: const BoxDecoration(
+                color: MinimalTheme.primaryOrange,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        (employee.empName?.isNotEmpty ?? false)
+                            ? employee.empName![0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          employee.empName ?? "N/A",
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            employee.activeStatus == 1 ? "Active" : "Inactive",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    _detailRow(
+                      icon: Icons.phone_outlined,
+                      label: "Mobile No",
+                      value: employee.empMobile ?? "—",
+                      color: MinimalTheme.successGreen,
+                    ),
+                    const Divider(height: 16, thickness: 0.5),
+                    _detailRow(
+                      icon: Icons.email_outlined,
+                      label: "Email",
+                      value: employee.empEmail ?? "—",
+                      color: Colors.blue,
+                    ),
+                    const Divider(height: 16, thickness: 0.5),
+                    _detailRow(
+                      icon: Icons.home_outlined,
+                      label: "Address",
+                      value: employee.empAddress ?? "—",
+                      color: Colors.purple,
+                    ),
+                    const Divider(height: 16, thickness: 0.5),
+                    _detailRow(
+                      icon: Icons.location_on_outlined,
+                      label: "Region",
+                      value: employee.regionName ?? "—",
+                      color: MinimalTheme.primaryOrange,
+                    ),
+                    const Divider(height: 16, thickness: 0.5),
+                    _buildIdProofRow(employee),
+                  ],
+                ),
+              ),
+            ),
+
+            // Close button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MinimalTheme.primaryOrange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    "Close",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A single row in the employee details dialog
+  Widget _detailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: MinimalTheme.textGray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: MinimalTheme.textDark,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIdProofRow(EmployeeLogin employee) {
+    final idProof = (employee.idProof ?? '').trim();
+    if (idProof.isEmpty || idProof.toLowerCase() == 'null') {
+      return _detailRow(
+        icon: Icons.badge_outlined,
+        label: "ID Proof",
+        value: "—",
+        color: Colors.teal,
+      );
+    }
+
+    final isImage = _isImagePath(idProof);
+    final isPdf = _isPdfPath(idProof);
+    final fileName = _extractFileName(idProof);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _openIdProof(idProof),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.teal.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.badge_outlined,
+              color: Colors.teal,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "ID Proof",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: MinimalTheme.textGray,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: MinimalTheme.cardWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isImage
+                            ? Icons.image_outlined
+                            : isPdf
+                                ? Icons.picture_as_pdf_outlined
+                                : Icons.insert_drive_file_outlined,
+                        size: 18,
+                        color: isPdf ? MinimalTheme.errorRed : Colors.teal,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: MinimalTheme.textDark,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Tap to open",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: MinimalTheme.primaryOrange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isImagePath(String path) {
+    final p = path.toLowerCase();
+    return p.contains('.jpg') ||
+        p.contains('.jpeg') ||
+        p.contains('.png') ||
+        p.contains('.webp');
+  }
+
+  bool _isPdfPath(String path) {
+    return path.toLowerCase().contains('.pdf');
+  }
+
+  String _extractFileName(String path) {
+    final uri = Uri.tryParse(path);
+    if (uri != null && uri.pathSegments.isNotEmpty) {
+      return uri.pathSegments.last;
+    }
+    final parts = path.split('/');
+    return parts.isNotEmpty ? parts.last : path;
+  }
+
+  Future<void> _openIdProof(String path) async {
+    if (_isImagePath(path)) {
+      _showImagePreview(path);
+      return;
+    }
+
+    final uri = Uri.tryParse(path);
+    if (uri == null) {
+      if (!mounted) return;
+      _showErrorSnackBar('Invalid ID proof link');
+      return;
+    }
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      _showErrorSnackBar('Unable to open ID proof');
+    }
+  }
+
+  void _showImagePreview(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox(
+                    height: 280,
+                    child: Center(
+                      child: Text(
+                        'Failed to load image',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              right: 8,
+              top: 8,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: MinimalTheme.errorRed,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   bool _passesOrderFilter(Order order) {
@@ -217,8 +621,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   }
 
   bool _passesVisitPayloadFilter(VisitPayload visit) {
-    final tsString = visit.punchIn ;
-    // if (tsString == null || tsString.isEmpty) return false;
+    final tsString = visit.punchIn;
 
     final date = _toIstDateOnly(DateTime.parse(tsString));
     final today = _toIstDateOnly(DateTime.now());
@@ -427,7 +830,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
               ),
             ),
 
-            // Action Buttons
+            // ── Action Buttons ── FIX: use Row with MainAxisAlignment.spaceEvenly
+            //    so all three buttons fit without overflow on any screen width.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
@@ -450,7 +854,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _actionButton(
                       icon: Icons.map_outlined,
@@ -468,6 +872,16 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                           ),
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    // ── FIX: tapping "Details" now opens the info dialog ──
+                    child: _actionButton(
+                      icon: Icons.info_outline_rounded,
+                      label: 'Details',
+                      color: MinimalTheme.errorRed,
+                      onTap: () => _showEmployeeDetailsDialog(employee),
                     ),
                   ),
                 ],
@@ -525,8 +939,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                     context: context,
                     firstDate: DateTime(now.year - 5),
                     lastDate: DateTime(now.year + 1),
-                    initialDateRange:
-                        orderCustomRange ?? DateTimeRange(start: now, end: now),
+                    initialDateRange: orderCustomRange ??
+                        DateTimeRange(start: now, end: now),
                   );
                   if (range == null) return;
                   setState(() {
@@ -558,8 +972,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                     context: context,
                     firstDate: DateTime(now.year - 5),
                     lastDate: DateTime(now.year + 1),
-                    initialDateRange:
-                        visitCustomRange ?? DateTimeRange(start: now, end: now),
+                    initialDateRange: visitCustomRange ??
+                        DateTimeRange(start: now, end: now),
                   );
                   if (range == null) return;
                   setState(() {
@@ -594,7 +1008,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        // ── FIX: removed fixed horizontal padding so text doesn't overflow ──
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
           color: MinimalTheme.cardWhite,
           borderRadius: BorderRadius.circular(12),
@@ -608,15 +1023,20 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,   // ← shrink-wrap the Row
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: color,
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 5),
+            Flexible(                        // ← allow label to wrap if needed
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ],
@@ -630,7 +1050,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     required String value,
     required IconData icon,
   }) {
-    // Assign colors based on title
     Color color;
     switch (title) {
       case "Avg Time/Shop":
@@ -758,7 +1177,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     if (ordersAsync == null) {
       return const Padding(
         padding: EdgeInsets.all(16),
-        child: Text("No orders found", style: TextStyle(color: MinimalTheme.textGray)),
+        child: Text("No orders found",
+            style: TextStyle(color: MinimalTheme.textGray)),
       );
     }
 
@@ -772,7 +1192,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(e.toString(), style: const TextStyle(color: MinimalTheme.textGray)),
+        child: Text(e.toString(),
+            style: const TextStyle(color: MinimalTheme.textGray)),
       ),
       data: (orders) {
         final filteredOrders = orders.where(_passesOrderFilter).toList()
@@ -782,7 +1203,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
         if (filteredOrders.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(16),
-            child: Text("No orders for this filter", style: TextStyle(color: MinimalTheme.textGray)),
+            child: Text("No orders for this filter",
+                style: TextStyle(color: MinimalTheme.textGray)),
           );
         }
 
@@ -884,7 +1306,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   }
 
   Widget _buildVisitsList() {
-    final visitsAsync = ref.watch(employeeloginViewModelProvider).employeeVisits;
+    final visitsAsync =
+        ref.watch(employeeloginViewModelProvider).employeeVisits;
 
     return visitsAsync.when(
       loading: () => const Padding(
@@ -896,21 +1319,25 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(e.toString(), style: const TextStyle(color: MinimalTheme.textGray)),
+        child: Text(e.toString(),
+            style: const TextStyle(color: MinimalTheme.textGray)),
       ),
       data: (visits) {
-        final filteredVisits = visits.where(_passesVisitPayloadFilter).toList()
+        final filteredVisits = visits
+            .where(_passesVisitPayloadFilter)
+            .toList()
           ..sort((a, b) {
             final aDateStr = a.punchIn;
-            final bDateStr = b.punchIn ;
-
-            return DateTime.parse(bDateStr).compareTo(DateTime.parse(aDateStr));
+            final bDateStr = b.punchIn;
+            return DateTime.parse(bDateStr)
+                .compareTo(DateTime.parse(aDateStr));
           });
 
         if (filteredVisits.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(16),
-            child: Text("No visits for this filter", style: TextStyle(color: MinimalTheme.textGray)),
+            child: Text("No visits for this filter",
+                style: TextStyle(color: MinimalTheme.textGray)),
           );
         }
 
@@ -1010,7 +1437,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     );
   }
 
-  // Helper methods
+  // ── Helper methods ──────────────────────────────────────────────────────────
+
   DateTime parseSqlServerDate(String raw) {
     final dt = DateTime.parse(raw);
     return DateTime(dt.year, dt.month, dt.day);
@@ -1087,7 +1515,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   String _formatDistance(double km) {
     if (km < 1) {
       final meters = (km * 1000).round();
-      return '${meters} m';
+      return '$meters m';
     }
     return '${km.toStringAsFixed(2)} km';
   }
@@ -1105,15 +1533,14 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       }
     }
     if (durations.isEmpty) return "0 min";
-    final totalSeconds = durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
+    final totalSeconds =
+        durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
     final avgSeconds = totalSeconds ~/ durations.length;
     final avgDuration = Duration(seconds: avgSeconds);
     final hours = avgDuration.inHours;
     final minutes = avgDuration.inMinutes % 60;
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    }
-    return '${minutes} min';
+    if (hours > 0) return '${hours}h ${minutes}m';
+    return '$minutes min';
   }
 
   String _calculateAvgShopsPerDay(List<EmployeeVisit>? visits) {
@@ -1128,7 +1555,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       byDay.putIfAbsent(key, () => <int>{}).add(v.shopId);
     }
     if (byDay.isEmpty) return "0";
-    final totalShops = byDay.values.fold<int>(0, (sum, set) => sum + set.length);
+    final totalShops =
+        byDay.values.fold<int>(0, (sum, set) => sum + set.length);
     final avg = totalShops / byDay.length;
     return avg.round().toString();
   }
@@ -1145,8 +1573,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       byDay[key] = (byDay[key] ?? 0) + 1;
     }
     if (byDay.isEmpty) return "0";
-    final totalOrders = byDay.values.fold<int>(0, (sum, count) => sum + count);
+    final totalOrders =
+        byDay.values.fold<int>(0, (sum, count) => sum + count);
     final avg = totalOrders / byDay.length;
     return avg.round().toString();
   }
 }
+

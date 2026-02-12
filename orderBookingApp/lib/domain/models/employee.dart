@@ -23,7 +23,7 @@
     final String? imageUrl;
 
   @JsonKey(name: 'id_proof')
-  final String? idProof;
+   String? idProof;
 
    @JsonKey(name: 'active_status')
   final int? activeStatus;
