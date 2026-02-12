@@ -536,6 +536,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
               onChanged: onChanged,
               validator: (v) {
                 if (v == null || v.isEmpty) return "This field is required";
+
                 if (keyboard == TextInputType.emailAddress) {
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                       .hasMatch(v)) {

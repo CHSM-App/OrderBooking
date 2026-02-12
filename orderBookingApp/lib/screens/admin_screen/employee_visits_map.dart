@@ -347,15 +347,24 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     return aDate.compareTo(bDate);
   }
 
-  void _showVisitDetails(EmployeeVisit visit, int sequence) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
+
+
+void _showVisitDetails(EmployeeVisit visit, int sequence) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,34 +377,52 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
                 ),
               ),
               const SizedBox(height: 12),
+
               _detailRow(
-                'Punch In',
+                'Punch In at:',
                 _formatDateTime(visit.punchIn),
               ),
               _detailRow(
-                'Punch Out',
+                'Punch Out at:',
                 _formatDateTime(visit.punchOut),
               ),
+
               if (visit.shopName != null && visit.shopName!.isNotEmpty)
-                _detailRow('Shop', visit.shopName!),
-              if (visit.ownerName != null && visit.ownerName!.isNotEmpty)
-                _detailRow('Owner', visit.ownerName!),
-              if (visit.mobileNo != null && visit.mobileNo!.isNotEmpty)
-                _detailRow('Mobile', visit.mobileNo!),
+                _detailRow('Shop Name:', visit.shopName!),
+
               if (visit.address != null && visit.address!.isNotEmpty)
-                _detailRow('Address', visit.address!),
-              _detailRow('Accuracy', '${visit.accuracy.toStringAsFixed(2)} m'),
-              _detailRow(
-                'Lat/Lng',
-                '${visit.latitude.toStringAsFixed(6)}, ${visit.longitude.toStringAsFixed(6)}',
-              ),
-              const SizedBox(height: 8),
+                _detailRow('Address:', visit.address!),
+
+              if (visit.ownerName != null && visit.ownerName!.isNotEmpty)
+                _detailRow('Owner Name:', visit.ownerName!),
+
+              if (visit.mobileNo != null && visit.mobileNo!.isNotEmpty)
+                _detailRow('Contact No:', visit.mobileNo!),
+
+                //  _detailRow(
+                  //   'Accuracy:',
+                  //   '${visit.accuracy.toStringAsFixed(2)} m',
+                  // ),
+
+                  // _detailRow(
+                  //   'Latitude:',
+                  //   '${visit.latitude.toStringAsFixed(6)}',
+                  // ),
+
+                  //     _detailRow(
+                  //   'Longitude:',
+                  //   '${visit.longitude.toStringAsFixed(6)}',
+                  // ),
+
+              const SizedBox(height: 10),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
 
   Widget _detailRow(String label, String value) {
     return Padding(
