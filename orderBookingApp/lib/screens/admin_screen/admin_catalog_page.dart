@@ -415,9 +415,13 @@ class _ProductCardState extends State<_ProductCard>
         child: Column(
           children: [
             // ── Header row ─────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-              child: Row(
+           GestureDetector(
+  onTap: _toggle,
+  behavior: HitTestBehavior.opaque,
+  child: Padding(
+    padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+    child: Row(
+
                 children: [
                   // Type icon
                   Container(
@@ -522,7 +526,7 @@ class _ProductCardState extends State<_ProductCard>
                 ],
               ),
             ),
-
+           ),
             // ── Expandable units ───────────────────────────────────────
             SizeTransition(
               sizeFactor: _expandAnim,

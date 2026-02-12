@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/checkin_status.dart';
@@ -125,6 +127,14 @@ Future<dynamic> addOrder(
 
 @GET("users/getEmployeeVisits/{emp_id}")
   Future<List<VisitPayload>>getEmployeeVisit(@Path("emp_id") int empId);
+
+  
+  @MultiPart()
+  @POST("upload/EmployeeIdProof")
+  Future<dynamic> uploadEmployeeIdProof(
+    @Part(name: "image") File images,
+    @Part(name: "emp_id") String empId,
+  );
 }
 
 

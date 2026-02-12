@@ -255,7 +255,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
             children: [
               // ── Product info card ────────────────────────────────────
               _SectionCard(
-                title: 'Product Info',
+                title: 'Product Information',
                 icon: Icons.inventory_2_outlined,
                 child: Column(
                   children: [
@@ -719,7 +719,8 @@ class _AddedItemRow extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${item.availableUnit} ${item.measuringUnit}',
+  _formatUnit(item.availableUnit, item.measuringUnit),
+
                       style: const TextStyle(
                           fontSize: 11, color: _kTextSecondary),
                     ),
@@ -761,4 +762,30 @@ class _AddedItemRow extends StatelessWidget {
       ),
     );
   }
+  String _formatUnit(double? value, String? unit) {
+  if (value == null || unit == null) return '';
+
+  final u = unit.toLowerCase();
+
+  String clean(double v) {
+    // Remove .0 if whole number
+    return v % 1 == 0 ? v.toInt().toString() : v.toString();
+  }
+
+  if (u == 'liter' || u == 'litre' || u == 'l') {
+    return value < 1
+        ? '${(value * 1000).toInt()} ml'
+        : '${clean(value)} L';
+  }
+
+  if (u == 'kilogram' || u == 'kg') {
+    return value < 1
+        ? '${(value * 1000).toInt()} g'
+        : '${clean(value)} kg';
+  }
+
+  return '${clean(value)} $unit';
+}
+
+
 }

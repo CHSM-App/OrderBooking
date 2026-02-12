@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
@@ -64,25 +66,62 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
 
 
-  // EXISTING: Add Employee
-  Future<void> addEmployee(EmployeeLogin employeeLogin) async {
+  // // EXISTING: Add Employee
+  // Future<void> addEmployee(EmployeeLogin employeeLogin) async {
 
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await usecase.addEmployee(employeeLogin);
+  //   state = state.copyWith(isLoading: true, error: null);
+  //   try {
+  //     await usecase.addEmployee(employeeLogin);
 
-      // refresh list
-      await getEmployeeList(employeeLogin.companyId!);
+  //     // refresh list
+  //     await getEmployeeList(employeeLogin.companyId!);
 
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after adding
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
+  //     state = state.copyWith(isLoading: false);
+  //     // Refresh employee list after adding
+  //   } catch (e) {
+  //     state = state.copyWith(
+  //       isLoading: false,
+  //       error: e.toString(),
+  //     );
+  //   }
+  // }
+  Future<int> addEmployee(EmployeeLogin employeeLogin) async {
+  state = state.copyWith(isLoading: true, error: null);
+  debugPrint("🟢 addEmployee: Started for ${employeeLogin.empName}");
+
+  try {
+    final response = await usecase.addEmployee(employeeLogin);
+    debugPrint("✅ addEmployee: API Response -> $response");
+
+    // Extract empId from response map
+    final int newEmpId = response['emp_id'] as int;
+    debugPrint("✅ addEmployee: Success, empId = $newEmpId");
+
+    // Refresh employee list
+    await getEmployeeList(employeeLogin.companyId!);
+
+    state = state.copyWith(isLoading: false);
+    return newEmpId;
+  } catch (e, st) {
+    debugPrint("❌ addEmployee: Error -> $e\n$st");
+    state = state.copyWith(isLoading: false, error: e.toString());
+    rethrow;
   }
+}
+
+Future<void> uploadEmployeeIdProof(File image, int empId) async {
+  state = state.copyWith(isLoading: true, error: null);
+  debugPrint("🟢 uploadEmployeeIdProof: Started for empId = $empId");
+
+  try {
+    await usecase.uploadEmployeeIdProof(image, empId.toString());
+    debugPrint("✅ uploadEmployeeIdProof: Success for empId = $empId");
+    state = state.copyWith(isLoading: false);
+  } catch (e, st) {
+    debugPrint("❌ uploadEmployeeIdProof: Error -> $e\n$st");
+    state = state.copyWith(isLoading: false, error: e.toString());
+  }
+}
 
   /// -----------------------
   /// GET EMPLOYEE LIST
@@ -119,9 +158,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  /// -----------------------
-  /// FETCH EMPLOYEE DETAILS BY ID
-  /// -----------------------
   Future<void> fetchEmployeeDetails(int empId) async {
     state = state.copyWith(
       isLoading: true,
@@ -144,9 +180,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     }
   }
 
-  /// -----------------------
-  /// FETCH EMPLOYEE INFO (LOGIN / PROFILE)
-  /// 🔥 FIXED FIRST-TIME ERROR
   Future<void> fetchEmployeeInfo(String mobile) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -223,6 +256,9 @@ Future<void> getEmployeeVisit(int empId) async {
       );
     }
   }
+void resetPhoneExistStatus() {
+  state = state.copyWith(isPhoneNoExists: null);
+}
 
 }
 
