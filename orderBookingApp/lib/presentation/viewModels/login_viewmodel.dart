@@ -54,7 +54,7 @@ class AdminloginState {
     String? companyId,
   }) {
     return AdminloginState(
-      regionId: regionId?? this.regionId,
+      regionId: regionId ?? this.regionId,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       adminDetails: adminDetails ?? this.adminDetails,
@@ -67,7 +67,7 @@ class AdminloginState {
       companyName: companyName ?? this.companyName,
       token: token ?? this.token,
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
-        companyId: companyId ?? this.companyId,
+      companyId: companyId ?? this.companyId,
     );
   }
 }
@@ -88,13 +88,13 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final companyName = await TokenStorage.getValue('company_name');
     final token = await TokenStorage.getValue('token');
     final isCheckedIn = await TokenStorage.getValue('isCheckedIn');
-  final userIdStr = await TokenStorage.getValue('user_id');
-  final userId = int.tryParse(userIdStr ?? '0') ?? 0;
-     final companyId = await TokenStorage.getValue('company_id');
-     final regionIdStr = await TokenStorage.getValue('region_id');
-     final regionId = int.tryParse(regionIdStr ?? '');
+    final userIdStr = await TokenStorage.getValue('user_id');
+    final userId = int.tryParse(userIdStr ?? '0') ?? 0;
+    final companyId = await TokenStorage.getValue('company_id');
+    final regionIdStr = await TokenStorage.getValue('region_id');
+    final regionId = int.tryParse(regionIdStr ?? '');
     state = state.copyWith(
-          userId: userId,
+      userId: userId,
       name: name,
       mobileNo: mobileNo,
       email: email,
@@ -135,7 +135,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
   }) async {
     var hasCached = false;
     if (useCacheFirst) {
-      final cached = state.adminDetails?.value;
+      final cached = state.adminDetails?.valueOrNull;
       if (cached != null && cached.isNotEmpty) {
         hasCached = true;
         state = state.copyWith(isLoading: false, error: null);
@@ -173,26 +173,23 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
   }
 
   Future<void> clearLogin() async {
-
     await usecase.logOut();
-  state = const AdminloginState(
-    isLoading: false,
-    error: null,
-    adminDetails: AsyncValue.data([]),
-    phoneCheckResult: AsyncValue.data([]),
-    userId: 0,
-    name: null,
-    mobileNo: null,
-    email: null,
-    roleId: null,
-    companyName: null,
-    token: null,
-    isCheckedIn: null,
-    companyId: null,
-  );
+    state = const AdminloginState(
+      isLoading: false,
+      error: null,
+      adminDetails: AsyncValue.data([]),
+      phoneCheckResult: AsyncValue.data([]),
+      userId: 0,
+      name: null,
+      mobileNo: null,
+      email: null,
+      roleId: null,
+      companyName: null,
+      token: null,
+      isCheckedIn: null,
+      companyId: null,
+    );
 
-  await TokenStorage.clear();
-}
-
- 
+    await TokenStorage.clear();
+  }
 }

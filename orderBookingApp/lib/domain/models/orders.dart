@@ -38,9 +38,17 @@ class Order {
   @JsonKey(name: 'items')
   final List<OrderItem> items;
 
+  @JsonKey(name: 'owner_name')
+  final String? ownerName;
+
+  @JsonKey(name: 'mobile_no')
+  final String? mobileNo;
+
+
  
 
   Order({
+    this.mobileNo,
     this.shopNamep,
     this.serverOrderId,
     this.localOrderId,
@@ -51,6 +59,7 @@ class Order {
     this.address,
     this.empName,
     this.companyId,
+    this.ownerName,
     double? totalPrice,
   }) : totalPrice =
           totalPrice ?? items.fold(0, (sum, i) => sum + i.totalPrice);
@@ -67,6 +76,8 @@ class Order {
     normalized['order_date'] ??= json['orderDate'];
     normalized['total_price'] ??= json['totalPrice'];
     normalized['company_id'] ??= json['companyId'];
+    normalized['owner_name'] ??= json['ownerName'];
+    normalized['mobile_no'] ??= json['mobileNo'];
 
     return _$OrderFromJson(normalized);
   }

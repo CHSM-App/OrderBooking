@@ -45,6 +45,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   final _phoneController = TextEditingController();
 
   Region? _selectedRegion;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -57,7 +58,9 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   }
 
   void _saveShop() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
 
     final shop = ShopDetails(
       localId: const Uuid().v4(),
@@ -67,25 +70,34 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       ownerName: _ownerNameController.text,
       mobileNo: _phoneController.text,
       shopId: 0,
+      createdBy: ref.read(adminloginViewModelProvider).userId,
       updatedAt: DateTime.now(),
       companyId:
           ref.read(adminloginViewModelProvider).companyId ?? "",
     );
 
-    await ref.read(shopViewModelProvider.notifier).addShop(shop);
- final state = ref.read(shopViewModelProvider);
-    if (!mounted) return;
+    try {
+      await ref.read(shopViewModelProvider.notifier).addShop(shop);
+      final state = ref.read(shopViewModelProvider);
+      if (!mounted) return;
 
-    if (state.error == null) {
-      _showSuccessDialog();
-      await Future.delayed(const Duration(milliseconds: 1800));
-      if (mounted) Navigator.pop(context, shop);
-    } else {
-      _showErrorSnackbar(state.error!);
+      if (state.error == null) {
+        _showSuccessDialog();
+        await Future.delayed(const Duration(milliseconds: 1800));
+        if (!mounted) return;
+        Navigator.of(context, rootNavigator: true).pop(); // close dialog
+        Navigator.pop(context, shop); // return to shops page
+      } else {
+        _showErrorSnackbar(state.error!);
+      }
+
+      await ref.read(shopViewModelProvider.notifier).getEmpShopList(
+            ref.read(adminloginViewModelProvider).companyId ?? "",
+            ref.read(adminloginViewModelProvider).regionId ?? 0,
+          );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    await ref.read(shopViewModelProvider.notifier).getEmpShopList(
-        ref.read(adminloginViewModelProvider).companyId ?? "", ref.read(adminloginViewModelProvider).regionId ?? 0);
   }
 
   void _showSuccessDialog() {
@@ -177,7 +189,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
 
                         /// ✅ REGION DROPDOWN
                         DropdownButtonFormField<Region>(
-                          value: _selectedRegion,
+                          initialValue: _selectedRegion,
                           decoration: InputDecoration(
                             labelText: 'Region Name',
                             prefixIcon:
@@ -250,7 +262,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: shopState.isLoading
+                        onPressed: (_isSaving || shopState.isLoading)
                             ? null
                             : _saveShop,
                         style: ElevatedButton.styleFrom(
@@ -262,7 +274,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                               borderRadius:
                                   BorderRadius.circular(16)),
                         ),
-                        child: shopState.isLoading
+                        child: (_isSaving || shopState.isLoading)
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,

@@ -15,6 +15,8 @@ class OfflineOrderDao {
       'shop_name': order.shopNamep,
       'emp_name': order.empName,
       'address': order.address,
+      'owner_name': order.ownerName,
+      'mobile_no' : order.mobileNo,
       'order_date': order.orderDate,
       'total_price': order.totalPrice,
       'status': 'pending',
@@ -105,6 +107,8 @@ class OfflineOrderDao {
     final batch = db.batch();
 
     batch.insert('offline_orders', {
+      'owner_name' : order.ownerName,
+      'mobile_no' : order.mobileNo,
       'local_order_id': order.localOrderId,
       'server_order_id': serverOrderId,
       'employee_id': order.employeeId,
@@ -187,6 +191,8 @@ class OfflineOrderDao {
             'server_order_id': serverOrderId,
             'employee_id': o.employeeId,
             'shop_id': o.shopId,
+            'owner_name': o.ownerName,
+            'mobile_no': o.mobileNo,
             'shop_name': o.shopNamep,
             'emp_name': o.empName,
             'address': o.address,
@@ -238,6 +244,8 @@ class OfflineOrderDao {
           shopNamep: row['shop_name'] as String?,
           empName: row['emp_name'] as String?,
           address: row['address'] as String?,
+          ownerName: row['owner_name'] as String?,
+          mobileNo: row['mobile_no'] as String?,
           orderDate: row['order_date'] as String,
           items: items,
           totalPrice: (row['total_price'] as num).toDouble(),

@@ -7,6 +7,7 @@ part of 'orders.dart';
 // **************************************************************************
 
 Order _$OrderFromJson(Map<String, dynamic> json) => Order(
+  mobileNo: json['mobile_no'] as String?,
   shopNamep: json['shop_name'] as String?,
   serverOrderId: (json['order_id'] as num?)?.toInt(),
   localOrderId: json['localOrderId'] as String?,
@@ -19,6 +20,7 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
   address: json['address'] as String?,
   empName: json['emp_name'] as String?,
   companyId: json['company_id'] as String?,
+  ownerName: json['owner_name'] as String?,
   totalPrice: (json['total_price'] as num?)?.toDouble(),
 );
 
@@ -34,4 +36,6 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
   'company_id': instance.companyId,
   'address': instance.address,
   'items': instance.items.map((e) => e.toJson()).toList(),
+  'owner_name': instance.ownerName,
+  'mobile_no': instance.mobileNo,
 };

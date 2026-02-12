@@ -43,6 +43,8 @@ class OrderPrintPreviewPage extends StatelessWidget {
                 ),
                 pw.SizedBox(height: 8),
                 pw.Text('Shop: ${order.shopNamep ?? "-"}'),
+                pw.Text('Shop Owner Name: ${order.ownerName ?? "-"}'),
+                pw.Text('Shop Owner Phone: ${order.mobileNo ?? "-"}'),
                 pw.Text('Address: ${order.address ?? "-"}'),
                 pw.Text('Order taken by: ${order.empName ?? "-"}'),
                 pw.Text('Order Date/Time: ${order.orderDate}'),

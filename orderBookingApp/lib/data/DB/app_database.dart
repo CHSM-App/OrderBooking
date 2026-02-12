@@ -146,6 +146,8 @@ static Future<void> _createRegionTable(Database db) async {
         server_order_id INTEGER,      
         employee_id INTEGER,
         shop_id INTEGER,
+        owner_name TEXT,
+         mobile_no TEXT,
         shop_name TEXT,
         emp_name TEXT,
         address TEXT,

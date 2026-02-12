@@ -131,7 +131,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       _quantityController.clear();
     });
 
-    _showSuccess('Product added');
+    // _showSuccess('Product added');
   }
 
   void _removeItem(int index) {
@@ -159,6 +159,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
 
     final Order order = Order(
       localOrderId: const Uuid().v4(),
+      ownerName: widget.shop.ownerName,
+      mobileNo: widget.shop.mobileNo,
       shopNamep: widget.shop.shopName,
       employeeId: ref.read(adminloginViewModelProvider).userId,
       shopId: widget.shop.shopId ?? 0,
@@ -804,7 +806,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${item.quantity} × ${item.unit}',
+                          '${item.quantity} × ${item.price} ₹',
                           style: const TextStyle(
                             fontSize: 12,
                             color: MinimalTheme.textGray,

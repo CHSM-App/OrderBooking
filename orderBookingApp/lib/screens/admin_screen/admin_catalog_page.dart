@@ -44,6 +44,14 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
     super.dispose();
   }
 
+  Future<void> _onRefresh() async {
+    await ref
+        .read(productViewModelProvider.notifier)
+        .fetchProductList(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+        );
+  }
+
   Future<void> _openAddEdit({Product? initialProduct}) async {
     final userId = ref.read(adminloginViewModelProvider).userId;
     if (userId == 0) return;
@@ -72,56 +80,61 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
     return Scaffold(
       backgroundColor: _kBackground,
-      body: CustomScrollView(
-        slivers: [
-          // Search bar
-          SliverToBoxAdapter(child: _buildSearchBar()),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: _kPrimary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Search bar
+            SliverToBoxAdapter(child: _buildSearchBar()),
 
-          // Product list
-          state.productList!.when(
-            loading: () => const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: _kPrimary,
-                  strokeWidth: 2.5,
-                ),
-              ),
-            ),
-            error: (err, _) =>
-                SliverFillRemaining(child: _buildError(err.toString())),
-            data: (products) {
-              final filtered = products
-                  .where(
-                    (p) => (p.productName ?? '').toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ),
-                  )
-                  .toList();
-
-              if (filtered.isEmpty) {
-                return SliverFillRemaining(child: _buildEmpty());
-              }
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) => _ProductCard(
-                      product: filtered[i],
-                      onEdit: () => _openAddEdit(initialProduct: filtered[i]),
-                    ),
-                    childCount: filtered.length,
+            // Product list
+            state.productList!.when(
+              loading: () => const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: _kPrimary,
+                    strokeWidth: 2.5,
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+              error: (err, _) =>
+                  SliverFillRemaining(child: _buildError(err.toString())),
+              data: (products) {
+                final filtered = products
+                    .where(
+                      (p) => (p.productName ?? '').toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ),
+                    )
+                    .toList();
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+                if (filtered.isEmpty) {
+                  return SliverFillRemaining(child: _buildEmpty());
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => _ProductCard(
+                        product: filtered[i],
+                        onEdit: () => _openAddEdit(initialProduct: filtered[i]),
+                      ),
+                      childCount: filtered.length,
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
 
       // FAB

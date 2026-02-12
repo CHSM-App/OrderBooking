@@ -19,7 +19,7 @@ enum _FilterType { today, thisMonth, custom }
 
 class _ActiveFilter {
   final _FilterType type;
-  final DateTimeRange? customRange; // only set when type == custom
+  final DateTimeRange? customRange;
 
   const _ActiveFilter(this.type, {this.customRange});
 
@@ -39,8 +39,7 @@ class _ActiveFilter {
     }
   }
 
-  static String _fmt(DateTime d) =>
-      '${d.day} ${_months[d.month - 1]}';
+  static String _fmt(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 
   static const _months = [
     'Jan','Feb','Mar','Apr','May','Jun',
@@ -58,7 +57,6 @@ class OrdersListPage extends ConsumerStatefulWidget {
 class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  // null = no filter (show all)
   _ActiveFilter? _filter;
 
   @override
@@ -83,65 +81,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     super.dispose();
   }
 
-  // ── Sort oldest→newest so #1 = first ever order ───────────────────────────
-  List<Order> _sorted(List<Order> orders) {
+  // ── Sort by date: newest first ─────────────────────────────────────────────
+  List<Order> _sortByDateDescending(List<Order> orders) {
     final list = List<Order>.from(orders);
     list.sort((a, b) {
-      try {
-        return DateTime.parse(b.orderDate)
-            .compareTo(DateTime.parse(a.orderDate));
-      } catch (_) {
-        return 0;
-      }
+      final da = DateTime.tryParse(a.orderDate);
+      final db = DateTime.tryParse(b.orderDate);
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return db.compareTo(da); // newest first
     });
     return list;
-  }
-
-  // ── Apply active filter ────────────────────────────────────────────────────
-  List<Order> _filtered(List<Order> sorted) {
-    if (_filter == null) return sorted;
-    final now = DateTime.now();
-
-    switch (_filter!.type) {
-      case _FilterType.today:
-        return sorted.where((o) {
-          try {
-            final d = DateTime.parse(o.orderDate);
-            return d.year == now.year &&
-                d.month == now.month &&
-                d.day == now.day;
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-
-      case _FilterType.thisMonth:
-        return sorted.where((o) {
-          try {
-            final d = DateTime.parse(o.orderDate);
-            return d.year == now.year && d.month == now.month;
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-
-      case _FilterType.custom:
-        if (_filter!.customRange == null) return sorted;
-        final start = _filter!.customRange!.start;
-        // include the full end day
-        final end = _filter!.customRange!.end
-            .add(const Duration(days: 1))
-            .subtract(const Duration(seconds: 1));
-        return sorted.where((o) {
-          try {
-            final d = DateTime.parse(o.orderDate);
-            return d.isAfter(start.subtract(const Duration(seconds: 1))) &&
-                d.isBefore(end.add(const Duration(seconds: 1)));
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -154,7 +105,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           children: [
             _buildHeader(state),
-            // Active filter chip row
             if (_filter != null) _buildFilterChip(),
             Expanded(child: _buildBody(state)),
           ],
@@ -178,12 +128,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _searchQuery.isNotEmpty
-                      ? Colors.green.shade300
-                      : Colors.transparent,
-                  width: 2,
-                ),
               ),
               child: TextField(
                 controller: _searchController,
@@ -197,17 +141,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   filled: true,
                   fillColor: Colors.white,
                   hintText: 'Search by order number, shop, employee...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                   prefixIcon: Container(
                     padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: Colors.grey[600],
-                      size: 22,
-                    ),
+                    child: Icon(Icons.search_rounded,
+                        color: Colors.grey[600], size: 22),
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -217,11 +155,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                               color: Colors.grey[300],
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            child: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
                           ),
                           onPressed: () {
                             _searchController.clear();
@@ -231,9 +166,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                      horizontal: 16, vertical: 14),
                 ),
               ),
             ),
@@ -274,16 +207,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                                 ? Colors.white
                                 : _kTextSecondary),
                       ),
-                      // const SizedBox(height: 4),
-                      // Text(
-                      //   'Filter',
-                      //   style: TextStyle(
-                      //     fontSize: 11,
-                      //     fontWeight: FontWeight.w600,
-                      //     color:
-                      //         isFiltered ? _kPrimary : _kTextPrimary,
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
@@ -306,7 +229,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     );
   }
 
-  // ── Active filter chip (shown below header) ────────────────────────────────
+  // ── Active filter chip ─────────────────────────────────────────────────────
   Widget _buildFilterChip() {
     return Container(
       color: _kSurface,
@@ -357,23 +280,55 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     if (state.orders != null) {
       return state.orders!.when(
         data: (rawOrders) {
-          final sorted = _sorted(rawOrders);
-          final visible = _filtered(sorted);
-          final filteredBySearch = _searchQuery.isEmpty
-              ? visible
-              : visible.where((order) {
-                  final orderNumber =
-                      sorted.length - sorted.indexOf(order);
-                  return _orderMatchesSearch(
-                    order,
-                    orderNumber,
-                    _searchQuery,
-                  );
+          // 1. Sort all orders by date: newest first.
+          //    After sorting, index 0 = newest, index (n-1) = oldest.
+          //    Order number = position from the bottom: oldest = #1, newest = #n.
+          final sorted = _sortByDateDescending(rawOrders);
+          final total  = sorted.length;
+
+          // 2. Attach a stable order number to each order based on the full
+          //    sorted list (oldest = 1, newest = total). This number never
+          //    changes regardless of active filters or search.
+          final numbered = [
+            for (var i = 0; i < total; i++)
+              (order: sorted[i], number: total - i),
+          ];
+
+          // 3. Apply date filter
+          final afterFilter = _filter == null
+              ? numbered
+              : numbered.where((e) {
+                  final d = DateTime.tryParse(e.order.orderDate);
+                  if (d == null) return false;
+                  final now = DateTime.now();
+                  switch (_filter!.type) {
+                    case _FilterType.today:
+                      return d.year == now.year &&
+                          d.month == now.month &&
+                          d.day == now.day;
+                    case _FilterType.thisMonth:
+                      return d.year == now.year && d.month == now.month;
+                    case _FilterType.custom:
+                      if (_filter!.customRange == null) return true;
+                      final start = _filter!.customRange!.start;
+                      final end = _filter!.customRange!.end
+                          .add(const Duration(days: 1))
+                          .subtract(const Duration(seconds: 1));
+                      return !d.isBefore(start) && !d.isAfter(end);
+                  }
                 }).toList();
-          if (filteredBySearch.isEmpty) {
-            return _buildSearchEmpty();
-          }
-          return _buildList(filteredBySearch, sorted);
+
+          // 4. Apply search filter
+          final visible = _searchQuery.isEmpty
+              ? afterFilter
+              : afterFilter
+                  .where((e) => _orderMatchesSearch(
+                      e.order, e.number, _searchQuery))
+                  .toList();
+
+          if (visible.isEmpty) return _buildSearchEmpty();
+
+          return _buildOrderList(visible);
         },
         loading: _buildLoading,
         error: (e, _) => _buildError(e.toString()),
@@ -382,7 +337,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return _buildEmpty();
   }
 
-  Widget _buildList(List<Order> orders, List<Order> allOrders) {
+  Widget _buildOrderList(List<({Order order, int number})> orders) {
     return RefreshIndicator(
       color: _kPrimary,
       backgroundColor: _kSurface,
@@ -394,8 +349,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: orders.length,
         itemBuilder: (_, i) => _OrderCard(
-          order: orders[i],
-          orderNumber: allOrders.length - allOrders.indexOf(orders[i]),
+          order: orders[i].order,
+          orderNumber: orders[i].number,
         ),
       ),
     );
@@ -403,18 +358,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   bool _orderMatchesSearch(Order order, int orderNumber, String query) {
     if (query.isEmpty) return true;
-
     if (orderNumber.toString().contains(query)) return true;
     if ((order.shopNamep ?? '').toLowerCase().contains(query)) return true;
-    if ((order.empName ?? '').toLowerCase().contains(query)) return true;
+    if ((order.empName  ?? '').toLowerCase().contains(query)) return true;
     if (order.totalPrice.toString().contains(query)) return true;
-    try {
-      if (_formatDateForSearch(DateTime.parse(order.orderDate))
-          .toLowerCase()
-          .contains(query)) {
-        return true;
-      }
-    } catch (_) {}
+
+    final d = DateTime.tryParse(order.orderDate);
+    if (d != null && _formatDateForSearch(d).toLowerCase().contains(query)) {
+      return true;
+    }
 
     for (final item in order.items) {
       if ((item.productName ?? '').toLowerCase().contains(query)) return true;
@@ -428,21 +380,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   String _formatDateForSearch(DateTime date) {
     const months = [
-      'jan',
-      'feb',
-      'mar',
-      'apr',
-      'may',
-      'jun',
-      'jul',
-      'aug',
-      'sep',
-      'oct',
-      'nov',
-      'dec',
+      'jan','feb','mar','apr','may','jun',
+      'jul','aug','sep','oct','nov','dec',
     ];
-
-    return '${months[date.month - 1]} ${date.day} ${date.year} ${date.day}/${date.month}/${date.year}';
+    return '${months[date.month - 1]} ${date.day} ${date.year} '
+        '${date.day}/${date.month}/${date.year}';
   }
 
   Widget _buildSearchEmpty() {
@@ -520,8 +462,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             isFiltered
                 ? 'Try a different date range'
                 : 'Orders will appear here once created.',
-            style:
-                const TextStyle(fontSize: 13, color: _kTextSecondary),
+            style: const TextStyle(fontSize: 13, color: _kTextSecondary),
           ),
           const SizedBox(height: 24),
           if (isFiltered)
@@ -613,14 +554,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               16, 20, 16, MediaQuery.of(sheetCtx).viewInsets.bottom + 32),
           decoration: const BoxDecoration(
             color: _kSurface,
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag handle
               Center(
                 child: Container(
                   width: 36,
@@ -631,8 +570,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Title + clear
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -657,38 +594,32 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 ],
               ),
               const SizedBox(height: 14),
-
-              // Today
               _FilterRow(
                 icon: Icons.today_outlined,
                 label: 'Today',
                 sublabel: _todayLabel(),
                 isSelected: _filter?.type == _FilterType.today,
                 onTap: () {
-                  setState(() => _filter =
-                      const _ActiveFilter(_FilterType.today));
+                  setState(() =>
+                      _filter = const _ActiveFilter(_FilterType.today));
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
               ),
               const SizedBox(height: 8),
-
-              // This Month
               _FilterRow(
                 icon: Icons.calendar_month_outlined,
                 label: 'This Month',
                 sublabel: _thisMonthLabel(),
                 isSelected: _filter?.type == _FilterType.thisMonth,
                 onTap: () {
-                  setState(() => _filter =
-                      const _ActiveFilter(_FilterType.thisMonth));
+                  setState(() =>
+                      _filter = const _ActiveFilter(_FilterType.thisMonth));
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
               ),
               const SizedBox(height: 8),
-
-              // Custom date range
               _FilterRow(
                 icon: Icons.date_range_outlined,
                 label: 'Custom Range',
@@ -697,22 +628,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     : 'Pick start & end date',
                 isSelected: _filter?.type == _FilterType.custom,
                 onTap: () async {
-                  // Close sheet first, then show date picker
                   Navigator.pop(sheetCtx);
-                  await Future.delayed(
-                      const Duration(milliseconds: 200));
+                  await Future.delayed(const Duration(milliseconds: 200));
                   if (!mounted) return;
 
                   final now = DateTime.now();
                   final picked = await showDateRangePicker(
                     context: context,
-                    firstDate:
-                        DateTime(now.year - 2),
+                    firstDate: DateTime(now.year - 2),
                     lastDate: now,
                     initialDateRange: _filter?.customRange ??
                         DateTimeRange(
-                          start: now.subtract(
-                              const Duration(days: 6)),
+                          start: now.subtract(const Duration(days: 6)),
                           end: now,
                         ),
                     builder: (ctx, child) => Theme(
@@ -821,9 +748,7 @@ class _FilterRow extends StatelessWidget {
                           fontWeight: isSelected
                               ? FontWeight.w600
                               : FontWeight.w500,
-                          color: isSelected
-                              ? _kPrimary
-                              : _kTextPrimary)),
+                          color: isSelected ? _kPrimary : _kTextPrimary)),
                   const SizedBox(height: 1),
                   Text(sublabel,
                       style: TextStyle(
@@ -855,24 +780,23 @@ class _OrderCard extends StatelessWidget {
 
   const _OrderCard({required this.order, required this.orderNumber});
 
-  String _formatDate(String iso) {
+  String _formatDate(String raw) {
     try {
-      final d = DateTime.parse(iso);
+      final d = DateTime.parse(raw);
       const months = [
         'Jan','Feb','Mar','Apr','May','Jun',
         'Jul','Aug','Sep','Oct','Nov','Dec'
       ];
       return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
-      return iso;
+      return raw;
     }
   }
 
-  String _formatTime(String iso) {
+  String _formatTime(String raw) {
     try {
-      final d = DateTime.parse(iso);
-      final h =
-          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      final d = DateTime.parse(raw);
+      final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
       final m = d.minute.toString().padLeft(2, '0');
       final p = d.hour >= 12 ? 'PM' : 'AM';
       return '$h:$m $p';
