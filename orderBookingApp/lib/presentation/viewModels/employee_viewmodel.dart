@@ -1,6 +1,4 @@
 import 'dart:io';
-
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
@@ -62,48 +60,17 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
   
-
-
-
-
-  // // EXISTING: Add Employee
-  // Future<void> addEmployee(EmployeeLogin employeeLogin) async {
-
-  //   state = state.copyWith(isLoading: true, error: null);
-  //   try {
-  //     await usecase.addEmployee(employeeLogin);
-
-  //     // refresh list
-  //     await getEmployeeList(employeeLogin.companyId!);
-
-  //     state = state.copyWith(isLoading: false);
-  //     // Refresh employee list after adding
-  //   } catch (e) {
-  //     state = state.copyWith(
-  //       isLoading: false,
-  //       error: e.toString(),
-  //     );
-  //   }
-  // }
   Future<int> addEmployee(EmployeeLogin employeeLogin) async {
   state = state.copyWith(isLoading: true, error: null);
-  debugPrint("🟢 addEmployee: Started for ${employeeLogin.empName}");
-
   try {
     final response = await usecase.addEmployee(employeeLogin);
-    debugPrint("✅ addEmployee: API Response -> $response");
-
     // Extract empId from response map
     final int newEmpId = response['emp_id'] as int;
-    debugPrint("✅ addEmployee: Success, empId = $newEmpId");
-
     // Refresh employee list
     await getEmployeeList(employeeLogin.companyId!);
-
     state = state.copyWith(isLoading: false);
     return newEmpId;
-  } catch (e, st) {
-    debugPrint("❌ addEmployee: Error -> $e\n$st");
+  } catch (e) {
     state = state.copyWith(isLoading: false, error: e.toString());
     rethrow;
   }
@@ -111,14 +78,10 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
 Future<void> uploadEmployeeIdProof(File image, int empId) async {
   state = state.copyWith(isLoading: true, error: null);
-  debugPrint("🟢 uploadEmployeeIdProof: Started for empId = $empId");
-
   try {
-    await usecase.uploadEmployeeIdProof(image, empId.toString());
-    debugPrint("✅ uploadEmployeeIdProof: Success for empId = $empId");
+    await usecase.uploadEmployeeIdProof(image, empId.toString());   
     state = state.copyWith(isLoading: false);
-  } catch (e, st) {
-    debugPrint("❌ uploadEmployeeIdProof: Error -> $e\n$st");
+  } catch (e) {
     state = state.copyWith(isLoading: false, error: e.toString());
   }
 }
@@ -131,7 +94,6 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
     bool useCacheFirst = true,
   }) async {
     var hasCached = false;
-
     if (useCacheFirst) {
       final cached = state.employeeList.value;
       if (cached != null && cached.isNotEmpty) {
@@ -164,10 +126,8 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
       error: null,
       employeeDetails: const AsyncValue.loading(),
     );
-
     try {
       final details = await usecase.fetchEmployeeDetails(empId);
-
       state = state.copyWith(
         isLoading: false,
         employeeDetails: AsyncValue.data(details),
@@ -188,8 +148,6 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
         isLoading: false,
         employeeDetails: AsyncData(response),
       );
-
-      debugPrint('⏳ Loading FALSE (success)');
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -198,15 +156,11 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   /// DELETE EMPLOYEE
   Future<void> deleteEmployee(int empId) async {
     state = state.copyWith(isLoading: true, error: null);
-
     try {
-      await usecase.deleteEmployee(empId);
-
-      
+      await usecase.deleteEmployee(empId);   
       state = state.copyWith(
         employeeDetails: const AsyncValue.data([]),
-      );
-      
+      );      
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -256,6 +210,7 @@ Future<void> getEmployeeVisit(int empId) async {
       );
     }
   }
+  
 void resetPhoneExistStatus() {
   state = state.copyWith(isPhoneNoExists: null);
 }
