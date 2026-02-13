@@ -11,10 +11,6 @@ class ProductUsecase {
    await productRepository.addOrUpdateProductOffline(product);
   }
 
-  /// Sync all unsynced products with server
-  Future<void> sync(String companyId) {
-    return productRepository.sync(companyId);
-  }
 
   /// Get all products (local + fetch remote if possible)
   Future<List<Product>> getAllProducts(String companyId) {
@@ -22,7 +18,7 @@ class ProductUsecase {
   }
 
   /// Delete a product subtype
-  Future<void> deleteProductSubType(int subItemId) async {
+  Future<void> deleteProductSubType(List<int> subItemId) async {
     // return productRepository.deleteProductSubType(subItemId);
     await productRepository.deleteSubProduct(subItemId);
   }

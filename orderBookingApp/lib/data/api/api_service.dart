@@ -104,9 +104,9 @@ abstract class ApiService {
   Future<List<EmployeeVisit>> getEmployeeVisits(@Path("emp_id") int empId);
 
   //DELETE API
-@DELETE("index/deleteProductSubType/{sub_item_id}")
+  @DELETE("index/deleteProductSubTypes")
   Future<ProductResponse> deleteProductSubType(
-    @Path("sub_item_id") int subItemId,
+    @Body() List<int> sub_item_ids,
   );
 
 @DELETE("index/deleteEmployee/{emp_id}")

@@ -41,6 +41,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   final TextEditingController _priceCtrl = TextEditingController();
 
   List<ProductSubType> addedItems = [];
+  final List<int> _pendingDeleteSubItemIds = [];
   bool _hasInitializedData = false;
 
   final List<String> _productTypes = [
@@ -152,9 +153,72 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     }
     if (!_formKey.currentState!.validate()) return;
     if (addedItems.isEmpty) {
-      _snack('Add at least one unit and price',
-          color: _kPrimary, icon: Icons.info_outline_rounded);
-      return;
+      if (_isEdit) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            title: Column(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                      color: _kRedLight, shape: BoxShape.circle),
+                  child:
+                      const Icon(Icons.warning_amber_rounded,
+                          color: _kRed, size: 26),
+                ),
+                const SizedBox(height: 14),
+                const Text('No Units Added',
+                    style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700),
+                    textAlign: TextAlign.center),
+              ],
+            ),
+            content: const Text(
+              'There are no unit and price entries for this product. '
+              'Updating now may remove the product. Are you sure you want to continue?',
+              style: TextStyle(
+                  fontSize: 14, color: _kTextSecondary, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            actionsAlignment: MainAxisAlignment.spaceEvenly,
+            actionsPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel',
+                    style: TextStyle(color: _kTextSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kRed,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 28, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Continue',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed != true) return;
+      } else {
+        _snack('Add at least one unit and price',
+            color: _kPrimary, icon: Icons.info_outline_rounded);
+        return;
+      }
     }
     _formKey.currentState!.save();
 
@@ -168,13 +232,24 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
           ref.read(adminloginViewModelProvider).companyId ?? '',
     );
 
+    final productVM = ref.read(productViewModelProvider.notifier);
+
     try {
-      await ref
-          .read(productViewModelProvider.notifier)
-          .addOrUpdateProduct(product);
-      ref.read(productViewModelProvider.notifier).fetchProductList(
-            ref.read(adminloginViewModelProvider).companyId ?? '',
-          );
+      await productVM.addOrUpdateProduct(product);
+
+      if (_isEdit && _pendingDeleteSubItemIds.isNotEmpty) {
+        try {
+          await productVM
+              .deleteProductSubType(_pendingDeleteSubItemIds);
+        } catch (e) {
+          _snack('Updated, but failed to delete items: $e',
+              color: _kRed, icon: Icons.error_outline_rounded);
+        }
+      }
+
+      productVM.fetchProductList(
+        ref.read(adminloginViewModelProvider).companyId ?? '',
+      );
       _snack(
         _isEdit
             ? 'Product updated successfully'
@@ -503,8 +578,6 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   }
 
   Future<void> _deleteItem(int index, ProductSubType item) async {
-    final productVM =
-        ref.read(productViewModelProvider.notifier);
     final subItemId = item.subItemId;
 
     if (subItemId == null) {
@@ -512,77 +585,15 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
       return;
     }
 
-    // Confirm
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        title: Column(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                  color: _kRedLight, shape: BoxShape.circle),
-              child:
-                  const Icon(Icons.delete_outline_rounded,
-                      color: _kRed, size: 26),
-            ),
-            const SizedBox(height: 14),
-            const Text('Delete Item?',
-                style: TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to delete this item?',
-          style: TextStyle(
-              fontSize: 14, color: _kTextSecondary, height: 1.5),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: _kTextSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 28, vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Delete',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await productVM.deleteProductSubType(subItemId);
-      setState(() => addedItems.removeAt(index));
-      _snack('Item deleted',
-          color: _kGreen,
-          icon: Icons.check_circle_outline_rounded);
-    } catch (e) {
-      _snack('Failed to delete: $e',
-          color: _kRed, icon: Icons.error_outline_rounded);
-    }
+    setState(() {
+      if (!_pendingDeleteSubItemIds.contains(subItemId)) {
+        _pendingDeleteSubItemIds.add(subItemId);
+      }
+      addedItems.removeAt(index);
+    });
+    _snack('Item removed (will delete on update)',
+        color: _kGreen,
+        icon: Icons.check_circle_outline_rounded);
   }
 }
 

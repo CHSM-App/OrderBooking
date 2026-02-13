@@ -667,16 +667,16 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<ProductResponse> deleteProductSubType(int subItemId) async {
+  Future<ProductResponse> deleteProductSubType(List<int> sub_item_ids) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
+    final _data = sub_item_ids;
     final _options = _setStreamType<ProductResponse>(
       Options(method: 'DELETE', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'index/deleteProductSubType/${subItemId}',
+            'index/deleteProductSubTypes',
             queryParameters: queryParameters,
             data: _data,
           )
