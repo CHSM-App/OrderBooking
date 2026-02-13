@@ -26,10 +26,13 @@ class ShopState {
 
 class ShopViewModel extends StateNotifier<ShopState> {
   final ShopUsecase usecase;
+  bool _isAddingShop = false;
 
   ShopViewModel(this.usecase) : super(const ShopState());
 
   Future<void> addShop(ShopDetails shopDetails) async {
+    if (_isAddingShop || state.isLoading) return;
+    _isAddingShop = true;
     state = state.copyWith(isLoading: true, error: null);
     try {
       await usecase.addShop(shopDetails);
@@ -37,6 +40,8 @@ class ShopViewModel extends StateNotifier<ShopState> {
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    } finally {
+      _isAddingShop = false;
     }
   }
 

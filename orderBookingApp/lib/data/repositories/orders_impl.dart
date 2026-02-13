@@ -43,6 +43,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
           localOrderId: o['local_order_id'],
           employeeId: o['employee_id'],
           shopId: o['shop_id'],
+          ownerName: o['owner_name'],
+          mobileNo: o['mobile_no'],
           orderDate: o['order_date'],
           companyId: o['company_id'],
           items: items,
@@ -65,8 +67,16 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
   Future<List<Order>> getAllOrders(int empId) async {
 
-  await syncOfflineOrders();
-  await syncServerOrdersToLocal(empId);
+  try {
+    await syncOfflineOrders();
+  } catch (_) {
+    // Ignore sync errors and fall back to local data.
+  }
+  try {
+    await syncServerOrdersToLocal(empId);
+  } catch (_) {
+    // Ignore sync errors and fall back to local data.
+  }
   final rows = await offlineOrderDao.fetchAllOrders();
 
   final result = <Order>[];
@@ -96,6 +106,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
         shopNamep: row['shop_name'],
         empName: row['emp_name'],
         address: row['address'],
+        ownerName: row['owner_name'],
+        mobileNo: row['mobile_no'],
         orderDate: row['order_date'],
         items: items,
         totalPrice: (row['total_price'] as num).toDouble(),
@@ -129,6 +141,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
     final localOrder = Order(
       localOrderId: localOrderId,
+      ownerName: serverOrder.ownerName,
+      mobileNo: serverOrder.mobileNo,
       employeeId: serverOrder.employeeId,
       shopId: serverOrder.shopId,
       shopNamep: serverOrder.shopNamep,

@@ -42,6 +42,128 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
         .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
   }
 
+  Future<void> _onRefresh() async {
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+  }
+
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
+  }
+
+  Widget _buildNoInternet() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 200),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: MinimalTheme.primaryOrange.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.wifi_off_rounded,
+                    size: 34,
+                    color: MinimalTheme.primaryOrange,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Internet Connection',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: MinimalTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Check your WiFi or mobile data\nand try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: MinimalTheme.textGray,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Retry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MinimalTheme.primaryOrange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(String message) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 200),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: MinimalTheme.iconGray.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: const TextStyle(
+                  color: MinimalTheme.textGray,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -103,182 +225,180 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
-      body: listAsync.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: MinimalTheme.primaryOrange,
-                strokeWidth: 2.5,
-              ),
-            )
-          : listAsync.hasError
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: MinimalTheme.iconGray.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        listAsync.error.toString(),
-                        style: const TextStyle(
-                          color: MinimalTheme.textGray,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    // Compact Header with Stats
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      decoration: BoxDecoration(
-                        color: MinimalTheme.cardWhite,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          // Title and Stats Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Employees',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: MinimalTheme.textDark,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  _compactStat(
-                                    label: 'Active',
-                                    count: activeCount,
-                                    color: MinimalTheme.successGreen,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _compactStat(
-                                    label: 'Inactive',
-                                    count: inactiveCount,
-                                    color: MinimalTheme.errorRed,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: MinimalTheme.primaryOrange,
+        child: listAsync.isLoading
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 300),
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: MinimalTheme.primaryOrange,
+                      strokeWidth: 2.5,
                     ),
-
-                    // Search Bar
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: Container(
-                        height: 46,
+                  ),
+                ],
+              )
+            : listAsync.hasError
+                ? _isNetworkError(listAsync.error.toString())
+                    ? _buildNoInternet()
+                    : _buildError(listAsync.error.toString())
+                : ListView(
+                    children: [
+                      // Compact Header with Stats
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                         decoration: BoxDecoration(
                           color: MinimalTheme.cardWhite,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (v) => setState(() => _searchQuery = v),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: MinimalTheme.textDark,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Search employees...',
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: MinimalTheme.textGray,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              size: 20,
-                              color: MinimalTheme.iconGray,
-                            ),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      size: 18,
-                                      color: MinimalTheme.iconGray,
+                        child: Column(
+                          children: [
+                            // Title and Stats Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Employees',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: MinimalTheme.textDark,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    _compactStat(
+                                      label: 'Active',
+                                      count: activeCount,
+                                      color: MinimalTheme.successGreen,
                                     ),
-                                    onPressed: () => setState(() {
-                                      _searchController.clear();
-                                      _searchQuery = "";
-                                    }),
-                                    splashRadius: 16,
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 13,
+                                    const SizedBox(width: 12),
+                                    _compactStat(
+                                      label: 'Inactive',
+                                      count: inactiveCount,
+                                      color: MinimalTheme.errorRed,
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            isDense: true,
+                          ],
+                        ),
+                      ),
+
+                      // Search Bar
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Container(
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: MinimalTheme.cardWhite,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (v) => setState(() => _searchQuery = v),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: MinimalTheme.textDark,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Search employees...',
+                              hintStyle: const TextStyle(
+                                fontSize: 14,
+                                color: MinimalTheme.textGray,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search_rounded,
+                                size: 20,
+                                color: MinimalTheme.iconGray,
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(
+                                        Icons.close_rounded,
+                                        size: 18,
+                                        color: MinimalTheme.iconGray,
+                                      ),
+                                      onPressed: () => setState(() {
+                                        _searchController.clear();
+                                        _searchQuery = "";
+                                      }),
+                                      splashRadius: 16,
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 13,
+                              ),
+                              isDense: true,
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Employee List
-                    Expanded(
-                      child: filteredEmployees.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.people_outline,
-                                    size: 64,
-                                    color: MinimalTheme.iconGray.withOpacity(0.5),
+                      // Employee List
+                      if (filteredEmployees.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 40),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.people_outline,
+                                  size: 64,
+                                  color:
+                                      MinimalTheme.iconGray.withOpacity(0.5),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'No employees found',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: MinimalTheme.textDark,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    'No employees found',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: MinimalTheme.textDark,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Try adjusting your search',
+                                  style: TextStyle(
+                                    color: MinimalTheme.textGray,
+                                    fontSize: 13,
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Try adjusting your search',
-                                    style: TextStyle(
-                                      color: MinimalTheme.textGray,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-                              itemCount: filteredEmployees.length,
-                              itemBuilder: (context, index) {
-                                final emp = filteredEmployees[index];
-                                return _employeeCard(context, emp);
-                              },
+                                ),
+                              ],
                             ),
-                    ),
-                  ],
-                ),
+                          ),
+                        )
+                      else
+                        ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
+                          itemCount: filteredEmployees.length,
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemBuilder: (context, index) {
+                            final emp = filteredEmployees[index];
+                            return _employeeCard(context, emp);
+                          },
+                        ),
+                    ],
+                  ),
+      ),
     );
   }
 

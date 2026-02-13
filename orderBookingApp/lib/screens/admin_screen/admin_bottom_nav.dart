@@ -71,26 +71,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     });
   }
 
-  // ================= CURRENT PAGE =================
-  Widget get _currentPage {
-    switch (_selectedIndex) {
-      case 0:
-        return AdminHomePage(onNavigate: navigateToTab);
-      case 1:
-        return const AdminCatalogPage();
-      case 2:
-        return OrdersListPage();
-      case 3:
-        return const AdminEmployeesPage();
-      case 4:
-        return AdminProfilePage(
-          mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? '',
-        );
-      default:
-        return AdminHomePage(onNavigate: navigateToTab);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(adminloginViewModelProvider);
@@ -103,7 +83,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     // Admin brand color
     const Color adminColor = Color(0xFFF57C00);
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
       // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: adminColor,
@@ -162,7 +150,18 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
 
       // ================= BODY =================
-      body: _currentPage,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          AdminHomePage(onNavigate: navigateToTab),
+          const AdminCatalogPage(),
+          OrdersListPage(),
+          const AdminEmployeesPage(),
+          AdminProfilePage(
+            mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? '',
+          ),
+        ],
+      ),
 
       // ================= CUSTOM PILL BOTTOM NAV =================
       bottomNavigationBar: _PillBottomNavBar(
@@ -171,6 +170,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         onTap: navigateToTab,
         activeColor: adminColor,
       ),
+    ),
     );
   }
 }

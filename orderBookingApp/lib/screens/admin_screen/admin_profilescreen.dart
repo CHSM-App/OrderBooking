@@ -45,8 +45,104 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
         .read(adminloginViewModelProvider.notifier)
         .fetchAdminDetails(
           ref.read(adminloginViewModelProvider).mobileNo ?? "",
-          useCacheFirst: false,
         );
+  }
+
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
+  }
+
+  Widget _buildNoInternet() {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 200),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: MinimalTheme.primaryOrange.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wifi_off_rounded,
+                    size: 34,
+                    color: MinimalTheme.primaryOrange,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Internet Connection',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: MinimalTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Check your WiFi or mobile data\nand try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: MinimalTheme.textGray,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Retry',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MinimalTheme.primaryOrange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(String message) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 200),
+        Center(child: Text('Error: $message')),
+      ],
+    );
   }
 
   @override
@@ -73,13 +169,9 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 ],
               )
             : detailsAsync.hasError
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      const SizedBox(height: 200),
-                      Center(child: Text('Error: ${detailsAsync.error}')),
-                    ],
-                  )
+                ? _isNetworkError(detailsAsync.error.toString())
+                    ? _buildNoInternet()
+                    : _buildError(detailsAsync.error.toString())
                 : detailsAsync.when(
                     data: (profile) => profile.isEmpty
                         ? ListView(
@@ -102,13 +194,9 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                         ),
                       ],
                     ),
-                    error: (e, _) => ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        const SizedBox(height: 200),
-                        Center(child: Text('Error: $e')),
-                      ],
-                    ),
+                    error: (e, _) => _isNetworkError(e.toString())
+                        ? _buildNoInternet()
+                        : _buildError(e.toString()),
                   ),
       ),
     );

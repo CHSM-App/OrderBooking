@@ -9,7 +9,7 @@ import 'package:order_booking_app/data/local/offline_visit_dao.dart';
 import 'package:order_booking_app/data/local/product_dao.dart';
 import 'package:order_booking_app/data/local/shop_dao.dart';
 import 'package:order_booking_app/data/repositories/checkin_status_impl.dart';
-import 'package:order_booking_app/data/repositories/orders.impl.dart';
+import 'package:order_booking_app/data/repositories/orders_impl.dart';
 import 'package:order_booking_app/data/repositories/product_impl.dart';
 import 'package:order_booking_app/data/repositories/region_impl.dart';
 

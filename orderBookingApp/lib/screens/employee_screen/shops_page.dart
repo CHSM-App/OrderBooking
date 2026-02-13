@@ -99,7 +99,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
       perm = await Geolocator.requestPermission();
       if (perm == LocationPermission.denied) {
         if (mounted) {
-          _simpleDialog(
+          await _simpleDialog(
             icon: Icons.location_disabled_outlined,
             iconColor: Colors.red,
             title: 'Permission Denied',
@@ -257,7 +257,22 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     );
   }
 
+  Future<bool> _confirmPunchIn(ShopDetails shop) async {
+    return _simpleDialog(
+      icon: Icons.check_circle_outline,
+      iconColor: _kPrimary,
+      title: 'Punch In?',
+      body:
+          'Do you want to punch in for "${shop.shopName ?? 'this shop'}" now?',
+      confirmLabel: 'Yes, Punch In',
+      cancelLabel: 'Cancel',
+    );
+  }
+
   Future<void> _onShopTap(ShopDetails shop) async {
+    final proceed = await _confirmPunchIn(shop);
+    if (!proceed) return;
+
     // Show compact loading overlay
     showDialog(
       context: context,

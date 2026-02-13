@@ -19,8 +19,13 @@ Future<void> saveRegionOffline(Region region) async {
 
 Future<List<Region>> fetchRegions(String companyId) async {
 
-  await pushLocalToServer();
+try {
+    await pushLocalToServer();
   await pullServerToLocal(companyId);
+} catch (e) {
+  
+}
+
   final rows = await local.fetchAll();
 
   return rows.map((row) {

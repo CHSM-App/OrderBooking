@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,22 +137,50 @@ class TokenInterceptor extends Interceptor {
   }
 
   bool _shouldRetryConnectionClosed(DioException err) {
-    const target = 'connection is closed';
-    final message = err.message?.toLowerCase();
-    if (message != null && message.contains(target)) {
+    if (err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout) {
       return true;
     }
-    final data = err.response?.data;
-    if (data is String && data.toLowerCase().contains(target)) {
+
+    final error = err.error;
+    if (error is SocketException || error is HandshakeException) {
       return true;
+    }
+
+    const targets = [
+      'connection is closed',
+      'connection closed',
+      'connection reset by peer',
+      'connection reset',
+      'broken pipe',
+      'failed host lookup',
+      'no address associated with hostname',
+      'network is unreachable',
+      'socket',
+      'timeout',
+    ];
+
+    final message = err.message?.toLowerCase();
+    if (message != null && targets.any(message.contains)) {
+      return true;
+    }
+
+    final data = err.response?.data;
+    if (data is String) {
+      final lower = data.toLowerCase();
+      if (targets.any(lower.contains)) return true;
     }
     if (data is Map) {
       final error = data['error'];
-      if (error is String && error.toLowerCase().contains(target)) {
+      if (error is String &&
+          targets.any(error.toLowerCase().contains)) {
         return true;
       }
       final message = data['message'];
-      if (message is String && message.toLowerCase().contains(target)) {
+      if (message is String &&
+          targets.any(message.toLowerCase().contains)) {
         return true;
       }
     }

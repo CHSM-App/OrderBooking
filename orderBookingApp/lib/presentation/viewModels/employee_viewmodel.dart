@@ -36,7 +36,7 @@ class EmployeeloginState {
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
     AsyncValue<List<VisitPayload>>? employeeVisits,
     String? companyId,
-    int? empId
+    int? empId,
   }) {
     return EmployeeloginState(
       isLoading: isLoading ?? this.isLoading,
@@ -46,7 +46,7 @@ class EmployeeloginState {
       employeeDetails: employeeDetails ?? this.employeeDetails,
       employeeVisits: employeeVisits ?? this.employeeVisits,
       companyId: companyId ?? this.companyId,
-      empId: empId ?? this.empId
+      empId: empId ?? this.empId,
     );
   }
 }
@@ -57,7 +57,6 @@ class EmployeeloginState {
 class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   final EmployeeloginUsecase usecase;
 
-  
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
   
   Future<int> addEmployee(EmployeeLogin employeeLogin) async {
@@ -86,6 +85,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   }
 }
 
+
   /// -----------------------
   /// GET EMPLOYEE LIST
   /// -----------------------
@@ -95,7 +95,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   }) async {
     var hasCached = false;
     if (useCacheFirst) {
-      final cached = state.employeeList.value;
+      final cached = state.employeeList.valueOrNull;
       if (cached != null && cached.isNotEmpty) {
         hasCached = true;
         state = state.copyWith(isLoading: false, error: null);
@@ -162,25 +162,21 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
         employeeDetails: const AsyncValue.data([]),
       );      
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-
   //check weather mobile number already exists in table
   Future<void> checkMobileExists(String mobileNo, String companyId) async {
-    state = state.copyWith(isLoading: true, error: null,isPhoneNoExists: null );
+    state = state.copyWith(isLoading: true, error: null, isPhoneNoExists: null);
 
     try {
-      final exists = await usecase.checkMobileExists(
-        mobileNo,
-        companyId,
-      );
+      final exists = await usecase.checkMobileExists(mobileNo, companyId);
 
-      state = state.copyWith(isLoading: false, isPhoneNoExists: exists['exists']);
+      state = state.copyWith(
+        isLoading: false,
+        isPhoneNoExists: exists['exists'],
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -188,14 +184,13 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
         isPhoneNoExists: false,
       );
     }
+  }
 
-}
-
-Future<void> getEmployeeVisit(int empId) async {
+  Future<void> getEmployeeVisit(int empId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final employees = await usecase.getEmployeeVisit(empId);
-      for (var employee in employees){
+      for (var employee in employees) {
         print(employee);
       }
 
@@ -206,7 +201,7 @@ Future<void> getEmployeeVisit(int empId) async {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-         employeeVisits: AsyncValue.error(e, StackTrace.current),
+        employeeVisits: AsyncValue.error(e, StackTrace.current),
       );
     }
   }
@@ -216,4 +211,3 @@ void resetPhoneExistStatus() {
 }
 
 }
-

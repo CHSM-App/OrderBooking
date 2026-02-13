@@ -104,6 +104,42 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  DateTime? _parseOrderDate(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed != null) return parsed;
+
+    final re = RegExp(
+      r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$',
+    );
+    final m = re.firstMatch(raw.trim());
+    if (m == null) return null;
+
+    final p1 = int.tryParse(m.group(1) ?? '');
+    final p2 = int.tryParse(m.group(2) ?? '');
+    final year = int.tryParse(m.group(3) ?? '');
+    if (p1 == null || p2 == null || year == null) return null;
+
+    final hour = int.tryParse(m.group(4) ?? '') ?? 0;
+    final minute = int.tryParse(m.group(5) ?? '') ?? 0;
+    final second = int.tryParse(m.group(6) ?? '') ?? 0;
+
+    int day = p1;
+    int month = p2;
+    if (p1 > 12 && p2 <= 12) {
+      day = p1;
+      month = p2;
+    } else if (p2 > 12 && p1 <= 12) {
+      day = p2;
+      month = p1;
+    }
+
+    try {
+      return DateTime(year, month, day, hour, minute, second);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── Enhanced Search ────────────────────────────────────────────────────────
   bool _passesSearch(Order o, int number, String q) {
     if (q.isEmpty) return true;
@@ -145,6 +181,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
 
     return false;
+  }
+
+  String _orderKey(Order o) {
+    if (o.serverOrderId != null) return 'srv-${o.serverOrderId}';
+    if (o.localOrderId != null) return 'loc-${o.localOrderId}';
+    return 'fallback-${o.shopId}-${o.orderDate}-${o.totalPrice}';
   }
 
   bool _isNetworkError(String? msg) {
@@ -328,31 +370,31 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   Widget _buildBody(ordersState state) {
     if (state.isLoading) return _buildLoading();
 
-    if (state.errorMessage != null) {
-      return _isNetworkError(state.errorMessage)
-          ? _buildNoInternet()
-          : _buildError(state.errorMessage!);
-    }
-
     if (state.orders != null) {
       return state.orders!.when(
         data: (orders) {
           // Sort newest→oldest for display
           final sorted = List<Order>.from(orders)
-            ..sort((a, b) => DateTime.parse(b.orderDate)
-                .compareTo(DateTime.parse(a.orderDate)));
+            ..sort((a, b) {
+              final da = _parseOrderDate(a.orderDate);
+              final db = _parseOrderDate(b.orderDate);
+              if (da == null && db == null) return 0;
+              if (da == null) return 1;
+              if (db == null) return -1;
+              return db.compareTo(da);
+            });
 
           // Stable number: oldest = #1
-          final numberMap = {
-            for (var i = 0; i < sorted.length; i++)
-              sorted[i].serverOrderId: sorted.length - i,
-          };
+          final numberMap = <String, int>{};
+          for (var i = 0; i < sorted.length; i++) {
+            numberMap[_orderKey(sorted[i])] = sorted.length - i;
+          }
 
           final visible = sorted
               .where((o) =>
                   _passesFilter(o) &&
                   _passesSearch(
-                      o, numberMap[o.serverOrderId] ?? 0, _searchQuery))
+                      o, numberMap[_orderKey(o)] ?? 0, _searchQuery))
               .toList();
 
           if (visible.isEmpty) return _buildEmpty();
@@ -365,11 +407,17 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       );
     }
 
+    if (state.errorMessage != null) {
+      return _isNetworkError(state.errorMessage)
+          ? _buildNoInternet()
+          : _buildError(state.errorMessage!);
+    }
+
     return _buildEmpty();
   }
 
   // ── List ───────────────────────────────────────────────────────────────────
-  Widget _buildList(List<Order> orders, Map<dynamic, int> numberMap) {
+  Widget _buildList(List<Order> orders, Map<String, int> numberMap) {
     return RefreshIndicator(
       color: _kPrimary,
       backgroundColor: _kSurface,
@@ -382,18 +430,35 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         itemCount: orders.length,
         itemBuilder: (_, i) => _OrderCard(
           order: orders[i],
-          orderNumber: numberMap[orders[i].serverOrderId] ?? (i + 1),
+          orderNumber: numberMap[_orderKey(orders[i])] ?? (i + 1),
         ),
+      ),
+    );
+  }
+
+  Widget _wrapRefresh(Widget child) {
+    return RefreshIndicator(
+      color: _kPrimary,
+      backgroundColor: _kSurface,
+      strokeWidth: 2.5,
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 220),
+          Center(child: child),
+        ],
       ),
     );
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
   Widget _buildLoading() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return _wrapRefresh(
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           const CircularProgressIndicator(
               color: _kPrimary, strokeWidth: 2.5),
           const SizedBox(height: 16),
@@ -401,7 +466,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               style: TextStyle(
                   fontSize: 14,
                   color: _kTextSecondary.withOpacity(0.8))),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -410,10 +476,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   Widget _buildEmpty() {
     final isFiltered =
         _filter != null || _searchQuery.isNotEmpty;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return _wrapRefresh(
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Container(
             width: 72,
             height: 72,
@@ -457,19 +524,21 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       fontWeight: FontWeight.w600)),
             ),
           ],
-        ],
+          ],
+        ),
       ),
     );
   }
 
   // ── No internet ────────────────────────────────────────────────────────────
   Widget _buildNoInternet() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return _wrapRefresh(
+      Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             Container(
               width: 72,
               height: 72,
@@ -511,7 +580,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     borderRadius: BorderRadius.circular(12)),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -519,12 +589,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   // ── Error ──────────────────────────────────────────────────────────────────
   Widget _buildError(String msg) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return _wrapRefresh(
+      Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             Container(
               width: 64,
               height: 64,
@@ -564,7 +635,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     borderRadius: BorderRadius.circular(12)),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

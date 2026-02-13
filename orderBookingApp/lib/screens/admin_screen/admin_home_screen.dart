@@ -45,6 +45,21 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
      
   }
 
+  Future<void> _onRefresh() async {
+    final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
+    if (companyId.isEmpty) return;
+
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(companyId);
+    await ref
+        .read(ordersViewModelProvider.notifier)
+        .getOrderList(companyId);
+    await ref
+        .read(productViewModelProvider.notifier)
+        .fetchProductList(companyId);
+  }
+
  
 
   bool isSameDay(DateTime a, DateTime b) {
@@ -162,11 +177,15 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
           stops: const [0.0, 0.3],
         ),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: const Color(0xFFF57C00),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text(
               "Overview",
               style: TextStyle(
@@ -250,7 +269,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
           ],
         ),
       ),
-    );
+    ),);
   }
 
   Widget _modernDashboardCard({
