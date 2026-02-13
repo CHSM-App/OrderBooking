@@ -1,31 +1,8 @@
-import 'dart:convert';
 import 'package:order_booking_app/data/DB/app_database.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/models/region.dart';
 
 class OfflineRegionDao {
-  Future<void> insertPending(Region region) async {
-    final db = await AppDatabase.database;
-
-    await db.insert('offline_regions', {
-      'local_id': region.localId,
-      'payload': jsonEncode(region.toLocalJson()),
-      'status': 'pending',
-      'captured_at': DateTime.now().toIso8601String(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-Future<List<Map<String, dynamic>>> fetchPending() async {
-  final db = await AppDatabase.database;
-
-  return db.query(
-    'offline_regions',
-    where: 'status = ? AND server_id IS NULL',
-    whereArgs: ['pending'],
-    orderBy: 'captured_at ASC',
-  );
-}
-
 
   Future<List<Map<String, dynamic>>> fetchAll() async {
     final db = await AppDatabase.database;
@@ -37,95 +14,56 @@ Future<List<Map<String, dynamic>>> fetchPending() async {
     );
   }
 
-  Future<void> markSyncing(String local_id) async {
-    final db = await AppDatabase.database;
-
-    await db.update(
-      'offline_regions',
-      {'status': 'syncing'},
-      where: 'local_id = ?',
-      whereArgs: [local_id],
-    );
-  }
-
-  Future<void> markSynced(String local_id, int serverId) async {
-    final db = await AppDatabase.database;
-
-    await db.update(
-      'offline_regions',
-      {
-        'status': 'synced',
-        'server_id': serverId,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'local_id = ?',
-      whereArgs: [local_id],
-    );
-  }
-
-  Future<void> incrementRetry(String local_id) async {
-    final db = await AppDatabase.database;
-
-    await db.rawUpdate(
-      '''
-      UPDATE offline_regions
-      SET retry_count = retry_count + 1,
-          status = 'pending'
-      WHERE id = ?
-    ''',
-      [local_id],
-    );
-  }
-
   /// 🔥 Upsert server data into local cache
-  Future<void> upsertFromServer(Region region) async {
-    final db = await AppDatabase.database;
+ Future<void> upsertFromServer(List<Region> regions) async {
+  final db = await AppDatabase.database;
 
-    /// 1️⃣ Check if region already exists locally using server_id
-    final existing = await db.query(
-      'offline_regions',
-      where: 'server_id = ?',
-      whereArgs: [region.regionId],
-      limit: 1,
-    );
+  await db.transaction((txn) async {
+    final batch = txn.batch();
 
     final now = DateTime.now().toIso8601String();
 
-    /// 2️⃣ If record exists → Decide update logic
-    if (existing.isNotEmpty) {
-      final row = existing.first;
-
-      final status = row['status'];
-
-      /// 🔥 IMPORTANT:
-      /// If region is pending locally, do NOT overwrite
-      if (status == 'pending' || status == 'syncing') {
-        return;
-      }
-
-      /// Update synced record
-      await db.update(
+    for (final region in regions) {
+      batch.insert(
         'offline_regions',
         {
-          'payload': jsonEncode(region.toLocalJson()),
+          'server_id': region.regionId,
+          'region_name': region.regionName,
+          'pincode': region.pincode,
+          'district': region.district,
+          'state': region.state,
+          'company_id': region.companyId,
+          'created_by': region.createdBy,
           'status': 'synced',
-          'updated_at': now,
           'is_deleted': 0,
+          'captured_at': now,
+          'updated_at': now,
         },
-        where: 'server_id = ?',
-        whereArgs: [region.regionId],
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
-    /// 3️⃣ If record does NOT exist → Insert new
-    else {
-      await db.insert('offline_regions', {
-        'server_id': region.regionId,
-        'payload': jsonEncode(region.toLocalJson()),
-        'status': 'synced',
-        'captured_at': now,
-        'updated_at': now,
-        'is_deleted': 0,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-    }
+
+    await batch.commit(noResult: true);
+  });
+}
+
+
+Future<void> 
+deleteRegionsNotIn(List<int> serverIds) async {
+  final db = await AppDatabase.database;
+
+  if (serverIds.isEmpty) {
+    await db.delete('offline_regions');
+    return;
   }
+
+  final placeholders = List.filled(serverIds.length, '?').join(',');
+
+  await db.delete(
+    'offline_regions',
+    where: 'server_id NOT IN ($placeholders)',
+    whereArgs: serverIds,
+  );
+}
+
 }

@@ -93,7 +93,8 @@ final visitRepositoryProvider = Provider<VisitRepository>((ref) {
 final regionRepositorofflineProvider = Provider<RegionRepooffline>((ref) {
  final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return RegionImplOffline(api);
+  final local = OfflineRegionDao();
+  return RegionImplOffline(api, local);
     
 });
 
