@@ -12,21 +12,36 @@ class ProductImpl implements ProductRepository {
 
   @override
   Future<void> addOrUpdateProductOffline(Product product) async {
-    final offlineProduct = product.copyWith(
-      localId: product.localId ?? const Uuid().v4(),
-      isSynced: false,
-      updatedAt: DateTime.now(),
-    );
+    // final offlineProduct = product.copyWith(
+    //   localId: product.localId ?? const Uuid().v4(),
+    //   isSynced: false,
+    //   updatedAt: DateTime.now(),
+    // );
 
-    await local.insertProducts([offlineProduct], markSynced: false);
+    // await local.insertProducts([offlineProduct], markSynced: false);
+
+    await api.addOrUpdateProduct(product);
   }
 
   @override
   Future<List<Product>> getAllProducts(String companyId) async {
-    await syncLocalToRemote();
+    // await syncLocalToRemote();
     await syncRemoteToLocal(companyId);
     await syncDeletedSubProducts();
     return local.getAllProducts();
+
+  }
+
+
+    /// User-triggered delete
+  Future<void> deleteSubProduct(int subItemId) async {
+     await api.deleteProductSubType(subItemId);
+    // 1️⃣ Local first (instant UI update)
+    // await local.markSubProductDeleted(localSubId);
+
+    // await syncDeletedSubProducts();
+
+    // await local.debugPrintOfflineSubProduct();
   }
 
   @override
@@ -65,15 +80,7 @@ class ProductImpl implements ProductRepository {
     }
   }
 
-  /// User-triggered delete
-  Future<void> deleteSubProduct(String localSubId) async {
-    // 1️⃣ Local first (instant UI update)
-    await local.markSubProductDeleted(localSubId);
 
-    await syncDeletedSubProducts();
-
-    // await local.debugPrintOfflineSubProduct();
-  }
 
   Future<void> syncDeletedSubProducts() async {
     final pendingDeletes = await local.getPendingSubProductDeletes();

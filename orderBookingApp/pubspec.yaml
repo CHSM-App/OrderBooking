@@ -53,7 +53,7 @@ dependencies:
   image_picker: ^1.0.7          # For camera and gallery
   file_picker: ^8.1.2
   flutter_pdfview: ^1.2.7
-  syncfusion_flutter_pdfviewer: ^21.2.3
+  syncfusion_flutter_pdfviewer: ^32.2.4
   open_file: ^3.3.2 
   
          # For PDF and file selection

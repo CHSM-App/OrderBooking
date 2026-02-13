@@ -8,6 +8,6 @@ abstract class ProductRepository {
   Future<void> syncLocalToRemote();
   Future<void> syncRemoteToLocal(String companyId);
   Future<void> sync(String companyId);
-  Future<void> deleteSubProduct(String localSubItemId);
+  Future<void> deleteSubProduct(int SubItemId);
   Future<void> syncDeletedSubProducts();
 }

@@ -22,9 +22,9 @@ class ProductUsecase {
   }
 
   /// Delete a product subtype
-  Future<void> deleteProductSubType(String subItemId) async {
+  Future<void> deleteProductSubType(int subItemId) async {
     // return productRepository.deleteProductSubType(subItemId);
-    await productRepository.deleteSubProduct(subItemId.toString());
+    await productRepository.deleteSubProduct(subItemId);
   }
   
 }

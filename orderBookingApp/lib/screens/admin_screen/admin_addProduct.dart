@@ -73,12 +73,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     productName = p.productName ?? '';
     _nameCtrl.text = productName;
     productType = p.productType;
+    measuringUnit = p.subtypes?[0].measuringUnit;
     addedItems = _normalizeSubtypes(p.subtypes);
   }
 
   List<ProductSubType> _normalizeSubtypes(List? raw) {
     if (raw == null) return [];
-    return raw.map((item) {
+    return raw.map((item) { 
       if (item is ProductSubType) return item;
       if (item is Map) {
         return ProductSubType.fromJson(Map<String, dynamic>.from(item));
@@ -504,9 +505,9 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   Future<void> _deleteItem(int index, ProductSubType item) async {
     final productVM =
         ref.read(productViewModelProvider.notifier);
-    final localId = item.localId;
+    final subItemId = item.subItemId;
 
-    if (localId == null) {
+    if (subItemId == null) {
       setState(() => addedItems.removeAt(index));
       return;
     }
@@ -573,7 +574,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     if (confirmed != true) return;
 
     try {
-      await productVM.deleteProductSubType(localId);
+      await productVM.deleteProductSubType(subItemId);
       setState(() => addedItems.removeAt(index));
       _snack('Item deleted',
           color: _kGreen,

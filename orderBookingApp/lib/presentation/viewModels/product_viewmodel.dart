@@ -68,7 +68,7 @@ class ProductViewModel extends StateNotifier<ProductState> {
   }
                   
   /// Delete a Product Subtype
-  Future<void> deleteProductSubType(String subItemId) async {
+  Future<void> deleteProductSubType(int subItemId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await usecase.deleteProductSubType(subItemId);
