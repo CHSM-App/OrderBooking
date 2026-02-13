@@ -5,9 +5,9 @@ abstract class ProductRepository {
 
   Future<void> addOrUpdateProductOffline(Product product);
   Future<List<Product>> getAllProducts(String companyId);
-  Future<void> syncLocalToRemote();
+  // Future<void> syncLocalToRemote();
   Future<void> syncRemoteToLocal(String companyId);
-  Future<void> sync(String companyId);
-  Future<void> deleteSubProduct(String localSubItemId);
-  Future<void> syncDeletedSubProducts();
+  // Future<void> sync(String companyId);
+  Future<void> deleteSubProduct(List<int> SubItemId);
+  // Future<void> syncDeletedSubProducts();
 }

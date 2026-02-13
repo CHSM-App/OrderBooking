@@ -1,9 +1,9 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -707,9 +707,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
 
     try {
       // Step 1: Add or update employee
-      final empId = widget.isEdit
-          ? widget.employee!.empId!
-          : await ref.read(employeeloginViewModelProvider.notifier)
+      final empId =  await ref.read(employeeloginViewModelProvider.notifier)
               .addEmployee(employeeToSave);
 
       // Step 2: Upload ID proof if available
@@ -913,6 +911,37 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                             ),
                           ),
                           data: (regions) {
+                            if (regions.isEmpty) {
+                              return Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: MinimalTheme.errorRed.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: MinimalTheme.errorRed.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: MinimalTheme.errorRed,
+                                      size: 18,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        "No region available. Please add a region first.",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: MinimalTheme.errorRed,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
                             return Container(
                               decoration: BoxDecoration(
                                 color: MinimalTheme.cardWhite,
