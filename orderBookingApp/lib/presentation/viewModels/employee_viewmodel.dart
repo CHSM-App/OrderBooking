@@ -62,20 +62,45 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
 
   // EXISTING: Add Employee
-  Future<void> addEmployee(EmployeeLogin employeeLogin) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      await usecase.addEmployee(employeeLogin);
+ 
+  Future<int> addEmployee(EmployeeLogin employeeLogin) async {
+  state = state.copyWith(isLoading: true, error: null);
+  debugPrint("🟢 addEmployee: Started for ${employeeLogin.empName}");
 
-      // refresh list
-      await getEmployeeList(employeeLogin.companyId!);
+  try {
+    final response = await usecase.addEmployee(employeeLogin);
+    debugPrint("✅ addEmployee: API Response -> $response");
 
-      state = state.copyWith(isLoading: false);
-      // Refresh employee list after adding
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
+    // Extract empId from response map
+    final int newEmpId = response['emp_id'] as int;
+    debugPrint("✅ addEmployee: Success, empId = $newEmpId");
+
+    // Refresh employee list
+    await getEmployeeList(employeeLogin.companyId!);
+
+    state = state.copyWith(isLoading: false);
+    return newEmpId;
+  } catch (e, st) {
+    debugPrint("❌ addEmployee: Error -> $e\n$st");
+    state = state.copyWith(isLoading: false, error: e.toString());
+    rethrow;
   }
+}
+
+Future<void> uploadEmployeeIdProof(File image, int empId) async {
+  state = state.copyWith(isLoading: true, error: null);
+  debugPrint("🟢 uploadEmployeeIdProof: Started for empId = $empId");
+
+  try {
+    await usecase.uploadEmployeeIdProof(image, empId.toString());
+    debugPrint("✅ uploadEmployeeIdProof: Success for empId = $empId");
+    state = state.copyWith(isLoading: false);
+  } catch (e, st) {
+    debugPrint("❌ uploadEmployeeIdProof: Error -> $e\n$st");
+    state = state.copyWith(isLoading: false, error: e.toString());
+  }
+}
+
 
   /// -----------------------
   /// GET EMPLOYEE LIST
