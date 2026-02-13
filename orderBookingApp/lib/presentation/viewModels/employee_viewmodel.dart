@@ -65,15 +65,14 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
  
   Future<int> addEmployee(EmployeeLogin employeeLogin) async {
   state = state.copyWith(isLoading: true, error: null);
-  debugPrint("🟢 addEmployee: Started for ${employeeLogin.empName}");
 
   try {
     final response = await usecase.addEmployee(employeeLogin);
-    debugPrint("✅ addEmployee: API Response -> $response");
+  
 
     // Extract empId from response map
     final int newEmpId = response['emp_id'] as int;
-    debugPrint("✅ addEmployee: Success, empId = $newEmpId");
+  
 
     // Refresh employee list
     await getEmployeeList(employeeLogin.companyId!);
@@ -81,7 +80,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     state = state.copyWith(isLoading: false);
     return newEmpId;
   } catch (e, st) {
-    debugPrint("❌ addEmployee: Error -> $e\n$st");
+   
     state = state.copyWith(isLoading: false, error: e.toString());
     rethrow;
   }
@@ -89,14 +88,14 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 
 Future<void> uploadEmployeeIdProof(File image, int empId) async {
   state = state.copyWith(isLoading: true, error: null);
-  debugPrint("🟢 uploadEmployeeIdProof: Started for empId = $empId");
+
 
   try {
     await usecase.uploadEmployeeIdProof(image, empId.toString());
-    debugPrint("✅ uploadEmployeeIdProof: Success for empId = $empId");
+  
     state = state.copyWith(isLoading: false);
   } catch (e, st) {
-    debugPrint("❌ uploadEmployeeIdProof: Error -> $e\n$st");
+   
     state = state.copyWith(isLoading: false, error: e.toString());
   }
 }
