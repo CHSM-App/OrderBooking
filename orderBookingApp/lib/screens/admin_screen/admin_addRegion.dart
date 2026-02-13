@@ -6,8 +6,9 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:uuid/uuid.dart';
 
 class AddRegionPage extends ConsumerStatefulWidget {
-  const AddRegionPage({Key? key}) : super(key: key);
+  final Region? region; // Optional for edit
 
+  const AddRegionPage({Key? key, this.region}) : super(key: key);
   @override
   ConsumerState<AddRegionPage> createState() => _AddRegionPageState();
 }
@@ -25,29 +26,34 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
 
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
+  regionController.text = widget.region?.regionName ?? '';
+  pincodeController.text = widget.region?.pincode ?? '';
+  districtController.text = widget.region?.district ?? '';
+  stateController.text = widget.region?.state ?? '';
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+  _animationController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+  _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+  );
 
-    _animationController.forward();
-  }
+  _slideAnimation =
+      Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+    CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ),
+  );
+
+  _animationController.forward();
+}
 
   @override
   void dispose() {
@@ -59,39 +65,49 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage>
     super.dispose();
   }
 
-  Future<void> submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    final region = Region(
-      localId: Uuid().v4(),
-      companyId: ref.read(adminloginViewModelProvider).companyId,
-      regionName: regionController.text.trim(),
-      pincode: pincodeController.text.trim(),
-      district: districtController.text.trim(),
-      state: stateController.text.trim(),
-      createdBy: 1,
+  Future<void> submitForm() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  final companyId = ref.read(adminloginViewModelProvider).companyId;
+  final notifier = ref.read(regionofflineViewModelProvider.notifier);
+
+  // Create region object
+  final region = Region(
+    localId: widget.region?.localId ?? Uuid().v4(),
+    regionId: widget.region?.regionId, // Use existing id for edit
+    companyId: companyId,
+    regionName: regionController.text.trim(),
+    pincode: pincodeController.text.trim(),
+    district: districtController.text.trim(),
+    state: stateController.text.trim(),
+    createdBy: 1,
+  );
+
+  try {
+    // Add or update
+    final response = await notifier.addRegion(region);
+
+    // Show API message (from your Node.js update/insert API)
+    _showSnackBar(
+      response['message'] ?? 'Operation completed',
+      isError: response['status'] == 0,
     );
 
-    final notifier = ref.read(regionofflineViewModelProvider.notifier);
-    await notifier.addRegion(region);
-    await notifier.fetchRegions(
-        ref.read(adminloginViewModelProvider).companyId ?? "");
-    final state = ref.read(regionofflineViewModelProvider);
+    // Refresh list
+    await notifier.fetchRegionList(companyId ?? "");
 
-    if (state is AsyncError) {
-      _showSnackBar(
-        "Saved locally, but sync failed: ${state.error}",
-        isError: true,
-      );
-    } else {
-      _showSnackBar(
-        "Region saved successfully",
-        isError: false,
-      );
-    }
+    if (!mounted) return;
 
     Navigator.pop(context);
+  } catch (e) {
+    _showSnackBar(
+      "Something went wrong: $e",
+      isError: true,
+    );
   }
+}
+
 
   void _showSnackBar(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(

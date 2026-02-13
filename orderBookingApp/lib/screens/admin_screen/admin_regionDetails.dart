@@ -19,7 +19,7 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final companyId = ref.read(adminloginViewModelProvider).companyId;
       if (companyId != null && companyId.isNotEmpty) {
-        ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
+        ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(companyId);
       }
     });
   }
@@ -105,7 +105,7 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
       onRefresh: () async {
         final companyId = ref.read(adminloginViewModelProvider).companyId;
         if (companyId != null && companyId.isNotEmpty) {
-          await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
+          await ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(companyId);
         }
       },
       color: const Color(0xFF4A5568),
@@ -119,55 +119,266 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
     );
   }
 
-  Widget _buildRegionCard(Region region) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Region Name and Status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  region.regionName ?? 'Unknown Region',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF5B6CF5), // Rich blue color like in image
-                  ),
-                ),
-              ),
-              if (region.syncStatus != null)
-                _buildSyncStatusBadge(region.syncStatus!),
-            ],
-          ),
-          const SizedBox(height: 6),
+  // Widget _buildRegionCard(Region region) {
+  //   return Container(
+  //     margin: const EdgeInsets.only(bottom: 12),
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: Colors.grey[300]!,
+  //         width: 1,
+  //       ),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // Region Name and Status
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Expanded(
+  //               child: Text(
+  //                 region.regionName ?? 'Unknown Region',
+  //                 style: const TextStyle(
+  //                   fontSize: 16,
+  //                   fontWeight: FontWeight.w600,
+  //                   color: Color(0xFF5B6CF5), // Rich blue color like in image
+  //                 ),
+  //               ),
+  //             ),
+  //             if (region.syncStatus != null)
+  //               _buildSyncStatusBadge(region.syncStatus!),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 6),
           
-          // Pincode and Location in one line
-          Text(
-            '${region.pincode ?? 'N/A'} • ${region.district ?? 'N/A'}, ${region.state ?? 'N/A'}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w400,
+  //         // Pincode and Location in one line
+  //         Text(
+  //           '${region.pincode ?? 'N/A'} • ${region.district ?? 'N/A'}, ${region.state ?? 'N/A'}',
+  //           style: TextStyle(
+  //             fontSize: 14,
+  //             color: Colors.grey[600],
+  //             fontWeight: FontWeight.w400,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+//   // }
+
+// Widget _buildRegionCard(Region region) {
+//   return Container(
+//     margin: const EdgeInsets.only(bottom: 12),
+//     padding: const EdgeInsets.all(16),
+//     decoration: BoxDecoration(
+//       color: Colors.white,
+//       borderRadius: BorderRadius.circular(12),
+//       border: Border.all(
+//         color: Colors.grey[300]!,
+//         width: 1,
+//       ),
+//     ),
+//     child: Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Row(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             /// Region Name
+//             Expanded(
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Text(
+//                     region.regionName ?? 'Unknown Region',
+//                     style: const TextStyle(
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w600,
+//                       color: Color(0xFF5B6CF5),
+//                     ),
+//                   ),
+//                   const SizedBox(height: 6),
+//                   Text(
+//                     '${region.pincode ?? 'N/A'} • ${region.district ?? 'N/A'}, ${region.state ?? 'N/A'}',
+//                     style: TextStyle(
+//                       fontSize: 14,
+//                       color: Colors.grey[600],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+
+//             /// Delete Button
+//             IconButton(
+//               icon: const Icon(
+//                 Icons.delete_outline_rounded,
+//                 color: Colors.red,
+//               ),
+//               onPressed: () {
+//                 _confirmDelete(region);
+//               },
+//             ),
+//           ],
+//         ),
+
+//         const SizedBox(height: 6),
+
+//         /// Sync Badge
+//         if (region.syncStatus != null)
+//           Align(
+//             alignment: Alignment.centerRight,
+//             child: _buildSyncStatusBadge(region.syncStatus!),
+//           ),
+//       ],
+//     ),
+//   );
+// }
+Widget _buildRegionCard(Region region) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: Colors.grey[300]!,
+        width: 1,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// Region Name
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    region.regionName ?? 'Unknown Region',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF5B6CF5),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${region.pincode ?? 'N/A'} • ${region.district ?? 'N/A'}, ${region.state ?? 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+            /// Edit Button
+            IconButton(
+              icon: const Icon(
+                Icons.edit_outlined,
+                color: Colors.blue,
+              ),
+              onPressed: () {
+                // Navigate to AddRegionPage with region data
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddRegionPage(region: region),
+                  ),
+                );
+              },
+            ),
+
+            /// Delete Button
+            IconButton(
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red,
+              ),
+              onPressed: () {
+                _confirmDelete(region);
+              },
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 6),
+
+        /// Sync Badge
+        if (region.syncStatus != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildSyncStatusBadge(region.syncStatus!),
+          ),
+      ],
+    ),
+  );
+}
+
+void _confirmDelete(Region region) {
+  final scaffoldContext = context; // Save parent context
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Delete Region"),
+        content: const Text("Are you sure you want to delete this region?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context); // close dialog
+
+              final companyId = ref.read(adminloginViewModelProvider).companyId;
+
+              if (region.regionId != null &&
+                  companyId != null &&
+                  companyId.isNotEmpty) {
+                
+                final result = await ref
+                    .read(regionofflineViewModelProvider.notifier)
+                    .deleteRegion(region.regionId!, companyId);
+
+                print("Delete Result: $result"); // debug
+
+                if (!mounted) return;
+
+                final status = result['status'] ?? 0;
+                final message = result['message'] ?? 'Something went wrong';
+
+                // Use the parent Scaffold context
+                ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    backgroundColor: status == 1 ? Colors.green : Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+
+                // Refresh the region list
+                await ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(companyId);
+              }
+            },
+            child: const Text("Delete"),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 
   Widget _buildSyncStatusBadge(String status) {
     final isSync = status.toLowerCase() == 'synced';
@@ -271,7 +482,7 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
             onPressed: () {
               final companyId = ref.read(adminloginViewModelProvider).companyId;
               if (companyId != null && companyId.isNotEmpty) {
-                ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);
+                ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(companyId);
               }
             },
             icon: const Icon(Icons.refresh_rounded),

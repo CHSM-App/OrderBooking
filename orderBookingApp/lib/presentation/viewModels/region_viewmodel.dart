@@ -31,11 +31,55 @@ class RegionofflineViewModel extends StateNotifier<RegionState> {
 
   RegionofflineViewModel(this.repo) : super(RegionState());
 
-  /// Fetch merged offline + server regions
-  Future<void> fetchRegions(String companyID) async {
+  // /// Fetch merged offline + server regions
+  // Future<void> fetchRegions(String companyID) async {
+  //   try {
+  //     state = state.copyWith(isLoading: true, error: null);
+  //     final regions = await repo.fetchRegions(companyID);
+  //     state = state.copyWith(
+  //       isLoading: false,
+  //       regionList: AsyncValue.data(regions),
+  //     );
+  //   } catch (e) {
+  //     state = state.copyWith(isLoading: false, error: e.toString());
+  //   }
+  // }
+
+  // /// Add region offline + sync
+  // Future<void> addRegion(Region region) async {
+  //   try {
+  //     state = state.copyWith(isLoading: true, error: null);
+  //     await repo.saveRegionOffline(region);
+  //     state = state.copyWith(isLoading: false);
+  //   } catch (e) {
+  //     state = state.copyWith(isLoading: false, error: e.toString());
+  //   }
+  // }
+
+Future<Map<String, dynamic>> addRegion(Region region) async {
+  try {
+    final response = await repo.addRegion(region);
+    // Convert dynamic to Map
+    final result = Map<String, dynamic>.from(response);
+    // Access values
+    final success = result['success'];
+    final regionId = result['region_id'];
+    final message = result['message'];
+
+    print("Success: $success, Region ID: $regionId, Message: $message");
+
+    return result;
+  } catch (e) {
+    print("Error in addRegion: $e");
+    rethrow;
+  }
+}
+
+
+  Future<void> fetchRegionList(String companyId) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      final regions = await repo.fetchRegions(companyID);
+      final regions = await repo.fetchRegionList(companyId);
       state = state.copyWith(
         isLoading: false,
         regionList: AsyncValue.data(regions),
@@ -44,15 +88,17 @@ class RegionofflineViewModel extends StateNotifier<RegionState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+  
 
-  /// Add region offline + sync
-  Future<void> addRegion(Region region) async {
+  Future<Map<String, dynamic>> deleteRegion(int regionId, String companyId) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      await repo.saveRegionOffline(region);
-      state = state.copyWith(isLoading: false);
+      final response = await repo.deleteRegion(regionId, companyId);
+      final result = Map<String, dynamic>.from(response); // ensure Map
+      print("Delete API returned: $result"); // debug log
+      return result;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      print("Delete error: $e");
+      return {'status': 0, 'message': 'Something went wrong'};
     }
   }
 

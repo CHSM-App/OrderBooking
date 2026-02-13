@@ -54,7 +54,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
 
     // Load regions when screen opens
     Future.microtask(() {
-      ref.read(regionofflineViewModelProvider.notifier).fetchRegions(ref.read(adminloginViewModelProvider).companyId?? '');
+      ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(ref.read(adminloginViewModelProvider).companyId?? '');
     });
   }
 

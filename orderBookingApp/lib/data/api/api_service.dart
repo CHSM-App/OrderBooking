@@ -135,6 +135,14 @@ Future<dynamic> addOrder(
     @Part(name: "image") File images,
     @Part(name: "emp_id") String empId,
   );
+@DELETE("index/deleteRegion/{region_id}/{company_id}")
+Future<dynamic> deleteRegion(
+  @Path("region_id") int regionId,
+  @Path("company_id") String companyId,
+);
+
+
+  
 }
 
 

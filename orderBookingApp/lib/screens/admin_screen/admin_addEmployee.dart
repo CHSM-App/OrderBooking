@@ -103,7 +103,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
       if (companyId != null && companyId.isNotEmpty) {
         ref
             .read(regionofflineViewModelProvider.notifier)
-            .fetchRegions(companyId);
+            .fetchRegionList(companyId);
       }
     });
   }
