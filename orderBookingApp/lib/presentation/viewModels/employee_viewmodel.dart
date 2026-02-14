@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
 
@@ -13,11 +14,13 @@ class EmployeeloginState {
   final AsyncValue<List<EmployeeLogin>> employeeList;
   final AsyncValue<List<EmployeeLogin>> employeeDetails;
   final AsyncValue<List<VisitPayload>> employeeVisits;
+  final AsyncValue<List<EmployeeVisit>> employeeVisitLocation;
   final int? empId;
   final String? companyId;
   final bool? isPhoneNoExists;
 
   const EmployeeloginState({
+    this.employeeVisitLocation =  const AsyncValue.loading(),
     this.isLoading = false,
     this.error,
     this.empId,
@@ -35,10 +38,12 @@ class EmployeeloginState {
     AsyncValue<List<EmployeeLogin>>? employeeList,
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
     AsyncValue<List<VisitPayload>>? employeeVisits,
+    AsyncValue<List<EmployeeVisit>>? employeeVisitLocation,
     String? companyId,
     int? empId
   }) {
     return EmployeeloginState(
+      employeeVisitLocation: employeeVisitLocation ?? this.employeeVisitLocation,
       isLoading: isLoading ?? this.isLoading,
       isPhoneNoExists: isPhoneNoExists ?? this.isPhoneNoExists,
       error: error ?? this.error,
@@ -211,6 +216,25 @@ Future<void> getEmployeeVisit(int empId) async {
       state = state.copyWith(
         isLoading: false,
          employeeVisits: AsyncValue.error(e, StackTrace.current),
+      );
+    }
+  }
+Future<void> getEmployeeVisitLocation(int empId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final employees = await usecase.getEmployeeVisitLocation(empId);
+      for (var employee in employees){
+        print(employee);
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        employeeVisitLocation: AsyncValue.data(employees),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+         employeeVisitLocation: AsyncValue.error(e, StackTrace.current),
       );
     }
   }

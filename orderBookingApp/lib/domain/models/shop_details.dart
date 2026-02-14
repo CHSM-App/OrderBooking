@@ -48,8 +48,16 @@ class ShopDetails {
   @JsonKey(name: 'region_name')
   final String? regionName;
 
+  @JsonKey(name : 'sync_Action')
+  final String? syncAction;
+
+  @JsonKey(name: 'is_deleted')
+  final bool? isDeleted;
+
 
   ShopDetails({
+    this.isDeleted,
+    this.syncAction,
     this.localId,
     this.shopId,
     this.shopName,
@@ -90,8 +98,12 @@ class ShopDetails {
     double? longitude,
     bool? isSynced,
     DateTime? updatedAt,
+    String? syncAction,
+    bool? isDeleted
   }) {
     return ShopDetails(
+      syncAction: syncAction?? this.syncAction,
+      isDeleted: isDeleted?? this.isDeleted,
       localId: localId ?? this.localId, 
       shopId: shopId ?? this.shopId,
       shopName: shopName ?? this.shopName,

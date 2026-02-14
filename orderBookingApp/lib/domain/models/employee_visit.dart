@@ -1,3 +1,5 @@
+import 'package:order_booking_app/domain/models/orders.dart';
+
 class EmployeeVisit {
   final int locationId;
   final double latitude;
@@ -11,6 +13,7 @@ class EmployeeVisit {
   final String? ownerName;
   final String? mobileNo;
   final String? address;
+  final List<Order>? orders;
 
   const EmployeeVisit({
     required this.locationId,
@@ -25,6 +28,7 @@ class EmployeeVisit {
     this.ownerName,
     this.mobileNo,
     this.address,
+    this.orders,
   });
 
   factory EmployeeVisit.fromJson(Map<String, dynamic> json) {

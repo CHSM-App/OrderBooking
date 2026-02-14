@@ -24,8 +24,6 @@ abstract class ApiService {
   @GET("/")
   Future<HttpResponse> checkHealth();
 
-
-
   //POST METHODS
   @POST("login/CreateLogin")
   Future<TokenResponse> createLogin(@Body() TokenResponse tokenResponse);
@@ -37,7 +35,10 @@ abstract class ApiService {
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
 
   @GET("users/checkMobile/{company_id}/{emp_mobile}")
-  Future<dynamic> checkMobileExists(@Path("emp_mobile") String empMobile, @Path("company_id") String companyId) ;
+  Future<dynamic> checkMobileExists(
+    @Path("emp_mobile") String empMobile,
+    @Path("company_id") String companyId,
+  );
 
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
@@ -62,7 +63,9 @@ abstract class ApiService {
 
   //GET METHODS
   @GET("users/employeeList/{company_id}")
-  Future<List<EmployeeLogin>> getEmployeeList(@Path("company_id") String companyId);
+  Future<List<EmployeeLogin>> getEmployeeList(
+    @Path("company_id") String companyId,
+  );
 
   @GET("users/employeeDetails/{emp_id}")
   Future<List<EmployeeLogin>> fetchEmployeeDetails(@Path("emp_id") int empId);
@@ -75,19 +78,24 @@ abstract class ApiService {
   @GET("users/adminDetails/{mobile_no}")
   Future<List<AdminLogin>> fetchAdminDetails(
     @Path("mobile_no") String mobileNo,
-  );  
+  );
 
   @GET("users/shopList/{company_id}")
   Future<List<ShopDetails>> getShopList(@Path("company_id") String companyId);
 
   @GET("users/employeeShopList/{company_id}/{region_id}")
-  Future<List<ShopDetails>> getEmpShopList(@Path("company_id") String companyId, @Path("region_id") int regionID);
+  Future<List<ShopDetails>> getEmpShopList(
+    @Path("company_id") String companyId,
+    @Path("region_id") int regionID,
+  );
 
   @GET("users/regionList/{company_id}")
   Future<List<Region>> fetchRegionList(@Path("company_id") String companyId);
 
   @GET("users/current/{emp_id}")
-  Future<List<CheckInStatusRequest>> fetchTodayAttendance(@Path("emp_id") int empId,);
+  Future<List<CheckInStatusRequest>> fetchTodayAttendance(
+    @Path("emp_id") int empId,
+  );
 
   //Login Check
   @GET("login/checkPhone")
@@ -98,53 +106,47 @@ abstract class ApiService {
   Future<List<Product>> fetchProductList(@Path("company_id") String companyId);
 
   @GET("users/getOrders/{emp_id}")
-  Future<List<Order>>getOrders(@Path("emp_id") int empId);
+  Future<List<Order>> getOrders(@Path("emp_id") int empId);
 
   @GET("users/employeeVisits/{emp_id}")
   Future<List<EmployeeVisit>> getEmployeeVisits(@Path("emp_id") int empId);
 
   //DELETE API
   @DELETE("index/deleteProductSubTypes")
-  Future<ProductResponse> deleteProductSubType(
-    @Body() List<int> sub_item_ids,
-  );
+  Future<ProductResponse> deleteProductSubType(@Body() List<int> sub_item_ids);
 
-@DELETE("index/deleteEmployee/{emp_id}")
+  @DELETE("index/deleteEmployee/{emp_id}")
   Future<EmployeeLogin> deleteEmployee(@Path("emp_id") int empId);
 
-@POST("insert/addOrder")
-Future<dynamic> addOrder(
-  @Body() Order product);
+  @POST("insert/addOrder")
+  Future<dynamic> addOrder(@Body() Order product);
 
-
-@GET("users/getAllOrders/{company_id}")
+  @GET("users/getAllOrders/{company_id}")
   Future<List<Order>> getOrderList(@Path("company_id") String companyId);
 
-@GET("users/getEmployeeAttendance/{emp_id}")
+  @GET("users/getEmployeeLocationOrders/{emp_id}")
+  Future<List<EmployeeVisit>> getEmployeeVisitLocation(@Path("emp_id") int empId);
+
+  @GET("users/getEmployeeAttendance/{emp_id}")
   Future<List<CheckInStatusRequest>> getAttendance(@Path("emp_id") int emp_id);
 
+  @GET("users/getEmployeeVisits/{emp_id}")
+  Future<List<VisitPayload>> getEmployeeVisit(@Path("emp_id") int empId);
 
-
-@GET("users/getEmployeeVisits/{emp_id}")
-  Future<List<VisitPayload>>getEmployeeVisit(@Path("emp_id") int empId);
-
-  
   @MultiPart()
   @POST("upload/EmployeeIdProof")
   Future<dynamic> uploadEmployeeIdProof(
     @Part(name: "image") File images,
     @Part(name: "emp_id") String empId,
   );
-@DELETE("index/deleteRegion/{region_id}/{company_id}")
-Future<dynamic> deleteRegion(
-  @Path("region_id") int regionId,
-  @Path("company_id") String companyId,
-);
+  @DELETE("index/deleteRegion/{region_id}/{company_id}")
+  Future<dynamic> deleteRegion(
+    @Path("region_id") int regionId,
+    @Path("company_id") String companyId,
+  );
 
-
-  
+  @DELETE("index/deleteShop/{shop_id}")
+  Future<dynamic> deleteShop(@Path("shop_id") int shopId);
 }
-
-
 
 

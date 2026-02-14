@@ -8,39 +8,39 @@ part of 'visite.dart';
 
 VisitPayload _$VisitPayloadFromJson(Map<String, dynamic> json) => VisitPayload(
   localId: json['localId'] as String?,
-  shopId: (json['shopId'] as num?)?.toInt(),
+  shopId: (json['shop_id'] as num?)?.toInt(),
   lat: (json['lat'] as num?)?.toDouble(),
   lng: (json['lng'] as num?)?.toDouble(),
-  punchIn: json['punchIn'] as String,
-  punchOut: json['punchOut'] as String?,
-  employeeId: (json['employeeId'] as num?)?.toInt(),
-  regionName: json['regionName'] as String?,
-  shopName: json['shopName'] as String?,
-  ownerName: json['ownerName'] as String?,
+  punchIn: json['punch_in'] as String,
+  punchOut: json['punch_out'] as String?,
+  employeeId: (json['employee_id'] as num?)?.toInt(),
+  regionName: json['region_name'] as String?,
+  shopName: json['shop_name'] as String?,
+  ownerName: json['owner_name'] as String?,
   address: json['address'] as String?,
-  mobileNo: json['mobileNo'] as String?,
+  mobileNo: json['mobile_no'] as String?,
   email: json['email'] as String?,
   accuracy: (json['accuracy'] as num?)?.toDouble(),
-  capturedAt: json['capturedAt'] == null
+  capturedAt: json['captured_at'] == null
       ? null
-      : DateTime.parse(json['capturedAt'] as String),
+      : DateTime.parse(json['captured_at'] as String),
 );
 
 Map<String, dynamic> _$VisitPayloadToJson(VisitPayload instance) =>
     <String, dynamic>{
       'localId': instance.localId,
-      'shopId': instance.shopId,
+      'shop_id': instance.shopId,
       'lat': instance.lat,
       'lng': instance.lng,
-      'punchIn': instance.punchIn,
-      'punchOut': instance.punchOut,
-      'employeeId': instance.employeeId,
-      'regionName': instance.regionName,
-      'shopName': instance.shopName,
-      'ownerName': instance.ownerName,
+      'punch_in': instance.punchIn,
+      'punch_out': instance.punchOut,
+      'employee_id': instance.employeeId,
+      'region_name': instance.regionName,
+      'shop_name': instance.shopName,
+      'owner_name': instance.ownerName,
       'address': instance.address,
-      'mobileNo': instance.mobileNo,
+      'mobile_no': instance.mobileNo,
       'email': instance.email,
       'accuracy': instance.accuracy,
-      'capturedAt': instance.capturedAt?.toIso8601String(),
+      'captured_at': instance.capturedAt?.toIso8601String(),
     };

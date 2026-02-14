@@ -2,50 +2,44 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'visite.g.dart';
 
-@JsonSerializable()
-// class VisitPayload {
-//   /// Local-only unique ID for offline sync
-//   final String? localId;
-//   final int? shopId;
-//   final double? lat;
-//   final double? lng;
-//   final double? accuracy;
-//   final DateTime? capturedAt;
-//   final String? punchIn;
-//   final int? employeeId;
-//   final String? punchOut;
-//   final String? regionName;
-//   final String? shopName;
-//   final String? email;
-//   VisitPayload({
-//     this.localId,
-//     this.shopId,
-//     this.regionName,
-//     this.shopName,
-//     this.employeeId,
-//     this.lat,
-//     this.lng,
-//     this.accuracy,
-//     this.capturedAt,
-//     this.punchIn,
-//     this.punchOut,
-//     this.email
-//   });
+@JsonSerializable(explicitToJson: true)
 class VisitPayload {
   final String? localId;
+
+  @JsonKey(name: 'shop_id')
   final int? shopId;
+
   final double? lat;
   final double? lng;
+
+  @JsonKey(name: 'punch_in')
   final String punchIn;
+
+  @JsonKey(name: 'punch_out')
   final String? punchOut;
+
+  @JsonKey(name: 'employee_id')
   final int? employeeId;
+
+  @JsonKey(name: 'region_name')
   final String? regionName;
+
+  @JsonKey(name: 'shop_name')
   final String? shopName;
+
+  @JsonKey(name: 'owner_name')
   final String? ownerName;
+
   final String? address;
+
+  @JsonKey(name: 'mobile_no')
   final String? mobileNo;
+
   final String? email;
+
   final double? accuracy;
+
+  @JsonKey(name: 'captured_at')
   final DateTime? capturedAt;
 
   VisitPayload({
@@ -66,78 +60,28 @@ class VisitPayload {
     this.capturedAt,
   });
 
-  static String formatForApi(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-
-    return '${dt.year}-'
-        '${two(dt.month)}-'
-        '${two(dt.day)} '
-        '${two(dt.hour)}:'
-        '${two(dt.minute)}:'
-        '${two(dt.second)}';
-  }
-
-  static String? normalizeDateTimeForApi(String? value) {
-    if (value == null) return null;
-    final parsed = DateTime.tryParse(value);
-    if (parsed == null) return value;
-    return formatForApi(parsed.toLocal());
-  }
-
-  /// Payload sent to backend
-  Map<String, dynamic> toJson() => {
-    'shopId': shopId,
-    'lat': lat,
-    'lng': lng,
-    'accuracy': accuracy,
-    'capturedAt': (capturedAt ?? DateTime.now()).toIso8601String(),
-    'punchIn': normalizeDateTimeForApi(punchIn),
-    'employeeId': employeeId,
-    'punchOut': normalizeDateTimeForApi(punchOut),
-    'shop_name': shopName,
-    'region_name': regionName,
-    'email': email,
-  };
-
-  /// Full JSON including localId (for SQLite)
-  Map<String, dynamic> toLocalJson() => {'localId': localId, ...toJson()};
-
-  // factory VisitPayload.fromJson(Map<String, dynamic> json) {
-  //   return VisitPayload(
-  //     localId: json['localId'],
-  //     shopId: json['shopId'],
-  //     lat: (json['lat'] as num?)?.toDouble(),
-  //     lng: (json['lng'] as num?)?.toDouble(),
-  //     accuracy: (json['accuracy'] as num?)?.toDouble(),
-  //     capturedAt: DateTime.parse(json['capturedAt']),
-  //     punchIn: json['punchIn'],
-  //     employeeId: json['employeeId'],
-  //     punchOut: json['punchOut'] ,
-  //     regionName: json['region_name'] ,
-  //     shopName: json['shop_name'] ,
-  //     email:json['email']
-  //   );
-  // }
-
   factory VisitPayload.fromJson(Map<String, dynamic> json) {
-    return VisitPayload(
-      localId: json['localId'],
-      shopId: json['shopId'], // ✅ FIX
-      employeeId: json['employeeId'] as int?,
+    final normalized = Map<String, dynamic>.from(json);
 
-      lat: (json['lat'] as num?)?.toDouble(), // ✅ FIX
-      lng: (json['lng'] as num?)?.toDouble(), // ✅ FIX
-      accuracy: (json['accuracy'] as num?)?.toDouble(),
-      punchIn: json['punchIn'],
+    // Normalize different backend key styles
+    normalized['shop_id'] ??= json['shopId'];
+    normalized['employee_id'] ??= json['employeeId'];
+    normalized['punch_in'] ??= json['punchIn'];
+    normalized['punch_out'] ??= json['punchOut'];
+    normalized['region_name'] ??= json['regionName'];
+    normalized['shop_name'] ??= json['shopName'];
+    normalized['owner_name'] ??= json['ownerName'];
+    normalized['mobile_no'] ??= json['mobileNo'];
+    normalized['captured_at'] ??= json['capturedAt'];
 
-      punchOut: json['punchOut'],
-
-      shopName: json['shop_name']?.toString(),
-      ownerName: json['owner_name']?.toString(),
-      address: json['address']?.toString(),
-      mobileNo: json['mobile_no']?.toString(),
-      email: json['email']?.toString(),
-      regionName: json['region_name']?.toString(),
-    );
+    return _$VisitPayloadFromJson(normalized);
   }
+
+  Map<String, dynamic> toJson() => _$VisitPayloadToJson(this);
+
+  /// For SQLite storage (include localId)
+  Map<String, dynamic> toLocalJson() => {
+        'localId': localId,
+        ...toJson(),
+      };
 }

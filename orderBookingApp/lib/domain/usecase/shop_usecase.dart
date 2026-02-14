@@ -10,6 +10,12 @@ class ShopUsecase {
   Future<void> addShop(ShopDetails shopDetails) {
     return shoprepository.addShop(shopDetails);
   }
+  Future<void> updateShop(ShopDetails shopDetails) {
+    return shoprepository.updateShop(shopDetails);
+  }
+  Future<void> deleteShop(ShopDetails shopDetails) {
+    return shoprepository.deleteShop(shopDetails);
+  }
 
      Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID) {
     return shoprepository.getEmpShopList(companyId, regionID );

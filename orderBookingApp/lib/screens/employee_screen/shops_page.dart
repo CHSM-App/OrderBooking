@@ -317,7 +317,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         lng: position.longitude,
         accuracy: position.accuracy,
         capturedAt: DateTime.now(),
-        punchIn: VisitPayload.formatForApi(DateTime.now().toLocal()),
+        punchIn: DateTime.now().toLocal().toIso8601String(),
+        // punchIn: VisitPayload.formatForApi(DateTime.now().toLocal()),
         employeeId: ref.read(adminloginViewModelProvider).userId,
       );
 
@@ -341,6 +342,89 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) _showSnack('Error: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _onEditShop(ShopDetails shop) async {
+    final result = await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => AddShopScreen(initialShop: shop),
+        transitionsBuilder: (_, anim, __, child) => SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeInOutCubic)).animate(anim),
+          child: child,
+        ),
+        transitionDuration: const Duration(milliseconds: 350),
+      ),
+    );
+
+    if (result == true && mounted) {
+      ref.read(shopViewModelProvider.notifier).getEmpShopList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+            ref.read(adminloginViewModelProvider).regionId ?? 0,
+          );
+    }
+  }
+
+  Future<void> _onDeleteShop(ShopDetails shop) async {
+    final confirm = await _simpleDialog(
+      icon: Icons.delete_outline_rounded,
+      iconColor: const Color(0xFFDC2626),
+      title: 'Delete Shop?',
+      body:
+          'Are you sure you want to delete "${shop.shopName ?? 'this shop'}"?',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    );
+    if (!confirm) return;
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black38,
+        builder: (_) => Center(
+          child: Container(
+            width: 140,
+            height: 120,
+            decoration: BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
+                SizedBox(height: 12),
+                Text(
+                  'Deleting...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _kTextSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    try {
+      await ref.read(shopViewModelProvider.notifier).deleteShop(shop);
+      await ref.read(shopViewModelProvider.notifier).getEmpShopList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+            ref.read(adminloginViewModelProvider).regionId ?? 0,
+          );
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) _showSnack('Shop deleted');
+    } catch (e) {
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) _showSnack('Failed to delete: $e', isError: true);
     }
   }
 
@@ -515,6 +599,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                 (_, i) => _MinimalShopCard(
                   shop: filtered[i],
                   onTap: () => _onShopTap(filtered[i]),
+                  onEdit: () => _onEditShop(filtered[i]),
+                  onDelete: () => _onDeleteShop(filtered[i]),
                   index: i,
                 ),
                 childCount: filtered.length,
@@ -658,11 +744,15 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 class _MinimalShopCard extends StatefulWidget {
   final ShopDetails shop;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
   final int index;
 
   const _MinimalShopCard({
     required this.shop,
     required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
     required this.index,
   });
 
@@ -787,10 +877,44 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
 
                   const SizedBox(width: 8),
                   // ── Arrow ────────────────────────────────────────────────
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 20,
-                    color: _kTextSecondary,
+                  Column(
+                    children: [
+                      InkWell(
+                        onTap: widget.onEdit,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: _kPrimaryLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: _kPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: widget.onDelete,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

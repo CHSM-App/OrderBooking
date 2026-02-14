@@ -1,4 +1,4 @@
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/usecase/shop_usecase.dart';
@@ -36,7 +36,7 @@ class ShopViewModel extends StateNotifier<ShopState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await usecase.addShop(shopDetails);
-      await getEmpShopList(shopDetails.companyId, shopDetails.regionId??0);
+      await getEmpShopList(shopDetails.companyId, shopDetails.regionId ?? 0);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -47,7 +47,6 @@ class ShopViewModel extends StateNotifier<ShopState> {
 
   //GET SHOP LIST
   Future<void> getEmpShopList(String companyId, int regionId) async {
-
     state = state.copyWith(isLoading: true, error: null);
     try {
       final shop = await usecase.getEmpShopList(companyId, regionId);
@@ -58,8 +57,8 @@ class ShopViewModel extends StateNotifier<ShopState> {
     }
   }
 
-  Future<void> getShopList(String companyId) async{
-        state = state.copyWith(isLoading: true, error: null);
+  Future<void> getShopList(String companyId) async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final shop = await usecase.getShopList(companyId);
 
@@ -69,5 +68,25 @@ class ShopViewModel extends StateNotifier<ShopState> {
     }
   }
 
-}
+  Future<void> updateShop(ShopDetails shop) async {
+    state = state.copyWith(isLoading: true, error: null);
 
+    try {
+      await usecase.updateShop(shop);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> deleteShop(ShopDetails shop) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await usecase.deleteShop(shop);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+}

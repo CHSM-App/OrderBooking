@@ -112,7 +112,8 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                 accuracy: widget.visit.accuracy,
                 capturedAt: widget.visit.capturedAt ?? now,
                 punchIn: widget.visit.punchIn,
-                punchOut: VisitPayload.formatForApi(now.toLocal()),
+                // punchOut: VisitPayload.formatForApi(now.toLocal()),
+                punchOut: now.toLocal().toIso8601String(),
               );
               ref.read(visitViewModelProvider.notifier).addVisit(updatedVisit);
 

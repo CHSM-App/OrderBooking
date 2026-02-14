@@ -55,6 +55,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       await ref
           .read(employeeloginViewModelProvider.notifier)
           .getEmployeeVisit(widget.empId);
+
+      await ref.read(ordersViewModelProvider.notifier).getEmployeeOrders(widget.empId);
     });
   }
 
@@ -651,7 +653,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
-    final ordersState = ref.watch(EmployeeOrderViewModelProvider(widget.empId));
+    final ordersState = ref.watch(ordersViewModelProvider);
     final detailsAsync = state.employeeDetails;
 
     if (detailsAsync.isLoading) {

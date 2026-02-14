@@ -57,6 +57,8 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         errorMessage: e.toString(),
         isSuccess: false,
       );
+
+      print("error $e");
     }
   }
 

@@ -76,11 +76,4 @@ final ordersViewModelProvider =
   return ordersStateNotifier(usecase);
 });
 
-final EmployeeOrderViewModelProvider =
-    StateNotifierProvider.family<
-        ordersStateNotifier,
-        ordersState,
-        int>((ref, empId) {
-  final usecase = ref.watch(ordersUsecaseProvider);
-  return ordersStateNotifier(usecase)..getEmployeeOrders(empId);
-});
+
