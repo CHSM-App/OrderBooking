@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
-import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/attendence.dart';
 import 'package:order_booking_app/screens/admin_screen/employee_visits_map.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
-import 'dart:math';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -50,13 +48,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
           .read(employeeloginViewModelProvider.notifier)
           .fetchEmployeeDetails(widget.empId);
       await ref
-          .read(visitViewModelProvider.notifier)
-          .fetchEmployeeVisits(widget.empId);
-      await ref
           .read(employeeloginViewModelProvider.notifier)
-          .getEmployeeVisit(widget.empId);
-
-      await ref.read(ordersViewModelProvider.notifier).getEmployeeOrders(widget.empId);
+          .getEmployeeVisitLocation(widget.empId);
     });
   }
 
@@ -593,43 +586,13 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     );
   }
 
-  bool _passesOrderFilter(Order order) {
-    final raw = _parseOrderDate(order.orderDate);
-    if (raw == null) return false;
+  bool _passesVisitLocationFilter(EmployeeVisit visit) {
+    final ts = visit.punchIn ?? visit.punchOut;
+    if (ts == null) return false;
 
-    final date = _toIstDateOnly(raw);
+    final date = _toIstDateOnly(ts);
     final today = _toIstDateOnly(DateTime.now());
-
-    final orderDate = parseSqlServerDate(order.orderDate);
-    final orderKey = dateKey(orderDate);
-
-    switch (orderFilter) {
-      case "All":
-        return true;
-      case "Today":
-        return date == today;
-      case "Month":
-        return date.year == today.year && date.month == today.month;
-      case "Year":
-        return date.year == today.year;
-      case "Custom":
-        if (orderCustomRange == null) return true;
-        final startKey = dateKey(orderCustomRange!.start);
-        final endKey = dateKey(orderCustomRange!.end);
-        return orderKey >= startKey && orderKey <= endKey;
-      default:
-        return true;
-    }
-  }
-
-  bool _passesVisitPayloadFilter(VisitPayload visit) {
-    final tsString = visit.punchIn;
-
-    final date = _toIstDateOnly(DateTime.parse(tsString));
-    final today = _toIstDateOnly(DateTime.now());
-
-    final visitDate = parseSqlServerDate(tsString);
-    final visitKey = dateKey(visitDate);
+    final visitKey = dateKey(date);
 
     switch (visitFilter) {
       case "All":
@@ -653,7 +616,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeloginViewModelProvider);
-    final ordersState = ref.watch(ordersViewModelProvider);
     final detailsAsync = state.employeeDetails;
 
     if (detailsAsync.isLoading) {
@@ -685,21 +647,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
 
     final EmployeeLogin employee = list.first;
     final bool isActive = employee.activeStatus == 1;
-    final avgDistanceText = _calculateAvgDistance(
-      ref.watch(visitViewModelProvider).visits?.value,
-    );
-    final avgShopTimeText = _calculateAvgShopTime(
-      ref.watch(visitViewModelProvider).visits?.value,
-    );
-    final avgShopsPerDayText = _calculateAvgShopsPerDay(
-      ref.watch(visitViewModelProvider).visits?.value,
-    );
-    final employeeOrdersForAvg = ordersState.orders?.maybeWhen(
-      data: (orders) => orders,
-      orElse: () => null,
-    );
-    final avgOrdersPerDayText = _calculateAvgOrdersPerDay(employeeOrdersForAvg);
-    final ordersAsync = ordersState.orders;
 
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
@@ -832,8 +779,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
               ),
             ),
 
-            // ── Action Buttons ── FIX: use Row with MainAxisAlignment.spaceEvenly
-            //    so all three buttons fit without overflow on any screen width.
+            // Action Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
@@ -878,7 +824,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    // ── FIX: tapping "Details" now opens the info dialog ──
                     child: _actionButton(
                       icon: Icons.info_outline_rounded,
                       label: 'Details',
@@ -889,76 +834,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            // Performance Stats
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.4,
-                children: [
-                  _statCard(
-                    title: "Avg Time/Shop",
-                    value: avgShopTimeText,
-                    icon: Icons.timer_outlined,
-                  ),
-                  _statCard(
-                    title: "Avg Distance",
-                    value: avgDistanceText,
-                    icon: Icons.route_outlined,
-                  ),
-                  _statCard(
-                    title: "Shops/Day",
-                    value: avgShopsPerDayText,
-                    icon: Icons.store_outlined,
-                  ),
-                  _statCard(
-                    title: "Orders/Day",
-                    value: avgOrdersPerDayText,
-                    icon: Icons.shopping_cart_outlined,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Recent Orders Section
-            _sectionHeader(
-              title: 'Recent Orders',
-              icon: Icons.receipt_long_outlined,
-              filter: orderFilter,
-              onFilterChanged: (value) async {
-                if (value == "Custom") {
-                  final now = DateTime.now();
-                  final range = await showDateRangePicker(
-                    context: context,
-                    firstDate: DateTime(now.year - 5),
-                    lastDate: DateTime(now.year + 1),
-                    initialDateRange: orderCustomRange ??
-                        DateTimeRange(start: now, end: now),
-                  );
-                  if (range == null) return;
-                  setState(() {
-                    orderFilter = value;
-                    orderCustomRange = range;
-                  });
-                } else {
-                  setState(() {
-                    orderFilter = value;
-                    orderCustomRange = null;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 8),
-            _buildOrdersList(ordersAsync),
 
             const SizedBox(height: 12),
 
@@ -1010,7 +885,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        // ── FIX: removed fixed horizontal padding so text doesn't overflow ──
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
           color: MinimalTheme.cardWhite,
@@ -1025,11 +899,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,   // ← shrink-wrap the Row
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 16),
             const SizedBox(width: 5),
-            Flexible(                        // ← allow label to wrap if needed
+            Flexible(
               child: Text(
                 label,
                 style: TextStyle(
@@ -1043,78 +917,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _statCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    Color color;
-    switch (title) {
-      case "Avg Time/Shop":
-        color = Colors.orange;
-        break;
-      case "Avg Distance":
-        color = Colors.purple;
-        break;
-      case "Shops/Day":
-        color = Colors.teal;
-        break;
-      case "Orders/Day":
-        color = Colors.blue;
-        break;
-      default:
-        color = MinimalTheme.primaryOrange;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: MinimalTheme.cardWhite,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              color: MinimalTheme.textGray,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ),
     );
   }
@@ -1175,141 +977,9 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     );
   }
 
-  Widget _buildOrdersList(AsyncValue<List<Order>>? ordersAsync) {
-    if (ordersAsync == null) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text("No orders found",
-            style: TextStyle(color: MinimalTheme.textGray)),
-      );
-    }
-
-    return ordersAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(16),
-        child: CircularProgressIndicator(
-          color: MinimalTheme.primaryOrange,
-          strokeWidth: 2.5,
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(e.toString(),
-            style: const TextStyle(color: MinimalTheme.textGray)),
-      ),
-      data: (orders) {
-        final filteredOrders = orders.where(_passesOrderFilter).toList()
-          ..sort((a, b) => _parseOrderDate(b.orderDate)!
-              .compareTo(_parseOrderDate(a.orderDate)!));
-
-        if (filteredOrders.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("No orders for this filter",
-                style: TextStyle(color: MinimalTheme.textGray)),
-          );
-        }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: filteredOrders.length,
-          itemBuilder: (_, index) {
-            final order = filteredOrders[index];
-            return _orderCard(order, filteredOrders.length - index);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _orderCard(Order order, int orderNumber) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: MinimalTheme.cardWhite,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => OrderDetailsPage(
-                  orderNumber: orderNumber,
-                  order: order,
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF4E6),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long_outlined,
-                    color: MinimalTheme.primaryOrange,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Order #$orderNumber",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: MinimalTheme.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "₹${order.totalPrice.toStringAsFixed(0)}",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: MinimalTheme.textGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: MinimalTheme.iconGray,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildVisitsList() {
     final visitsAsync =
-        ref.watch(employeeloginViewModelProvider).employeeVisits;
+        ref.watch(employeeloginViewModelProvider).employeeVisitLocation;
 
     return visitsAsync.when(
       loading: () => const Padding(
@@ -1326,13 +996,15 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
       ),
       data: (visits) {
         final filteredVisits = visits
-            .where(_passesVisitPayloadFilter)
+            .where(_passesVisitLocationFilter)
             .toList()
           ..sort((a, b) {
-            final aDateStr = a.punchIn;
-            final bDateStr = b.punchIn;
-            return DateTime.parse(bDateStr)
-                .compareTo(DateTime.parse(aDateStr));
+            final aDate = a.punchIn ?? a.punchOut;
+            final bDate = b.punchIn ?? b.punchOut;
+            if (aDate == null && bDate == null) return 0;
+            if (aDate == null) return 1;
+            if (bDate == null) return -1;
+            return bDate.compareTo(aDate);
           });
 
         if (filteredVisits.isEmpty) {
@@ -1357,10 +1029,14 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     );
   }
 
-  Widget _visitCard(VisitPayload visit) {
+  // ── UPDATED: Side-by-side layout — shop info (left) | orders (right) ───────
+  Widget _visitCard(EmployeeVisit visit) {
+    final orders = visit.orders ?? const <Order>[];
+    final shopName =
+        visit.shopName ?? (orders.isNotEmpty ? orders.first.shopNamep : null);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: MinimalTheme.cardWhite,
         borderRadius: BorderRadius.circular(14),
@@ -1372,38 +1048,207 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            visit.shopName ?? "Unknown Shop",
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: MinimalTheme.textDark,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── LEFT: Shop info ─────────────────────────────────────────────
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Shop icon + name
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: MinimalTheme.primaryOrange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.store_outlined,
+                            color: MinimalTheme.primaryOrange,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            shopName ?? "Unknown Shop",
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: MinimalTheme.textDark,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Punch-in / Punch-out chips
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        _timeChip("In", visit.punchIn, MinimalTheme.successGreen),
+                        _timeChip("Out", visit.punchOut, MinimalTheme.errorRed),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              _timeChip("In", visit.punchIn, MinimalTheme.successGreen),
-              const SizedBox(width: 8),
-              _timeChip("Out", visit.punchOut, MinimalTheme.errorRed),
-            ],
-          ),
-        ],
+
+            // ── Divider ──────────────────────────────────────────────────────
+            if (orders.isNotEmpty)
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: Colors.grey.shade200,
+                indent: 10,
+                endIndent: 10,
+              ),
+
+            // ── RIGHT: Orders list (empty area when no orders) ───────────────
+            Expanded(
+              flex: 5,
+              child: orders.isEmpty
+                  ? const SizedBox() // intentionally blank
+                  : Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // "Orders" label
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.receipt_long_outlined,
+                                size: 13,
+                                color: MinimalTheme.iconGray,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Orders (${orders.length})",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: MinimalTheme.textGray,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Order items
+                          ...orders.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final order = entry.value;
+                            final orderNumber =
+                                order.serverOrderId ?? (index + 1);
+                            return _visitOrderCard(order, orderNumber);
+                          }),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _timeChip(String label, String? time, Color color) {
+  Widget _visitOrderCard(Order order, int orderNumber) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFE1C2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OrderDetailsPage(
+                  orderNumber: orderNumber,
+                  order: order,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEAD1),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: MinimalTheme.primaryOrange,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Order #$orderNumber",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: MinimalTheme.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "₹${order.totalPrice.toStringAsFixed(0)}",
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: MinimalTheme.textGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: MinimalTheme.iconGray,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _timeChip(String label, DateTime? time, Color color) {
     String formattedTime = "--";
-    if (time != null && time.isNotEmpty) {
+    if (time != null) {
       try {
-        final dt = DateTime.parse(time);
-        final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-        final minute = dt.minute.toString().padLeft(2, '0');
-        final period = dt.hour >= 12 ? "PM" : "AM";
+        final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+        final minute = time.minute.toString().padLeft(2, '0');
+        final period = time.hour >= 12 ? "PM" : "AM";
         formattedTime = "$hour:$minute $period";
       } catch (_) {}
     }
@@ -1452,133 +1297,4 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
     return DateTime(ist.year, ist.month, ist.day);
   }
-
-  DateTime _toIst(DateTime dt) {
-    return dt.toUtc().add(const Duration(hours: 5, minutes: 30));
-  }
-
-  DateTime? _parseOrderDate(String? value) {
-    if (value == null || value.isEmpty) return null;
-    return DateTime.tryParse(value);
-  }
-
-  String _calculateAvgDistance(List<EmployeeVisit>? visits) {
-    if (visits == null || visits.isEmpty) return "0 km";
-    final byDay = <String, List<EmployeeVisit>>{};
-    for (final v in visits) {
-      final ts = v.punchIn ?? v.punchOut;
-      if (ts == null) continue;
-      final ist = _toIst(ts);
-      final key =
-          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
-      byDay.putIfAbsent(key, () => []).add(v);
-    }
-    if (byDay.isEmpty) return "0 km";
-    double totalKm = 0.0;
-    for (final dayVisits in byDay.values) {
-      dayVisits.sort((a, b) {
-        final aDate = a.punchIn ?? a.punchOut;
-        final bDate = b.punchIn ?? b.punchOut;
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        return aDate.compareTo(bDate);
-      });
-      for (var i = 1; i < dayVisits.length; i++) {
-        final prev = dayVisits[i - 1];
-        final curr = dayVisits[i];
-        totalKm += _haversineKm(
-          prev.latitude,
-          prev.longitude,
-          curr.latitude,
-          curr.longitude,
-        );
-      }
-    }
-    final avg = totalKm / byDay.length;
-    return _formatDistance(avg);
-  }
-
-  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
-    const earthRadiusKm = 6371.0;
-    final dLat = _degToRad(lat2 - lat1);
-    final dLon = _degToRad(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_degToRad(lat1)) *
-            cos(_degToRad(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadiusKm * c;
-  }
-
-  double _degToRad(double deg) => deg * (pi / 180.0);
-
-  String _formatDistance(double km) {
-    if (km < 1) {
-      final meters = (km * 1000).round();
-      return '$meters m';
-    }
-    return '${km.toStringAsFixed(2)} km';
-  }
-
-  String _calculateAvgShopTime(List<EmployeeVisit>? visits) {
-    if (visits == null || visits.isEmpty) return "0 min";
-    final durations = <Duration>[];
-    for (final v in visits) {
-      if (v.punchIn != null && v.punchOut != null) {
-        final start = _toIst(v.punchIn!);
-        final end = _toIst(v.punchOut!);
-        if (end.isAfter(start)) {
-          durations.add(end.difference(start));
-        }
-      }
-    }
-    if (durations.isEmpty) return "0 min";
-    final totalSeconds =
-        durations.fold<int>(0, (sum, d) => sum + d.inSeconds);
-    final avgSeconds = totalSeconds ~/ durations.length;
-    final avgDuration = Duration(seconds: avgSeconds);
-    final hours = avgDuration.inHours;
-    final minutes = avgDuration.inMinutes % 60;
-    if (hours > 0) return '${hours}h ${minutes}m';
-    return '$minutes min';
-  }
-
-  String _calculateAvgShopsPerDay(List<EmployeeVisit>? visits) {
-    if (visits == null || visits.isEmpty) return "0";
-    final byDay = <String, Set<int>>{};
-    for (final v in visits) {
-      final ts = v.punchIn ?? v.punchOut;
-      if (ts == null) continue;
-      final ist = _toIst(ts);
-      final key =
-          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
-      byDay.putIfAbsent(key, () => <int>{}).add(v.shopId);
-    }
-    if (byDay.isEmpty) return "0";
-    final totalShops =
-        byDay.values.fold<int>(0, (sum, set) => sum + set.length);
-    final avg = totalShops / byDay.length;
-    return avg.round().toString();
-  }
-
-  String _calculateAvgOrdersPerDay(List<Order>? orders) {
-    if (orders == null || orders.isEmpty) return "0";
-    final byDay = <String, int>{};
-    for (final o in orders) {
-      final ts = _parseOrderDate(o.orderDate);
-      if (ts == null) continue;
-      final ist = _toIst(ts);
-      final key =
-          '${ist.year.toString().padLeft(4, '0')}-${ist.month.toString().padLeft(2, '0')}-${ist.day.toString().padLeft(2, '0')}';
-      byDay[key] = (byDay[key] ?? 0) + 1;
-    }
-    if (byDay.isEmpty) return "0";
-    final totalOrders =
-        byDay.values.fold<int>(0, (sum, count) => sum + count);
-    final avg = totalOrders / byDay.length;
-    return avg.round().toString();
-  }
 }
-

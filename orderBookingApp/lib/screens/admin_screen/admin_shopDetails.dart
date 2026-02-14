@@ -89,7 +89,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         elevation: 0,
         backgroundColor: Colors.white,
         title: const Text(
-          'Shops List',
+          'Shops',
           style: TextStyle(
             color: Color(0xFF2D3748),
             fontSize: 20,

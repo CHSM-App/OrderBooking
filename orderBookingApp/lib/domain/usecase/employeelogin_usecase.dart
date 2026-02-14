@@ -37,7 +37,7 @@ class EmployeeloginUsecase {
   Future<List<VisitPayload>> getEmployeeVisit(int empId) async {
       return employeeloginRepository.getEmployeeVisit(empId);
   }
-  Future<List<getEmployeeVisitLocation>> getEmployeeVisitLocation(int empId) async {
+  Future<List<EmployeeVisit>> getEmployeeVisitLocation(int empId) async {
       return employeeloginRepository.getEmployeeVisitLocation(empId);
   }
     Future<dynamic> uploadEmployeeIdProof(File image, String empId) {
