@@ -1,50 +1,70 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/core/storage/token_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+final tokenProvider =
+    StateNotifierProvider<TokenNotifier, TokenState>((ref) {
+  return TokenNotifier();
+});
 
 class TokenState {
-  final String? accessToken;
-  final String? refreshToken;
+  final String accessToken;
+  final String refreshToken;
+  final int roleId;
+  final bool isLoggedIn;
 
-  const TokenState({this.accessToken, this.refreshToken});
+  TokenState({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.roleId,
+    required this.isLoggedIn,
+  });
 
-  bool get isLoggedIn => accessToken != null && refreshToken != null;
-
-  TokenState copyWith({
-    String? accessToken,
-    String? refreshToken,
-  }) {
-    return TokenState(
-      accessToken: accessToken ?? this.accessToken,
-      refreshToken: refreshToken ?? this.refreshToken,
-    );
-  }
+  factory TokenState.initial() => TokenState(
+        accessToken: "",
+        refreshToken: "",
+        roleId: 0,
+        isLoggedIn: false,
+      );
 }
 
 class TokenNotifier extends StateNotifier<TokenState> {
-  TokenNotifier() : super(const TokenState());
+  TokenNotifier() : super(TokenState.initial());
 
-  /// Load saved tokens at app start
+  final storage = const FlutterSecureStorage();
+
+  /// SAVE TOKENS AFTER OTP SUCCESS
+  Future<void> saveTokens(
+      String accessToken, String refreshToken, int roleId) async {
+    await storage.write(key: "accessToken", value: accessToken);
+    await storage.write(key: "refreshToken", value: refreshToken);
+    await storage.write(key: "roleId", value: roleId.toString());
+
+    state = TokenState(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      roleId: roleId,
+      isLoggedIn: true,
+    );
+  }
+
+  /// LOAD TOKENS ON APP START
   Future<void> loadTokens() async {
-    final tokens = await TokenStorage.getTokens();
-    if (tokens != null) {
-      state = TokenState(
-        accessToken: tokens['accessToken'],
-        refreshToken: tokens['refreshToken'],
-      );
-    }
+    final accessToken = await storage.read(key: "accessToken") ?? "";
+    final refreshToken = await storage.read(key: "refreshToken") ?? "";
+    final roleId =
+        int.tryParse(await storage.read(key: "roleId") ?? "0") ?? 0;
+
+    state = TokenState(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      roleId: roleId,
+      isLoggedIn: accessToken.isNotEmpty,
+    );
   }
 
-  /// Save new tokens
-  Future<void> saveTokens(String accessToken, String refreshToken) async {
-    state = TokenState(accessToken: accessToken, refreshToken: refreshToken);
-    await TokenStorage.saveTokens(accessToken, refreshToken);
-  }
-
-  /// Clear tokens and trigger logout
+  /// LOGOUT
   Future<void> clearTokens() async {
-    state = const TokenState();
-    await TokenStorage.clear();
+    await storage.deleteAll();
+    state = TokenState.initial();
   }
 }
-
-final tokenProvider = StateNotifierProvider<TokenNotifier, TokenState>((ref) => TokenNotifier());

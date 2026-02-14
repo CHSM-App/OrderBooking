@@ -8,12 +8,14 @@ class TokenResponse {
   final String? refreshToken;
   final String? mobile;
   final String? deviceDetails;
+  final int? roleId;
 
   TokenResponse({
      this.accessToken,
      this.refreshToken,
     this.mobile,
-    this.deviceDetails
+    this.deviceDetails,
+     this.roleId,
 
   });
 

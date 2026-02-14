@@ -18,17 +18,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final TextEditingController _mobileController = TextEditingController();
   late AnimationController _controller;
   bool _isFocused = false;
-  bool _shouldReact = false; // To avoid multiple snackbars/navigation
+  bool _shouldReact = false;
+ // To avoid multiple snackbars/navigation
+@override
+void initState() {
+  super.initState();
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _controller.forward();
-  }
+  _controller = AnimationController(
+    duration: const Duration(milliseconds: 800),
+    vsync: this,
+  );
+
+  _controller.forward();
+
+  /// OPTIONAL SAFETY
+  _shouldReact = false;
+}
+
 
   @override
   void dispose() {
@@ -112,20 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Back Button
-                // Align(
-                //   alignment: Alignment.topLeft,
-                //   child: Container(
-                //     decoration: BoxDecoration(
-                //       color: Colors.white.withOpacity(0.2),
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //     child: IconButton(
-                //       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                //       onPressed: () => Navigator.pop(context),
-                //     ),
-                //   ),
-                // ),
+               
                 const SizedBox(height: 24),
 
                 // Animated Circle Icon

@@ -104,10 +104,15 @@ class TokenInterceptor extends Interceptor {
       }
  
       // Save new tokens
-      await ref.read(tokenProvider.notifier).saveTokens(
-            tokenResponse.accessToken!,
-            tokenResponse.refreshToken!,
-          );
+    // Save new tokens
+final currentRoleId = ref.read(tokenProvider).roleId ?? 0;
+
+await ref.read(tokenProvider.notifier).saveTokens(
+  tokenResponse.accessToken!,
+  tokenResponse.refreshToken!,
+  currentRoleId,
+);
+
  
       // Retry failed request
       return _retryRequest(err, handler);

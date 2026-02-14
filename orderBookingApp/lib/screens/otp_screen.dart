@@ -27,8 +27,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
-
-  void _verifyOTP() async {
+void _verifyOTP() async {
     String otp = _otpControllers.map((c) => c.text).join();
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,22 +82,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
         ),
       );
     }
-    // ref.read(adminloginViewModelProvider).phoneCheckResult.whenData((
-    //   loginInfos,
-    // ) {
-    //   if (loginInfos.isNotEmpty) {
-    //     final loginInfo = loginInfos.first;
-    //     if (loginInfo.roleId == 2) {
-    //       Navigator.pushReplacement(
-    //         context,
-    //         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-    //       );
-    //       // _showPermissionDialog();
-    //     }
-    //   }
-    // });
   }
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -123,10 +107,10 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                       children: [
                         Align(
                           alignment: Alignment.topLeft,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.pop(context),
-                          ),
+                          // child: IconButton(
+                          //   icon: const Icon(Icons.arrow_back),
+                          //   onPressed: () => Navigator.pop(context),
+                          // ),
                         ),
                         const SizedBox(height: 20),
                         Container(
