@@ -31,7 +31,9 @@ class AddShopTheme {
 }
 
 class AddShopScreen extends ConsumerStatefulWidget {
-  const AddShopScreen({Key? key}) : super(key: key);
+  final ShopDetails? initialShop;
+
+  const AddShopScreen({Key? key, this.initialShop}) : super(key: key);
 
   @override
   ConsumerState<AddShopScreen> createState() => _AddShopScreenState();
@@ -46,6 +48,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   final _phoneController = TextEditingController();
 
   Region? _selectedRegion;
+  int? _initialRegionId;
   bool _isSaving = false;
 
   @override
@@ -56,6 +59,15 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     Future.microtask(() {
       ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(ref.read(adminloginViewModelProvider).companyId?? '');
     });
+
+    if (widget.initialShop != null) {
+      final shop = widget.initialShop!;
+      _shopNameController.text = shop.shopName ?? '';
+      _addressController.text = shop.address ?? '';
+      _ownerNameController.text = shop.ownerName ?? '';
+      _phoneController.text = shop.mobileNo ?? '';
+      _initialRegionId = shop.regionId;
+    }
   }
 
   void _saveShop() async {
@@ -70,7 +82,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       regionId: _selectedRegion!.regionId, // ✅ Save region_id
       ownerName: _ownerNameController.text,
       mobileNo: _phoneController.text,
-      shopId: 0,
+      shopId: widget.initialShop?.shopId ?? 0,
       createdBy: ref.read(adminloginViewModelProvider).userId,
       updatedAt: DateTime.now(),
       companyId:
@@ -78,16 +90,25 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     );
 
     try {
-      await ref.read(shopViewModelProvider.notifier).addShop(shop);
+      if (widget.initialShop == null) {
+        await ref.read(shopViewModelProvider.notifier).addShop(shop);
+      } else {
+        await ref.read(shopViewModelProvider.notifier).updateShop(shop);
+      }
       final state = ref.read(shopViewModelProvider);
       if (!mounted) return;
 
       if (state.error == null) {
-        _showSuccessDialog();
+        _showSuccessDialog(
+          title: widget.initialShop == null ? 'Shop Added' : 'Shop Updated',
+          subtitle: widget.initialShop == null
+              ? 'Saved successfully'
+              : 'Updated successfully',
+        );
         await Future.delayed(const Duration(milliseconds: 1800));
         if (!mounted) return;
         Navigator.of(context, rootNavigator: true).pop(); // close dialog
-        Navigator.pop(context, shop); // return to shops page
+        Navigator.pop(context, true); // return to shops page
       } else {
         _showErrorSnackbar(state.error!);
       }
@@ -101,12 +122,18 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog({
+    required String title,
+    required String subtitle,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.5),
-      builder: (context) => const SuccessDialog(),
+      builder: (context) => SuccessDialog(
+        title: title,
+        subtitle: subtitle,
+      ),
     );
   }
 
@@ -150,14 +177,32 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     final regionState = ref.watch(regionofflineViewModelProvider).regionList;
     final shopState = ref.watch(shopViewModelProvider);
 
+    regionState.when(
+      data: (regions) {
+        if (_selectedRegion == null &&
+            _initialRegionId != null &&
+            regions.isNotEmpty) {
+          final match = regions.firstWhere(
+            (r) => r.regionId == _initialRegionId,
+            orElse: () => regions.first,
+          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedRegion = match);
+          });
+        }
+      },
+      loading: () {},
+      error: (_, __) {},
+    );
+
     return Scaffold(
       backgroundColor: AddShopTheme.backgroundGray,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Add New Shop",
+        title: Text(
+          widget.initialShop == null ? "Add New Shop" : "Update Shop",
           style: TextStyle(
               color: AddShopTheme.textDark,
               fontWeight: FontWeight.bold),
@@ -388,7 +433,14 @@ Widget _buildTextField({
 
 // Minimal Success Dialog (restored)
 class SuccessDialog extends StatelessWidget {
-  const SuccessDialog({super.key});
+  final String title;
+  final String subtitle;
+
+  const SuccessDialog({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -418,18 +470,18 @@ class SuccessDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Shop Added',
-              style: TextStyle(
+            Text(
+              title,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AddShopTheme.textDark,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Saved successfully',
-              style: TextStyle(
+            Text(
+              subtitle,
+              style: const TextStyle(
                 fontSize: 13,
                 color: AddShopTheme.textGray,
               ),

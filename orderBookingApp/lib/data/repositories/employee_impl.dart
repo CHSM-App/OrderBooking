@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
@@ -15,14 +16,17 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   Future<dynamic> addEmployee(EmployeeLogin employeeLogin) {
     return apiService.addEmployee(employeeLogin);
   }
+
   @override
   Future<List<EmployeeLogin>> getEmployeeList(String companyId) {
     return apiService.getEmployeeList(companyId);
   }
-    @override
+
+  @override
   Future<List<EmployeeLogin>> fetchEmployeeDetails(int empId) {
     return apiService.fetchEmployeeDetails(empId);
   }
+
   @override
   Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) {
     return apiService.fetchEmployeeInfo(mobileNo);
@@ -43,9 +47,13 @@ class EmployeeloginImpl implements EmployeeloginRepository {
     return apiService.getEmployeeVisit(empId);
   }
 
-  
   @override
-  Future  uploadEmployeeIdProof(File image, String empId) {
+  Future uploadEmployeeIdProof(File image, String empId) {
     return apiService.uploadEmployeeIdProof(image, empId);
+  }
+
+  @override
+  Future<List<EmployeeVisit>> getEmployeeVisitLocation(int empId) {
+    return apiService.getEmployeeVisitLocation(empId);
   }
 }

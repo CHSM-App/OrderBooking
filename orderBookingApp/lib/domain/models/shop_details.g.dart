@@ -7,6 +7,8 @@ part of 'shop_details.dart';
 // **************************************************************************
 
 ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
+  isDeleted: json['is_deleted'] as bool?,
+  syncAction: json['sync_Action'] as String?,
   localId: json['localId'] as String?,
   shopId: (json['shop_id'] as num?)?.toInt(),
   shopName: json['shop_name'] as String?,
@@ -43,4 +45,6 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'company_id': instance.companyId,
       'region_name': instance.regionName,
+      'sync_Action': instance.syncAction,
+      'is_deleted': instance.isDeleted,
     };

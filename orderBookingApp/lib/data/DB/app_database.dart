@@ -59,27 +59,30 @@ class AppDatabase {
     ''');
   }
 
-  static Future<void> _createShopsTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS shops (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        local_id TEXT UNIQUE,
-        server_id INTEGER,
-        shop_name TEXT,
-        owner_name TEXT,
-        address TEXT,
-        mobile_no TEXT,
-        email TEXT,
-        region_id INTEGER,
-        created_by INTEGER,
-        latitude REAL,
-        longitude REAL,
-        company_id TEXT,
-        is_synced INTEGER DEFAULT 0,
-        updated_at TEXT
-      )
-    ''');
-  }
+static Future<void> _createShopsTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS shops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      local_id TEXT UNIQUE,
+      server_id INTEGER UNIQUE,
+      shop_name TEXT,
+      owner_name TEXT,
+      address TEXT,
+      mobile_no TEXT,
+      email TEXT,
+      region_id INTEGER,
+      created_by INTEGER,
+      latitude REAL,
+      longitude REAL,
+      company_id TEXT,
+      is_synced INTEGER DEFAULT 0,
+      is_deleted INTEGER DEFAULT 0,
+      sync_action TEXT, -- create | update | delete
+      updated_at TEXT
+    )
+  ''');
+}
+
 
 
 static Future<void> _createRegionTable(Database db) async {

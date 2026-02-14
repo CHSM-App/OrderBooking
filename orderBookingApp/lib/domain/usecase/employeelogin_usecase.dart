@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 
@@ -35,6 +36,9 @@ class EmployeeloginUsecase {
 
   Future<List<VisitPayload>> getEmployeeVisit(int empId) async {
       return employeeloginRepository.getEmployeeVisit(empId);
+  }
+  Future<List<getEmployeeVisitLocation>> getEmployeeVisitLocation(int empId) async {
+      return employeeloginRepository.getEmployeeVisitLocation(empId);
   }
     Future<dynamic> uploadEmployeeIdProof(File image, String empId) {
     return employeeloginRepository.uploadEmployeeIdProof(image, empId);

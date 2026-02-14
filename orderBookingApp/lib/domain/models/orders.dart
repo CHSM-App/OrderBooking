@@ -45,8 +45,6 @@ class Order {
   final String? mobileNo;
 
 
- 
-
   Order({
     this.mobileNo,
     this.shopNamep,

@@ -50,7 +50,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     });
   }
 
-  String formatForApi(DateTime dt) => VisitPayload.formatForApi(dt);
+  // String formatForApi(DateTime dt) => VisitPayload.formatForApi(dt);
 
   String _formatUnit(double? availableUnit, String? measuringUnit) {
     if (availableUnit == null || measuringUnit == null) return '';
@@ -157,6 +157,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       );
     }).toList();
 
+    final dateTime = DateTime.now().toLocal().toIso8601String();
+
     final Order order = Order(
       localOrderId: const Uuid().v4(),
       ownerName: widget.shop.ownerName,
@@ -164,11 +166,10 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       shopNamep: widget.shop.shopName,
       employeeId: ref.read(adminloginViewModelProvider).userId,
       shopId: widget.shop.shopId ?? 0,
-      orderDate: DateTime.now().toIso8601String(),
+      orderDate:dateTime,
       items: orderItems,
       companyId: ref.read(adminloginViewModelProvider).companyId,
     );
-
     ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
 
     setState(() {
@@ -180,10 +181,13 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
         lng: _visit.lng,
         accuracy: _visit.accuracy,
         capturedAt: _visit.capturedAt,
-        punchIn: formatForApi(_visit.capturedAt ?? DateTime.now()),
-        punchOut: formatForApi(DateTime.now().toLocal()),
+        punchIn: _visit.capturedAt!.toIso8601String(),
+        punchOut: dateTime,
+        // punchIn: formatForApi(_visit.capturedAt ?? DateTime.now()),
+        // punchOut: formatForApi(DateTime.now().toLocal()),
       );
     });
+
     ref.read(visitViewModelProvider.notifier).addVisit(_visit);
 
     showDialog(
