@@ -36,7 +36,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       // ✅ Save tokens to Riverpod + SecureStorage
       await ref
           .read(tokenProvider.notifier)
-          .saveTokens(result.accessToken??"", result.refreshToken??"");
+          .saveTokens(result.accessToken??"", result.refreshToken??"",result.roleId??0);
 
       state = const AsyncValue.data(null);
       return "sucesss"; // Return TokenResponse for UI navigation
