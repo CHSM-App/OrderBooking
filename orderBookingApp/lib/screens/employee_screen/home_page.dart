@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
-import 'package:order_booking_app/screens/employee_screen/reports.dart';
 
-class HomePage extends StatefulWidget {
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
-  int _todayOrders = 12;
-  int _shopsVisited = 8;
-  int _pendingOrders = 3;
-  double _todayRevenue = 18500.0;
-  int _selectedTabIndex = 0;
-
+class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderStateMixin {
+ 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -39,6 +36,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       curve: Curves.easeOutCubic,
     ));
     _animationController.forward();
+ 
   }
 
   @override
@@ -46,15 +44,96 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _animationController.dispose();
     super.dispose();
   }
+ 
+
+final shopsCountProvider = Provider<int>((ref) {
+  final shopsstate = ref.watch(shopViewModelProvider);
+  final shops=shopsstate.shopList?.maybeWhen(
+  data: (list) => list,
+        orElse: () => [],
+      ) ?? [];
+return shops.length;
+});
+
+final productsCountProvider = Provider<int>((ref) {
+  final productsstate = ref.watch(productViewModelProvider);
+  final products=productsstate.productList?.maybeWhen(
+  data: (list) => list,
+        orElse: () => [],
+      ) ?? [];
+  return products.length;
+});
+
+
+
+final todayOrdersCountProvider = Provider<int>((ref) {
+  final ordersState = ref.watch(ordersViewModelProvider);
+  final ordersList = ordersState.orders?.maybeWhen(
+        data: (list) => list,
+        orElse: () => [],
+      ) ?? [];
+
+  final now = DateTime.now();
+
+  final todayOrders = ordersList.where((order) {
+    final orderDateStr = order.orderDate;
+    if (orderDateStr == null || orderDateStr.isEmpty) return false;
+
+    try {
+      // Parse as UTC
+      final orderDateUtc = DateTime.parse(orderDateStr);
+      // Convert to local time
+      final orderDateLocal = orderDateUtc.toLocal();
+
+      // Compare year, month, day
+      return orderDateLocal.year == now.year &&
+             orderDateLocal.month == now.month &&
+             orderDateLocal.day == now.day;
+    } catch (e) {
+      debugPrint('Error parsing order date: ${order.order_id}, $e');
+      return false;
+    }
+  }).toList();
+
+  debugPrint('Today orders count: ${todayOrders.length}');
+  return todayOrders.length;
+});
+
+
+final todayRevenueProvider = Provider<double>((ref) {
+  final ordersState = ref.watch(ordersViewModelProvider);
+  final ordersList = ordersState.orders?.maybeWhen(
+        data: (list) => list,
+        orElse: () => [],
+      ) ?? [];
+
+  final today = DateTime.now();
+
+  final todayOrders = ordersList.where((order) {
+    try {
+      final orderDate = DateTime.parse(order.orderDate).toLocal(); // camelCase
+      return orderDate.year == today.year &&
+             orderDate.month == today.month &&
+             orderDate.day == today.day;
+    } catch (_) {
+      return false;
+    }
+  }).toList();
+
+  final totalRevenue = todayOrders.fold<double>(0.0, (sum, order) {
+    final price = order.totalPrice; // camelCase
+    return sum + price;
+  });
+
+  debugPrint('Total revenue today: $totalRevenue');
+  return totalRevenue;
+});
+
+
 Future<void> _onRefresh() async {
   await Future.delayed(const Duration(seconds: 2));
 
-  setState(() {
-    _todayOrders = 15;
-    _shopsVisited = 10;
-    _pendingOrders = 1;
-    _todayRevenue = 22500.0;
-  });
+
 }
 @override
 Widget build(BuildContext context) {
@@ -84,7 +163,7 @@ Widget build(BuildContext context) {
                     const SizedBox(height: 24),
                     _buildQuickActions(context),
                     const SizedBox(height: 24),
-                    _buildRecentActivity(),
+                //    _buildRecentActivity(),
                     const SizedBox(height: 20),
                   ]),
                 ),
@@ -97,69 +176,75 @@ Widget build(BuildContext context) {
   );
 }
 
-
   Widget _buildStatsOverview() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 380;
-        return Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: 'Orders',
-                    value: _todayOrders.toString(),
-                    icon: Icons.shopping_bag_outlined,
-                    color: const Color(0xFF6C63FF),
-                    trend: '+12%',
-                    isSmall: isSmallScreen,
-                  ),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final isSmallScreen = constraints.maxWidth < 380;
+
+      // Watch your providers
+      final todayOrders = ref.watch(todayOrdersCountProvider);
+      final todayRevenue = ref.watch(todayRevenueProvider);
+      final shopsCount = ref.watch(shopsCountProvider);
+      final productsCount = ref.watch(productsCountProvider);
+
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  title: 'Orders',
+                  value: todayOrders.toString(),
+                  icon: Icons.shopping_bag_outlined,
+                  color: const Color(0xFF6C63FF),
+                //  trend: '+12%',
+                  isSmall: isSmallScreen,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Revenue',
-                    value: '₹${(_todayRevenue / 1000).toStringAsFixed(1)}K',
-                    icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF00C853),
-                    trend: '+8%',
-                    isSmall: isSmallScreen,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  title: 'Revenue',
+                  value: '₹${todayRevenue.toStringAsFixed(2)}',
+                  icon: Icons.trending_up_rounded,
+                  color: const Color(0xFF00C853),
+                 // trend: '+8%',
+                  isSmall: isSmallScreen,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: 'Shops',
-                    value: _shopsVisited.toString(),
-                    icon: Icons.store_outlined,
-                    color: const Color(0xFFFF6B6B),
-                    trend: '+5',
-                    isSmall: isSmallScreen,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  title: 'Shops',
+                  value: shopsCount.toString(),
+                  icon: Icons.store_outlined,
+                  color: const Color(0xFFFF6B6B),
+                //  trend: '+5',
+                  isSmall: isSmallScreen,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Pending',
-                    value: _pendingOrders.toString(),
-                    icon: Icons.pending_outlined,
-                    color: const Color(0xFFFFA726),
-                    trend: '-2',
-                    isSmall: isSmallScreen,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  title: 'Products',
+                  value: productsCount.toString(),
+                  icon: Icons.production_quantity_limits_sharp,
+                  color: const Color(0xFFFFA726),
+                 // trend: '-2',
+                  isSmall: isSmallScreen,
                 ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
+              ),
+            ],
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildQuickActions(BuildContext context) {
     return Column(
@@ -193,19 +278,19 @@ Widget build(BuildContext context) {
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.shopping_cart_rounded,
-                label: 'New Order',
-                backgroundColor: const Color(0xFFE8E5FF),
-                iconColor: const Color(0xFF7C6FDC),
-                onTap: () {
-                  setState(() {
-                    _selectedTabIndex = 1;
-                  });
-                },
-              ),
-            ),
+            // Expanded(
+            //   child: _QuickActionButton(
+            //     icon: Icons.shopping_cart_rounded,
+            //     label: 'New Order',
+            //     backgroundColor: const Color(0xFFE8E5FF),
+            //     iconColor: const Color(0xFF7C6FDC),
+            //     onTap: () {
+            //       setState(() {
+            //         _selectedTabIndex = 1;
+            //       });
+            //     },
+            //   ),
+            // ),
             const SizedBox(width: 12),
             Expanded(
               child: _QuickActionButton(
@@ -224,22 +309,22 @@ Widget build(BuildContext context) {
               ),
             ),
              const SizedBox(width: 12),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.bar_chart_rounded,
-                label: 'Reports',
-                backgroundColor: const Color(0xFFD4F4E7),
-                iconColor: const Color.fromARGB(255, 180, 29, 12),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ReportsPage(),
-                    ),
-                  );
-                },
-              ),
-            ),
+            // Expanded(
+            //   child: _QuickActionButton(
+            //     icon: Icons.bar_chart_rounded,
+            //     label: 'Reports',
+            //     backgroundColor: const Color(0xFFD4F4E7),
+            //     iconColor: const Color.fromARGB(255, 180, 29, 12),
+            //     onTap: () {
+            //       Navigator.push(
+            //         context,
+            //         MaterialPageRoute(
+            //           builder: (context) => const ReportsPage(),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
           ],
         ),
       ],
@@ -468,7 +553,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  final String trend;
+  final String? trend;
   final bool isSmall;
 
   const _StatCard({
@@ -476,7 +561,7 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
-    required this.trend,
+     this.trend,
     this.isSmall = false,
   });
 
@@ -509,21 +594,21 @@ class _StatCard extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: isSmall ? 18 : 20),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  trend,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              //   decoration: BoxDecoration(
+              //     color: color.withOpacity(0.1),
+              //     borderRadius: BorderRadius.circular(6),
+              //   ),
+              //   child: Text(
+              //     trend ?? '',
+              //     style: TextStyle(
+              //       color: color,
+              //       fontSize: 10,
+              //       fontWeight: FontWeight.bold,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
           SizedBox(height: isSmall ? 10 : 12),

@@ -574,6 +574,8 @@ class Order {
     required this.status,
     required this.amount,
   });
+
+  get items => null;
 }
 
 class Product {

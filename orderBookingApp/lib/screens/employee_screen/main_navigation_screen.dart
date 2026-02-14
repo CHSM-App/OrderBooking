@@ -236,51 +236,51 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   ),
                 ),
 
-                /// NOTIFICATIONS
-                if (isCheckedIn)
-                  Stack(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        color: Colors.white,
-                        iconSize: 26,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      if (_notificationCount > 0)
-                        Positioned(
-                          right: 6,
-                          top: 6,
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              _notificationCount > 9
-                                  ? '9+'
-                                  : '$_notificationCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                // /// NOTIFICATIONS
+                // if (isCheckedIn)
+                //   Stack(
+                //     children: [
+                //       IconButton(
+                //         icon: const Icon(Icons.notifications_outlined),
+                //         color: Colors.white,
+                //         iconSize: 26,
+                //         onPressed: () {
+                //           Navigator.push(
+                //             context,
+                //             MaterialPageRoute(
+                //               builder: (_) => const NotificationPage(),
+                //             ),
+                //           );
+                //         },
+                //       ),
+                //       if (_notificationCount > 0)
+                //         Positioned(
+                //           right: 6,
+                //           top: 6,
+                //           child: Container(
+                //             padding: const EdgeInsets.all(3),
+                //             decoration: const BoxDecoration(
+                //               color: Colors.red,
+                //               shape: BoxShape.circle,
+                //             ),
+                //             constraints: const BoxConstraints(
+                //               minWidth: 16,
+                //               minHeight: 16,
+                //             ),
+                //             child: Text(
+                //               _notificationCount > 9
+                //                   ? '9+'
+                //                   : '$_notificationCount',
+                //               style: const TextStyle(
+                //                 color: Colors.white,
+                //                 fontSize: 9,
+                //                 fontWeight: FontWeight.bold,
+                //               ),
+                //             ),
+                //           ),
+                //         ),
+                //     ],
+                //   ),
                 const SizedBox(width: 6),
               ],
             ),
