@@ -87,9 +87,14 @@ static Future<void> _createRegionTable(Database db) async {
     CREATE TABLE IF NOT EXISTS offline_regions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       local_id TEXT UNIQUE,
-      server_id INTEGER,
-      payload TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
+      server_id INTEGER UNIQUE,
+      region_name TEXT,
+      pincode TEXT,
+      district TEXT,
+      state TEXT,
+      company_id TEXT,
+      created_by INTEGER,
+      status TEXT NOT NULL DEFAULT 'synced',
       retry_count INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,
       captured_at TEXT NOT NULL,
@@ -97,6 +102,7 @@ static Future<void> _createRegionTable(Database db) async {
     )
   ''');
 }
+
 
   static Future<void> _createProductsTable(Database db) async {
     await db.execute('''
