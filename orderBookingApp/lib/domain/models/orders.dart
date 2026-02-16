@@ -43,7 +43,7 @@ class Order {
 
   @JsonKey(name: 'mobile_no')
   final String? mobileNo;
-
+  final String? status;  
 
   Order({
     this.mobileNo,
@@ -59,6 +59,7 @@ class Order {
     this.companyId,
     this.ownerName,
     double? totalPrice,
+    this.status,
   }) : totalPrice =
           totalPrice ?? items.fold(0, (sum, i) => sum + i.totalPrice);
 

@@ -798,14 +798,23 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                         .read(employeeloginViewModelProvider.notifier)
                         // ignore: invalid_use_of_protected_member
                         .state = employeeState.copyWith(
-                      isPhoneNoExists: null,
+                      isPhoneNoExists: null, mobileNoStatus: null
                     );
                   }
                 },
-                errorText: employeeState.isPhoneNoExists == true
-                    ? 'Mobile number already exists'
+                // errorText: employeeState.isPhoneNoExists == true
+                //     ? 'Mobile number already exists'
+                //     : null,
+                // onSaved: (v) => mobile = v!,
+                errorText:
+                    employeeState.isPhoneNoExists == true &&
+                        employeeState.mobileNoStatus == 0
+                    ? 'Mobile number already exists and active'
+                    : employeeState.isPhoneNoExists == true &&
+                          employeeState.mobileNoStatus == 1
+                    ? 'Mobile number exists in past history'
                     : null,
-                onSaved: (v) => mobile = v!,
+                onSaved: (String? p1) {},
               ),
 
               _buildField(

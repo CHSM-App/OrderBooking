@@ -61,10 +61,12 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
       final owner = shop.ownerName?.toLowerCase() ?? '';
       final address = shop.address?.toLowerCase() ?? '';
       final phone = shop.mobileNo?.toLowerCase() ?? '';
+      final regionName = shop.regionName?.toLowerCase()?? '';
       return name.contains(_searchQuery) ||
           owner.contains(_searchQuery) ||
           address.contains(_searchQuery) ||
-          phone.contains(_searchQuery);
+          phone.contains(_searchQuery) || 
+          regionName.contains(_searchQuery);
     }).toList();
   }
 
@@ -134,7 +136,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         height: 48,
         decoration: BoxDecoration(
           color: _kSurface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(17),
           border: Border.all(color: _kDivider, width: 1),
         ),
         child: TextField(
@@ -145,7 +147,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
             color: _kTextPrimary,
           ),
           decoration: InputDecoration(
-            hintText: 'Search shops, owners…',
+            hintText: 'Search shop, owner, region...',
             hintStyle: const TextStyle(
               fontSize: 14,
               color: _kTextSecondary,
@@ -164,13 +166,13 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                       color: _kTextSecondary,
                     ),
                     onPressed: () => _searchController.clear(),
-                    splashRadius: 16,
+                    splashRadius: 12,
                   )
                 : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 8,
-              vertical: 14,
+              vertical: 20,
             ),
             isDense: true,
           ),
@@ -473,6 +475,12 @@ class _ShopDetailSheet extends StatelessWidget {
                     icon: Icons.email_outlined,
                     label: 'Email',
                     value: shop.email!,
+                  ),
+                  if (shop.regionName != null)
+                  _DetailRow(
+                    icon: Icons.email_outlined,
+                    label: 'Region',
+                    value: shop.regionName!,
                   )
                 // if (shop. != null)
                 //   _DetailRow(
@@ -732,6 +740,26 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
                         if (widget.shop.mobileNo != null ||
                             widget.shop.address != null) ...[
                           const SizedBox(height: 6),
+                          // Row(
+                          //   children: [
+                          //     if (widget.shop.mobileNo != null)
+                          //       _Chip(
+                          //         icon: Icons.phone_outlined,
+                          //         label: widget.shop.mobileNo!,
+                          //       ),
+                          //     if (widget.shop.mobileNo != null &&
+                          //         widget.shop.address != null)
+                          //       const SizedBox(width: 8),
+                          //     if (widget.shop.address != null)
+                          //       Expanded(
+                          //         child: _Chip(
+                          //           icon: Icons.location_on_outlined,
+                          //           label: widget.shop.address!,
+                          //           shrink: true,
+                          //         ),
+                          //       ),
+                          //   ],
+                          // ),
                           Row(
                             children: [
                               if (widget.shop.mobileNo != null)
@@ -739,15 +767,39 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
                                   icon: Icons.phone_outlined,
                                   label: widget.shop.mobileNo!,
                                 ),
+
                               if (widget.shop.mobileNo != null &&
-                                  widget.shop.address != null)
+                                  (widget.shop.address != null ||
+                                      widget.shop.regionName != null))
                                 const SizedBox(width: 8),
-                              if (widget.shop.address != null)
+
+                              if (widget.shop.address != null ||
+                                  widget.shop.regionName != null)
                                 Expanded(
-                                  child: _Chip(
-                                    icon: Icons.location_on_outlined,
-                                    label: widget.shop.address!,
-                                    shrink: true,
+                                  child: Row(
+                                    children: [
+                                      if (widget.shop.address != null)
+                                        Flexible(
+                                          child: _Chip(
+                                            icon: Icons.home_outlined,
+                                            label: widget.shop.address!,
+                                            shrink: true,
+                                          ),
+                                        ),
+
+                                      if (widget.shop.address != null &&
+                                          widget.shop.regionName != null)
+                                        const SizedBox(width: 8),
+
+                                      if (widget.shop.regionName != null)
+                                        Flexible(
+                                          child: _Chip(
+                                            icon: Icons.location_on_outlined,
+                                            label: widget.shop.regionName!,
+                                            shrink: true,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                             ],

@@ -337,7 +337,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                           height: 46,
                           decoration: BoxDecoration(
                             color: MinimalTheme.cardWhite,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(17),
                             border: Border.all(color: Colors.grey[200]!),
                           ),
                           child: TextField(
@@ -349,7 +349,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                               color: MinimalTheme.textDark,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Search employees...',
+                              hintText: 'Search employee...',
                               hintStyle: const TextStyle(
                                 fontSize: 14,
                                 color: MinimalTheme.textGray,
@@ -371,13 +371,13 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                                         _searchController.clear();
                                         _searchQuery = "";
                                       }),
-                                      splashRadius: 16,
+                                      splashRadius: 12,
                                     )
                                   : null,
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 13,
+                                vertical: 16,
                               ),
                               isDense: true,
                             ),
