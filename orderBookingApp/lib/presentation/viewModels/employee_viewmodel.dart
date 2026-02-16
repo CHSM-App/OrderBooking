@@ -18,6 +18,7 @@ class EmployeeloginState {
   final int? empId;
   final String? companyId;
   final bool? isPhoneNoExists;
+  final bool? mobileNoStatus;
 
   const EmployeeloginState({
     this.employeeVisitLocation =  const AsyncValue.loading(),
@@ -26,6 +27,7 @@ class EmployeeloginState {
     this.empId,
     this.companyId,
     this.isPhoneNoExists,
+    this.mobileNoStatus,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
     this.employeeVisits = const AsyncValue.loading(),
@@ -33,6 +35,7 @@ class EmployeeloginState {
 
   EmployeeloginState copyWith({
     bool? isPhoneNoExists,
+    bool? mobileNoStatus,
     bool? isLoading,
     String? error,
     AsyncValue<List<EmployeeLogin>>? employeeList,
@@ -46,6 +49,7 @@ class EmployeeloginState {
       employeeVisitLocation: employeeVisitLocation ?? this.employeeVisitLocation,
       isLoading: isLoading ?? this.isLoading,
       isPhoneNoExists: isPhoneNoExists ?? this.isPhoneNoExists,
+      mobileNoStatus: mobileNoStatus ?? this.mobileNoStatus,
       error: error ?? this.error,
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
@@ -181,7 +185,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 
   //check weather mobile number already exists in table
   Future<void> checkMobileExists(String mobileNo, String companyId) async {
-    state = state.copyWith(isLoading: true, error: null,isPhoneNoExists: null );
+    state = state.copyWith(isLoading: true, error: null,isPhoneNoExists: null, mobileNoStatus: null );
 
     try {
       final exists = await usecase.checkMobileExists(
@@ -189,12 +193,13 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
         companyId,
       );
 
-      state = state.copyWith(isLoading: false, isPhoneNoExists: exists['exists']);
+      state = state.copyWith(isLoading: false, isPhoneNoExists: exists['exists'], mobileNoStatus: exists['status']);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
         isPhoneNoExists: false,
+        mobileNoStatus: false,
       );
     }
 
