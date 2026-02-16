@@ -69,6 +69,14 @@ Future<void> syncRemoteToLocal(String companyId) async {
   }
 }
 
+Future<void>productReport(String companyId) async {
+    try {
+      final report = await api.productReport(companyId);
+      // Handle the report data as needed
+    } catch (e) {
+      print('Failed to fetch product report: $e');
+    }
+  }
 
 }
 

@@ -10,4 +10,5 @@ abstract class ProductRepository {
   // Future<void> sync(String companyId);
   Future<void> deleteSubProduct(List<int> SubItemId);
   // Future<void> syncDeletedSubProducts();
+  Future<void> productReport(String companyId);
 }

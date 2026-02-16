@@ -9,7 +9,7 @@ part of 'employee.dart';
 EmployeeLogin _$EmployeeLoginFromJson(Map<String, dynamic> json) =>
     EmployeeLogin(
       empName: json['emp_name'] as String?,
-      empMobile: json['emp_mobile'] as String?,
+      empMobile: json['emp_mobile'] as String,
       empAddress: json['emp_address'] as String?,
       empEmail: json['emp_email'] as String?,
       regionId: (json['region_id'] as num?)?.toInt(),
@@ -23,7 +23,7 @@ EmployeeLogin _$EmployeeLoginFromJson(Map<String, dynamic> json) =>
       adminId: (json['admin_id'] as num?)?.toInt(),
       regionName: json['region_name'] as String?,
       companyName: json['company_name'] as String?,
-      checkinStatus: json['checkin_status'] as int?,
+      checkinStatus: (json['checkin_status'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$EmployeeLoginToJson(EmployeeLogin instance) =>

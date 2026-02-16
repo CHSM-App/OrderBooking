@@ -147,6 +147,11 @@ abstract class ApiService {
 
   @DELETE("index/deleteShop/{shop_id}")
   Future<dynamic> deleteShop(@Path("shop_id") int shopId);
+
+
+    @GET("users/productReport/{company_id}")
+  Future<List<Product>> productReport(@Path("company_id") String companyId);
+  
 }
 
 

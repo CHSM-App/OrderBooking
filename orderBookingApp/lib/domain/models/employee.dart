@@ -8,7 +8,7 @@
     final String? empName;
 
     @JsonKey(name: 'emp_mobile')
-    final String? empMobile;
+    final String empMobile;
 
     @JsonKey(name: 'emp_address')
     final String? empAddress;
@@ -54,7 +54,7 @@
  
   EmployeeLogin({
     this.empName,
-    this.empMobile,
+   required this.empMobile,
     this.empAddress,
     this.empEmail,
     this.regionId,
@@ -80,3 +80,5 @@
     // JSON serialization
     Map<String, dynamic> toJson() => _$EmployeeLoginToJson(this);
   }
+
+

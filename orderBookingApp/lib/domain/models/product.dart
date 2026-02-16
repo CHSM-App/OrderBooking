@@ -36,6 +36,10 @@ class Product {
   final String? productUnit;
   final int? shopId;
 
+  
+  final double totalSales;
+  final List<DateTime> orderDates;
+
   // ===== LOCAL DB ONLY =====
   @JsonKey(ignore: true)
   final String? localId; // local UUID
@@ -61,6 +65,9 @@ class Product {
     this.localId,
     this.isSynced = false,
     this.updatedAt,
+    this.totalSales = 0,
+    this.orderDates = const [],
+      
   });
 
   factory Product.fromJson(Map<String, dynamic> json) =>

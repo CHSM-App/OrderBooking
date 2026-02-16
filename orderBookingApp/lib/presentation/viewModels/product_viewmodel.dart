@@ -8,11 +8,13 @@ class ProductState {
   final bool isLoading;
   final String? error;
   final AsyncValue<List<Product>>? productList;
+  final AsyncValue<List<Product>>?productReport;
 
   const ProductState({
     this.isLoading = false,
     this.error,
     this.productList = const AsyncValue.loading(),
+    this.productReport = const AsyncValue.loading(),
   });
 
   ProductState copyWith({
@@ -20,11 +22,13 @@ class ProductState {
     String? error,
     AsyncValue<ProductResponse>? addUpdateResponse,
     AsyncValue<List<Product>>? productList,
+    AsyncValue<List<Product>>? productReport,
   }) {
     return ProductState(
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       productList: productList ?? this.productList,
+      productReport: productReport ?? this.productReport,
     );
   }
 }
@@ -78,6 +82,21 @@ class ProductViewModel extends StateNotifier<ProductState> {
         isLoading: false,
         error: e.toString(),
         addUpdateResponse: AsyncValue.error(e, st),
+      );
+    }
+  }
+  
+  /// Get Product Report
+  Future<void> getProductReport(String companyId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await usecase.getProductReport(companyId);
+      state = state.copyWith(isLoading: false);
+    } catch (e, st) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        productReport: AsyncValue.error(e, st),
       );
     }
   }

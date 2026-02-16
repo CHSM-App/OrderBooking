@@ -20,6 +20,12 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   totalPrice: (json['total_price'] as num?)?.toDouble(),
   productUnit: json['productUnit'] as String?,
   shopId: (json['shopId'] as num?)?.toInt(),
+  totalSales: (json['totalSales'] as num?)?.toDouble() ?? 0,
+  orderDates:
+      (json['orderDates'] as List<dynamic>?)
+          ?.map((e) => DateTime.parse(e as String))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
@@ -34,6 +40,8 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'total_price': instance.totalPrice,
   'productUnit': instance.productUnit,
   'shopId': instance.shopId,
+  'totalSales': instance.totalSales,
+  'orderDates': instance.orderDates.map((e) => e.toIso8601String()).toList(),
 };
 
 ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>

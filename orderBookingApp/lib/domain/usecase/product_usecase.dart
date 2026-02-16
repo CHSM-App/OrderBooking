@@ -23,4 +23,8 @@ class ProductUsecase {
     await productRepository.deleteSubProduct(subItemId);
   }
   
+  Future<void> getProductReport(String companyId) async {
+    await productRepository.productReport(companyId);
+  }
+  
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
+import 'package:order_booking_app/screens/employee_screen/product_report.dart';
 
 
 class HomePage extends ConsumerStatefulWidget {
@@ -303,8 +304,6 @@ Future<void> _onRefresh() async {
   }
 }
 
-
-
 @override
 Widget build(BuildContext context) {
    
@@ -472,7 +471,7 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AddShopScreen(),
+                      builder: (context) => ProductReportPage(companyId: 'C00001'),
                     ),
                   );
                 },
