@@ -6,21 +6,14 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
-// Theme Colors matching the booking app design
 class ProfileTheme {
-  // Primary magenta/pink from the design
-  static const primaryPink =Color(0xFFE8720C);
+  static const primaryPink = Color(0xFFE8720C);
   static const primaryPinkDark = Color(0xFFC01869);
-  
-  // Background colors
-  static const backgroundGray = Color(0xFFF5F5F5); // Gray100
-  
-  // Neutral colors
+  static const backgroundGray = Color(0xFFF5F5F5);
   static const cardWhite = Color.fromARGB(255, 255, 255, 255);
   static const textDark = Color(0xFF1E1E1E);
   static const textGray = Color(0xFF6B7280);
-  
-  // Soft shadows
+
   static List<BoxShadow> cardShadow = [
     BoxShadow(
       color: Colors.black.withOpacity(0.04),
@@ -28,7 +21,7 @@ class ProfileTheme {
       offset: const Offset(0, 2),
     ),
   ];
-  
+
   static List<BoxShadow> buttonShadow = [
     BoxShadow(
       color: primaryPink.withOpacity(0.3),
@@ -50,7 +43,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  String? get mobileNo => ref.read(adminloginViewModelProvider).mobileNo;
+
+  // Tracks whether we've already fired the fetch, so we don't repeat it.
+  bool _hasFetchedOnce = false;
 
   @override
   void initState() {
@@ -68,20 +63,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+          parent: _animationController, curve: Curves.easeOutCubic),
     );
 
     _animationController.forward();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
-
-      if (mobileNo != null && mobileNo.isNotEmpty) {
-        ref
-            .read(employeeloginViewModelProvider.notifier)
-            .fetchEmployeeInfo(mobileNo);
-      }
-    });
+    // NOTE: No fetch in initState. We watch mobileNo reactively in build()
+    // so the fetch fires the moment adminloginViewModelProvider has the value —
+    // even if that happens after this widget first renders.
   }
 
   Future<void> _onRefresh() async {
@@ -101,83 +91,54 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    // ✅ CORE FIX: Watch adminloginViewModelProvider (not read() in initState).
+    // Every time mobileNo changes (e.g. becomes non-null after async restore),
+    // build() re-runs and we catch it here.
+    final mobileNo = ref.watch(adminloginViewModelProvider).mobileNo;
     final employeeState = ref.watch(employeeloginViewModelProvider);
 
-    // 1. Loading
-    if (employeeState.isLoading) {
+    // ✅ Trigger fetch exactly once, as soon as mobileNo is available.
+    // addPostFrameCallback safely defers the side-effect outside of build().
+    if (!_hasFetchedOnce && mobileNo != null && mobileNo.isNotEmpty) {
+      _hasFetchedOnce = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(employeeloginViewModelProvider.notifier)
+              .fetchEmployeeInfo(mobileNo);
+        }
+      });
+    }
+
+    // Show loading while mobileNo isn't ready yet, or the fetch is running.
+    if (!_hasFetchedOnce || employeeState.isLoading) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
         body: _buildLoadingState(),
       );
     }
 
-    // 2. Error
+    // Error state
     if (employeeState.error != null) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
-        body: _buildErrorState(employeeState.error!),
+        body: _buildErrorState(employeeState.error!, mobileNo ?? ""),
       );
     }
 
-    // 3. Data null (API call complete but data not set yet)
-    final detailsState = employeeState.employeeDetails;
-
-    // 4. Empty list
-    final list = detailsState.value ?? [];
+    // Empty state
+    final list = employeeState.employeeDetails.value ?? [];
     if (list.isEmpty) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
-        body: _buildEmptyStateWithRefresh(),
+        body: _buildEmptyStateWithRefresh(mobileNo ?? ""),
       );
     }
 
-    // 5. Success
+    // Success
     return Scaffold(
       backgroundColor: ProfileTheme.backgroundGray,
-      body: _buildProfileContent(list.first),
-    );
-  }
-
-  Widget _buildEmptyStateWithRefresh() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: ProfileTheme.primaryPink.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_off_rounded,
-              size: 48,
-              color: ProfileTheme.primaryPink,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No data available',
-            style: TextStyle(
-              fontSize: 15,
-              color: ProfileTheme.textGray,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 24),
-          _ModernButton(
-            label: 'Refresh',
-            icon: Icons.refresh_rounded,
-            onPressed: () {
-              ref
-                  .read(employeeloginViewModelProvider.notifier)
-                  .fetchEmployeeInfo(
-                    ref.read(adminloginViewModelProvider).mobileNo ?? "",
-                  );
-            },
-          ),
-        ],
-      ),
+      body: _buildProfileContent(list.first, mobileNo ?? ""),
     );
   }
 
@@ -212,7 +173,48 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildEmptyStateWithRefresh(String mobileNo) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: ProfileTheme.primaryPink.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_off_rounded,
+              size: 48,
+              color: ProfileTheme.primaryPink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No data available',
+            style: TextStyle(
+              fontSize: 15,
+              color: ProfileTheme.textGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _ModernButton(
+            label: 'Refresh',
+            icon: Icons.refresh_rounded,
+            onPressed: () {
+              ref
+                  .read(employeeloginViewModelProvider.notifier)
+                  .fetchEmployeeInfo(mobileNo);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error, String mobileNo) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -254,9 +256,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               onPressed: () {
                 ref
                     .read(employeeloginViewModelProvider.notifier)
-                    .fetchEmployeeInfo(
-                      ref.read(adminloginViewModelProvider).mobileNo ?? "",
-                    );
+                    .fetchEmployeeInfo(mobileNo);
               },
               label: 'Try Again',
               icon: Icons.refresh_rounded,
@@ -267,7 +267,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  Widget _buildProfileContent(EmployeeLogin employeeDetails) {
+  Widget _buildProfileContent(EmployeeLogin employeeDetails, String mobileNo) {
     final employeeName = employeeDetails.empName ?? "Unknown";
     final employeeId = employeeDetails.empId?.toString() ?? "N/A";
     final email = employeeDetails.empEmail ?? "";
@@ -297,7 +297,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 child: Column(
                   children: [
                     const SizedBox(height: 16),
-
                     _buildModernProfileHeader(
                       employeeName,
                       employeeId,
@@ -308,10 +307,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       isActive,
                       email,
                       address,
+                      mobileNo,
                     ),
-
                     const SizedBox(height: 20),
-
                     _buildModernSection(
                       title: 'Contact',
                       child: Column(
@@ -319,14 +317,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                           _ModernInfoCard(
                             icon: Icons.phone_rounded,
                             label: 'Phone',
-                            value: mobileNo ?? "N/A",
+                            value: mobileNo,
                           ),
                           if (email.isNotEmpty) ...[
                             const SizedBox(height: 1),
-                            Container(
-                              height: 1,
-                              color: Colors.grey.shade100,
-                            ),
+                            Container(height: 1, color: Colors.grey.shade100),
                             _ModernInfoCard(
                               icon: Icons.email_rounded,
                               label: 'Email',
@@ -335,10 +330,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                           ],
                           if (address.isNotEmpty) ...[
                             const SizedBox(height: 1),
-                            Container(
-                              height: 1,
-                              color: Colors.grey.shade100,
-                            ),
+                            Container(height: 1, color: Colors.grey.shade100),
                             _ModernInfoCard(
                               icon: Icons.location_on_rounded,
                               label: 'Address',
@@ -348,9 +340,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     _buildModernSection(
                       title: 'Settings',
                       child: Column(
@@ -381,14 +371,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: _buildLogoutButton(),
                     ),
-
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -418,12 +405,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     bool isActive,
     String? empEmail,
     String? empAddress,
+    String mobileNo,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Stack(
         children: [
-          // MAIN CARD - Simplified
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -435,7 +422,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // LEFT: AVATAR - Simplified
                 Stack(
                   children: [
                     Container(
@@ -448,7 +434,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       ),
                       child: CircleAvatar(
                         radius: 32,
-                        backgroundColor: ProfileTheme.primaryPink.withOpacity(0.1),
+                        backgroundColor:
+                            ProfileTheme.primaryPink.withOpacity(0.1),
                         child: imageUrl != null && imageUrl.isNotEmpty
                             ? ClipOval(
                                 child: Image.network(
@@ -480,10 +467,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     ),
                   ],
                 ),
-
                 const SizedBox(width: 14),
-
-                // RIGHT: DETAILS - Simplified
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,8 +514,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               ],
             ),
           ),
-
-          // EDIT BUTTON - Minimal
           Positioned(
             top: 12,
             right: 12,
@@ -543,13 +525,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   MaterialPageRoute(
                     builder: (_) => EditProfilePage(
                       name: employeeName,
-                      phone: mobileNo ?? "N/A",
+                      phone: mobileNo,
                       email: empEmail ?? "N/A",
                       address: empAddress ?? "N/A",
                       onSave: (_) {
                         ref
                             .read(employeeloginViewModelProvider.notifier)
-                            .fetchEmployeeInfo(mobileNo ?? "");
+                            .fetchEmployeeInfo(mobileNo);
                       },
                     ),
                   ),
@@ -637,11 +619,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.logout_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
+              Icon(Icons.logout_rounded, color: Colors.white, size: 18),
               SizedBox(width: 10),
               Text(
                 'Logout',
@@ -663,7 +641,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: ProfileTheme.cardWhite,
         title: const Text(
           'Logout',
@@ -675,10 +654,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         ),
         content: const Text(
           'Are you sure you want to logout?',
-          style: TextStyle(
-            fontSize: 14,
-            color: ProfileTheme.textGray,
-          ),
+          style: TextStyle(fontSize: 14, color: ProfileTheme.textGray),
         ),
         actions: [
           TextButton(
@@ -686,9 +662,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             child: const Text(
               'Cancel',
               style: TextStyle(
-                color: ProfileTheme.textGray,
-                fontWeight: FontWeight.w600,
-              ),
+                  color: ProfileTheme.textGray, fontWeight: FontWeight.w600),
             ),
           ),
           TextButton(
@@ -704,9 +678,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             child: const Text(
               'Logout',
               style: TextStyle(
-                color: ProfileTheme.primaryPink,
-                fontWeight: FontWeight.w600,
-              ),
+                  color: ProfileTheme.primaryPink,
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -718,18 +691,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     try {
       final date = DateTime.parse(dateStr).toLocal();
       final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
@@ -745,7 +708,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 }
 
-// Modern Info Card Widget - Minimal Design
 class _ModernInfoCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -763,11 +725,7 @@ class _ModernInfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: ProfileTheme.textGray,
-            size: 18,
-          ),
+          Icon(icon, color: ProfileTheme.textGray, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -799,7 +757,6 @@ class _ModernInfoCard extends StatelessWidget {
   }
 }
 
-// Modern Setting Tile Widget - Minimal Design
 class _ModernSettingTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -821,11 +778,7 @@ class _ModernSettingTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: ProfileTheme.textGray,
-                size: 18,
-              ),
+              Icon(icon, color: ProfileTheme.textGray, size: 18),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -850,7 +803,6 @@ class _ModernSettingTile extends StatelessWidget {
   }
 }
 
-// Modern Button Widget
 class _ModernButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
@@ -875,10 +827,7 @@ class _ModernButton extends StatelessWidget {
         icon: Icon(icon, size: 18),
         label: Text(
           label,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
@@ -893,3 +842,5 @@ class _ModernButton extends StatelessWidget {
     );
   }
 }
+
+

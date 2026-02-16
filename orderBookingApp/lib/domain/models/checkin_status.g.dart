@@ -9,6 +9,8 @@ part of 'checkin_status.dart';
 CheckInStatusRequest _$CheckInStatusRequestFromJson(
   Map<String, dynamic> json,
 ) => CheckInStatusRequest(
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
   message: json['message'] as String?,
   success: (json['success'] as num?)?.toInt(),
   empId: (json['emp_id'] as num?)?.toInt(),
@@ -30,4 +32,6 @@ Map<String, dynamic> _$CheckInStatusRequestToJson(
   'checkin_status': instance.checkinStatus,
   'message': instance.message,
   'success': instance.success,
+  'latitude': instance.latitude,
+  'longitude': instance.longitude,
 };

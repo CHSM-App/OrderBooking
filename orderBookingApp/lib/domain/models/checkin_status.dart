@@ -20,7 +20,6 @@ class CheckInStatusRequest {
   @JsonKey(name: 'out_time')
   final String? outTime;
 
-  /// 1 = Checked In, 0 = Checked Out
   @JsonKey(name: 'checkin_status')
   final int? checkinStatus;
 
@@ -30,7 +29,17 @@ class CheckInStatusRequest {
   @JsonKey(name: 'success')
   final int? success;
 
+  @JsonKey(name : 'latitude')
+  final double? latitude;
+
+  @JsonKey(name : 'longitude')
+  final double? longitude;
+
+
+
   CheckInStatusRequest({
+    this.latitude,
+    this.longitude,
     this.message,
     this.success,
     this.empId,

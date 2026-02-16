@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Minimal Theme Colors
@@ -788,6 +790,7 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                 maxLength: 10,
                 formatter: FilteringTextInputFormatter.digitsOnly,
                 counterText: '',
+                bottomPadding: 6,
                 onChanged: (value) {
                   if (value.length == 10) {
                     ref
@@ -806,16 +809,59 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                 //     ? 'Mobile number already exists'
                 //     : null,
                 // onSaved: (v) => mobile = v!,
-                errorText:
-                    employeeState.isPhoneNoExists == true &&
-                        employeeState.mobileNoStatus == 0
-                    ? 'Mobile number already exists and active'
-                    : employeeState.isPhoneNoExists == true &&
-                          employeeState.mobileNoStatus == 1
-                    ? 'Mobile number exists in past history'
-                    : null,
+                errorText: null,
                 onSaved: (String? p1) {},
               ),
+              if (employeeState.isPhoneNoExists == true &&
+                  employeeState.mobileNoStatus == false)
+                const Padding(
+                  padding: EdgeInsets.only(top: 2, left: 12),
+                  child: Text(
+                    'Mobile number already exists and active',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: MinimalTheme.errorRed,
+                    ),
+                  ),
+                ),
+              if (employeeState.isPhoneNoExists == true &&
+                  employeeState.mobileNoStatus == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, left: 12),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: MinimalTheme.errorRed,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'Mobile number exists in history. ',
+                        ),
+                        TextSpan(
+                          text: 'Enable user',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const AdminEmployeesPage(activeStatus: 1),
+                                ),
+                              );
+                            },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
               _buildField(
                 label: "Email Address",
@@ -1288,9 +1334,10 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     ValueChanged<String>? onChanged,
     String? errorText,
     String? counterText,
+    double bottomPadding = 16,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

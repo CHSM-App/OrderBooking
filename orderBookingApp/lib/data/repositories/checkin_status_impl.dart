@@ -13,13 +13,18 @@ class CheckinStatusRequestImpl implements CheckinRepository {
   CheckinStatusRequestImpl(this.apiService);
 
   @override
-  Future<CheckInStatusRequest> checkIn(int empId) {
-    return apiService.checkIn(empId);
+  Future<CheckInStatusRequest> checkIn(
+    int empId,
+    double latitude,
+    double longitude,
+  ) {
+    return apiService.checkIn(empId, latitude, longitude);
   }
 
   @override
-  Future<CheckInStatusRequest> checkOut(int empId) {
-    return apiService.checkOut(empId);
+  Future<CheckInStatusRequest> checkOut(int empId,     double latitude,
+    double longitude,) {
+    return apiService.checkOut(empId , latitude, longitude);
   }
 
   @override
