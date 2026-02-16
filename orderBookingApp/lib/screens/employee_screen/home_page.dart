@@ -471,7 +471,7 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProductReportPage(companyId: 'C00001'),
+                      builder: (context) => ProductReportPage(companyId: ref.read(adminloginViewModelProvider).companyId ?? ''),
                     ),
                   );
                 },
