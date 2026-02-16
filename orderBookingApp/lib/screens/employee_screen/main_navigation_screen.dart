@@ -60,6 +60,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             .read(checkInViewModelProvider.notifier)
             .loadTodayStatus(userId);
       }
+ 
+     
+    await ref.read(visitViewModelProvider.notifier).fetchEmployeeVisits(userId);
     });
   }
 

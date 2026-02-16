@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
 
@@ -16,63 +17,195 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+@override
+void initState() {
+  super.initState();
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-    _animationController.forward();
+  _animationController = AnimationController(
+    duration: const Duration(milliseconds: 800),
+    vsync: this,
+  );
+
+  _fadeAnimation = CurvedAnimation(
+    parent: _animationController,
+    curve: Curves.easeInOut,
+  );
+
+  _slideAnimation = Tween<Offset>(
+    begin: const Offset(0, 0.2),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(
+    parent: _animationController,
+    curve: Curves.easeOutCubic,
+  ));
+
+  _animationController.forward();
  
-  }
+}
+
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
- 
+ //Today Performance Fetch 
+ //Efficiency calculation
+ final efficiencyProvider = Provider<double>((ref) {
+  final ordersState = ref.watch(ordersViewModelProvider);
 
-final shopsCountProvider = Provider<int>((ref) {
-  final shopsstate = ref.watch(shopViewModelProvider);
-  final shops=shopsstate.shopList?.maybeWhen(
-  data: (list) => list,
-        orElse: () => [],
-      ) ?? [];
-return shops.length;
+  final ordersList = ordersState.orders?.maybeWhen(
+    data: (list) => list,
+    orElse: () => [],
+  ) ?? [];
+
+  final totalShops = ordersList
+      .map((order) => order.shopId)
+      .toSet()
+      .length;
+
+  final visitedToday = ref.watch(ordersViewModelProvider).orders?.maybeWhen(
+    data: (list) {
+      final now = DateTime.now();
+      final todayOrders = list.where((order) {
+        try {
+          final orderDate = DateTime.parse(order.orderDate).toLocal();
+          return orderDate.year == now.year &&
+                 orderDate.month == now.month &&
+                 orderDate.day == now.day;
+        } catch (_) {
+          return false;
+        }
+      });
+      return todayOrders
+          .map((order) => order.shopId)
+          .toSet()
+          .length;
+    },
+    orElse: () => 0,
+  ) ?? 0;
+
+  if (totalShops == 0) return 0;
+
+  return (visitedToday / totalShops) * 100;
 });
 
-final productsCountProvider = Provider<int>((ref) {
-  final productsstate = ref.watch(productViewModelProvider);
-  final products=productsstate.productList?.maybeWhen(
-  data: (list) => list,
-        orElse: () => [],
-      ) ?? [];
-  return products.length;
+
+
+//Sucess Rate Calculation
+final successRateProvider = Provider<double>((ref) {
+  final todayOrders = ref.watch(ordersViewModelProvider).orders?.maybeWhen(
+    data: (list) {
+      final now = DateTime.now();
+      final todayOrders = list.where((order) {
+        try {
+          final orderDate = DateTime.parse(order.orderDate).toLocal();
+          return orderDate.year == now.year &&
+                 orderDate.month == now.month &&
+                 orderDate.day == now.day;
+        } catch (_) {
+          return false;
+        }
+      }).toList();
+
+      return todayOrders.length;
+    },
+    orElse: () => 0,
+  ) ?? 0;
+  final visitedShops = ref.watch(ordersViewModelProvider).orders?.maybeWhen(
+    data: (list) {
+      final now = DateTime.now();
+      final todayOrders = list.where((order) {
+        try {
+          final orderDate = DateTime.parse(order.orderDate).toLocal();
+          return orderDate.year == now.year &&
+                 orderDate.month == now.month &&
+                 orderDate.day == now.day;
+        } catch (_) {
+          return false;
+        }
+      });
+      return todayOrders
+          .where((order) => order.status?.toLowerCase() == 'delivered')
+          .map((order) => order.shopId)
+          .toSet()
+          .length;
+    },
+    orElse: () => 0,
+  ) ?? 0;
+
+  if (visitedShops == 0) return 0;
+
+  return (todayOrders / visitedShops) * 100;
 });
 
 
 
+//Avg time Calculation
+final avgOrderTimeProvider = Provider<String>((ref) {
+  final ordersState = ref.watch(ordersViewModelProvider);
+
+  final ordersList = ordersState.orders?.maybeWhen(
+    data: (list) => list,
+    orElse: () => [],
+  ) ?? [];
+
+  if (ordersList.length < 2) return "0m";
+
+  final sortedOrders = [...ordersList];
+
+  sortedOrders.sort((a, b) =>
+      DateTime.parse(a.orderDate)
+          .compareTo(DateTime.parse(b.orderDate)));
+
+  int totalMinutes = 0;
+
+  for (int i = 1; i < sortedOrders.length; i++) {
+    final prev = DateTime.parse(sortedOrders[i - 1].orderDate);
+    final curr = DateTime.parse(sortedOrders[i].orderDate);
+
+    totalMinutes += curr.difference(prev).inMinutes;
+  }
+
+  final avgMinutes = totalMinutes ~/ (sortedOrders.length - 1);
+
+  return "${avgMinutes}m";
+});
+
+
+
+
+///----------------------------------------------------//
+//Today VisitedShop Count
+
+final todayVisitsCountProvider = Provider<int>((ref) {
+  final visitState = ref.watch(visitViewModelProvider);
+
+  final visits = visitState.visits?.maybeWhen(
+    data: (list) => list,
+    orElse: () => [],
+  ) ?? [];
+
+  final now = DateTime.now();
+
+  final todayVisits = visits.where((visit) {
+    if (visit.punchIn == null) return false;
+    final local = visit.punchIn!.toLocal();
+    return local.year == now.year &&
+           local.month == now.month &&
+           local.day == now.day;
+  }).length;
+
+  return todayVisits;
+});
+
+//TodayTotal order count 
 final todayOrdersCountProvider = Provider<int>((ref) {
   final ordersState = ref.watch(ordersViewModelProvider);
   final ordersList = ordersState.orders?.maybeWhen(
         data: (list) => list,
         orElse: () => [],
       ) ?? [];
-
   final now = DateTime.now();
 
   final todayOrders = ordersList.where((order) {
@@ -99,7 +232,7 @@ final todayOrdersCountProvider = Provider<int>((ref) {
   return todayOrders.length;
 });
 
-
+//Today Shop Visited Count
 final todayRevenueProvider = Provider<double>((ref) {
   final ordersState = ref.watch(ordersViewModelProvider);
   final ordersList = ordersState.orders?.maybeWhen(
@@ -129,14 +262,52 @@ final todayRevenueProvider = Provider<double>((ref) {
   return totalRevenue;
 });
 
+//Monthly Product Revenue Count
+final monthlyRevenueProvider = Provider<double>((ref) {
+  final ordersState = ref.watch(ordersViewModelProvider);
 
+  final ordersList = ordersState.orders?.maybeWhen(
+    data: (list) => list,
+    orElse: () => [],
+  ) ?? [];
+
+  final now = DateTime.now();
+
+  // filter current month orders
+  final monthlyOrders = ordersList.where((order) {
+    try {
+      final orderDate = DateTime.parse(order.orderDate).toLocal();
+
+      return orderDate.year == now.year &&
+             orderDate.month == now.month;
+    } catch (_) {
+      return false;
+    }
+  });
+
+  // sum totalPrice
+  final totalRevenue = monthlyOrders.fold<double>(
+    0.0,
+    (sum, order) => sum + order.totalPrice,
+  );
+
+  return totalRevenue;
+});
 Future<void> _onRefresh() async {
-  await Future.delayed(const Duration(seconds: 2));
-
-
+  try {
+    final userId = ref.read(adminloginViewModelProvider).userId ?? 0;
+    await ref.read(visitViewModelProvider.notifier).fetchEmployeeVisits(userId);
+    // Provider rebuild automatically → UI update
+  } catch (e) {
+    debugPrint("Refresh error: $e");
+  }
 }
+
+
+
 @override
 Widget build(BuildContext context) {
+   
   return Scaffold(
     backgroundColor: const Color(0xFFF8F9FA),
     body: RefreshIndicator(
@@ -181,11 +352,10 @@ Widget build(BuildContext context) {
     builder: (context, constraints) {
       final isSmallScreen = constraints.maxWidth < 380;
 
-      // Watch your providers
       final todayOrders = ref.watch(todayOrdersCountProvider);
       final todayRevenue = ref.watch(todayRevenueProvider);
-      final shopsCount = ref.watch(shopsCountProvider);
-      final productsCount = ref.watch(productsCountProvider);
+      final todayVisitedShops = ref.watch(todayVisitsCountProvider);
+      final monthlyRevenue = ref.watch(monthlyRevenueProvider);
 
       return Column(
         children: [
@@ -220,7 +390,7 @@ Widget build(BuildContext context) {
               Expanded(
                 child: _StatCard(
                   title: 'Shops',
-                  value: shopsCount.toString(),
+                 value: todayVisitedShops.toString(),
                   icon: Icons.store_outlined,
                   color: const Color(0xFFFF6B6B),
                 //  trend: '+5',
@@ -230,8 +400,8 @@ Widget build(BuildContext context) {
               const SizedBox(width: 12),
               Expanded(
                 child: _StatCard(
-                  title: 'Products',
-                  value: productsCount.toString(),
+                  title: 'Products Revenue',
+                value: '₹${monthlyRevenue.toStringAsFixed(2)}',
                   icon: Icons.production_quantity_limits_sharp,
                   color: const Color(0xFFFFA726),
                  // trend: '-2',
@@ -334,6 +504,10 @@ Widget build(BuildContext context) {
   
 
   Widget _buildPerformanceSection() {
+    final efficiency = ref.watch(efficiencyProvider);
+    final successRate = ref.watch(successRateProvider);
+    final avgTime = ref.watch(avgOrderTimeProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -402,26 +576,27 @@ Widget build(BuildContext context) {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _PerformanceMetric(
-                label: 'Efficiency',
-                value: '87%',
-                icon: Icons.speed_rounded,
-              ),
-              _PerformanceMetric(
-                label: 'Success Rate',
-                value: '94%',
-                icon: Icons.check_circle_outline_rounded,
-              ),
-              _PerformanceMetric(
-                label: 'Avg. Time',
-                value: '15m',
-                icon: Icons.access_time_rounded,
-              ),
-            ],
-          ),
+        Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    _PerformanceMetric(
+      label: 'Efficiency',
+      value: '${efficiency.toStringAsFixed(0)}%',
+      icon: Icons.speed,
+    ),
+    _PerformanceMetric(
+      label: 'Success Rate',
+      value: '${successRate.toStringAsFixed(0)}%',
+      icon: Icons.check_circle,
+    ),
+    _PerformanceMetric(
+      label: 'Avg. Time',
+      value: avgTime,
+      icon: Icons.access_time,
+    ),
+  ],
+)
+
         ],
       ),
     );

@@ -3,16 +3,15 @@ import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/usecase/shop_visit.dart';
 import '../../domain/models/visite.dart';
 
-
 class EmployeeVisitState {
   final bool isLoading;
   final String? error;
-  final AsyncValue<List<EmployeeVisit>>? visits;
+  final AsyncValue<List<EmployeeVisit>> visits; // non-null
 
   const EmployeeVisitState({
     this.isLoading = false,
     this.error,
-    this.visits = const AsyncValue.loading(),
+    this.visits = const AsyncValue.loading(), // default loading
   });
 
   EmployeeVisitState copyWith({
@@ -27,6 +26,7 @@ class EmployeeVisitState {
     );
   }
 }
+
 
 class VisitViewModel extends StateNotifier<EmployeeVisitState> {
   final VisitUseCase repo;
@@ -46,19 +46,28 @@ class VisitViewModel extends StateNotifier<EmployeeVisitState> {
     await repo.syncOfflineVisits();
   }
 
-    Future<void> fetchEmployeeVisits(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final visits = await repo.getEmployeeVisits(empId);
-      state = state.copyWith(
-        isLoading: false,
-        visits: AsyncValue.data(visits),
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
+  //   Future<void> fetchEmployeeVisits(int empId) async {
+  //   state = state.copyWith(isLoading: true, error: null);
+  //   try {
+  //     final visits = await repo.getEmployeeVisits(empId);
+  //     state = state.copyWith(
+  //       isLoading: false,
+  //       visits: AsyncValue.data(visits),
+  //     );
+  //   } catch (e) {
+  //     state = state.copyWith(isLoading: false, error: e.toString());
+  //   }
+  // }
 
+Future<void> fetchEmployeeVisits(int empId) async {
+  state = state.copyWith(visits: const AsyncValue.loading(), error: null);
+  try {
+    final visits = await repo.getEmployeeVisits(empId);
+    state = state.copyWith(visits: AsyncValue.data(visits));
+  } catch (e, st) {
+    state = state.copyWith(visits: AsyncValue.error(e, st));
+  }
+}
 
 }
 
