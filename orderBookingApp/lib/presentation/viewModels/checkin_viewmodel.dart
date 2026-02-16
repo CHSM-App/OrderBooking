@@ -17,7 +17,7 @@ class CheckinState {
     this.error,
     this.message,
     this.attendance = const AsyncValue.loading(),
-    this.attendanceList = const AsyncValue.loading()
+    this.attendanceList = const AsyncValue.loading(),
   });
 
   CheckinState copyWith({
@@ -34,7 +34,7 @@ class CheckinState {
       error: error,
       message: message,
       attendance: attendance ?? this.attendance,
-      attendanceList: attendanceList ?? this.attendanceList
+      attendanceList: attendanceList ?? this.attendanceList,
     );
   }
 }
@@ -68,11 +68,11 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
   }
 
   /// CHECK-IN
-  Future<void> checkIn(int empId) async {
+  Future<void> checkIn(int empId, double latitude, double longitude) async {
     state = state.copyWith(isLoading: true, error: null, message: null);
     try {
       // ✅ Get response from usecase
-      final response = await usecase.checkIn(empId);
+      final response = await usecase.checkIn(empId, latitude, longitude);
 
       // ✅ Extract message from response
       final message = response.message ?? 'Checked in successfully!';
@@ -94,11 +94,11 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
   }
 
   /// CHECK-OUT
-  Future<void> checkOut(int empId) async {
+  Future<void> checkOut(int empId, double latitude, double longitude) async {
     state = state.copyWith(isLoading: true, error: null, message: null);
     try {
       // ✅ Get response from usecase
-      final response = await usecase.checkOut(empId);
+      final response = await usecase.checkOut(empId, latitude, longitude);
       // ✅ Extract message from response
       final message = response.message ?? 'Checked out successfully!';
 
@@ -138,7 +138,6 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
       );
     }
   }
-
 
   /// Clear message (call after showing snackbar)
   void clearMessage() {
