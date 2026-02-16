@@ -75,7 +75,8 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     }
   }
 
-  Future<void> _deleteEmployee() async {
+  Future<void> _deleteEmployee(int? activeStatus) async {
+    final isInactive = activeStatus == 1;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -97,25 +98,27 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Delete Employee?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: MinimalTheme.textDark,
+              Text(
+                isInactive ? 'Enable Employee?' : 'Delete Employee?',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: MinimalTheme.textDark,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'This action cannot be undone.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: MinimalTheme.textGray,
+              const SizedBox(height: 8),
+              Text(
+                isInactive
+                    ? 'This will enable the employee.'
+                    : 'You can Enable this employee from profile',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: MinimalTheme.textGray,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -131,7 +134,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
               ),
               elevation: 0,
             ),
-            child: const Text('Delete'),
+            child: Text(isInactive ? 'Enable' : 'Delete'),
           ),
         ],
       ),
@@ -251,7 +254,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            employee.activeStatus == 1 ? "Active" : "Inactive",
+                            employee.checkinStatus == 1 ? "Active" : "Inactive",
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -590,23 +593,27 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     final ts = visit.punchIn ?? visit.punchOut;
     if (ts == null) return false;
 
-    final date = _toIstDateOnly(ts);
-    final today = _toIstDateOnly(DateTime.now());
-    final visitKey = dateKey(date);
+    // Compare dates only (ignore time) using a stable key.
+    // API timestamps are UTC ("Z"), so compare using UTC dates.
+    final dateOnly = _toUtcDateOnly(ts);
+    final todayOnly = _toUtcDateOnly(DateTime.now());
+    final visitKey = dateKey(dateOnly);
+    final todayKey = dateKey(todayOnly);
 
     switch (visitFilter) {
       case "All":
         return true;
       case "Today":
-        return date == today;
+        return visitKey == todayKey;
       case "Month":
-        return date.year == today.year && date.month == today.month;
+        return dateOnly.year == todayOnly.year &&
+            dateOnly.month == todayOnly.month;
       case "Year":
-        return date.year == today.year;
+        return dateOnly.year == todayOnly.year;
       case "Custom":
         if (visitCustomRange == null) return true;
-        final startKey = dateKey(visitCustomRange!.start);
-        final endKey = dateKey(visitCustomRange!.end);
+        final startKey = dateKey(_toUtcDateOnly(visitCustomRange!.start));
+        final endKey = dateKey(_toUtcDateOnly(visitCustomRange!.end));
         return visitKey >= startKey && visitKey <= endKey;
       default:
         return true;
@@ -646,7 +653,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     }
 
     final EmployeeLogin employee = list.first;
-    final bool isActive = employee.activeStatus == 1;
+    final bool isActive = employee.checkinStatus == 1;
 
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
@@ -665,16 +672,31 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
-            onPressed: _editEmployee,
+       actions: [
+
+  IconButton(
+    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+    onPressed: _editEmployee,
+  ),
+
+    employee.activeStatus == 1
+        ? TextButton(
+            onPressed: () => _deleteEmployee(employee.activeStatus),
+            child: const Text(
+              "Enable",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+            ),
           ),
-          IconButton(
+        )
+        : IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.white),
-            onPressed: _deleteEmployee,
+            onPressed: () => _deleteEmployee(employee.activeStatus),
           ),
-        ],
+
+],
+
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1296,5 +1318,10 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
   DateTime _toIstDateOnly(DateTime dt) {
     final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
     return DateTime(ist.year, ist.month, ist.day);
+  }
+
+  DateTime _toUtcDateOnly(DateTime dt) {
+    final utc = dt.toUtc();
+    return DateTime.utc(utc.year, utc.month, utc.day);
   }
 }

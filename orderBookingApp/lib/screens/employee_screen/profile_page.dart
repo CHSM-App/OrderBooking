@@ -274,7 +274,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final address = employeeDetails.empAddress ?? "";
     final imageUrl = employeeDetails.imageUrl;
     final joiningDate = employeeDetails.joiningDate ?? "";
-    final isActive = employeeDetails.activeStatus == 1;
+    final isActive = employeeDetails.checkinStatus == 1;
     final region = employeeDetails.regionName?.toString() ?? "N/A";
     final companyName = employeeDetails.companyName ?? "";
 

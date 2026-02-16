@@ -801,7 +801,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.productName,
+                          '${item.productName} (${item.unit})',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

@@ -48,7 +48,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     'Beverage', 'Grocery', 'Ice Cream',
     'Bakery & Snacks', 'Dairy', 'Personal & Home Care', 'Others',
   ];
-  final List<String> _units = ['Kilogram', 'Liter', 'Piece', 'Packet'];
+  final List<String> _units = ['Liter', 'ml', 'Box','Piece','Kilogram', 'gm'];
 
   bool get _isEdit => widget.initialProduct != null;
 

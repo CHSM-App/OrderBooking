@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
 // Minimal Theme Colors
@@ -306,11 +307,93 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
 
           const SizedBox(height: 16),
 
+          // Deleted Employees
+          _buildDeletedEmployeesCard(),
+
+          const SizedBox(height: 16),
+
           // Logout Button
           _buildLogoutButton(),
 
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDeletedEmployeesCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminEmployeesPage(activeStatus: 1),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MinimalTheme.cardWhite,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: MinimalTheme.errorRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: MinimalTheme.errorRed,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Deleted Employees',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: MinimalTheme.textDark,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'View inactive or deleted staff',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: MinimalTheme.textGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: MinimalTheme.iconGray,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

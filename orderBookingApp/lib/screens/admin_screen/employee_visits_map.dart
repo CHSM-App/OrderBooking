@@ -248,9 +248,10 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
       return visits.where((v) {
         final d = _visitDate(v);
         if (d == null) return false;
-        final local = d.toLocal();
-        return !local.isBefore(_customRange!.start) &&
-            !local.isAfter(_customRange!.end);
+        final visitUtc = _toUtcDateOnly(d);
+        final startUtc = _toUtcDateOnly(_customRange!.start);
+        final endUtc = _toUtcDateOnly(_customRange!.end);
+        return !visitUtc.isBefore(startUtc) && !visitUtc.isAfter(endUtc);
       }).toList();
     }
     return visits;
@@ -262,22 +263,25 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
 
   bool _isSameDay(DateTime? a, DateTime b) {
     if (a == null) return false;
-    final local = a.toLocal();
-    return local.year == b.year &&
-        local.month == b.month &&
-        local.day == b.day;
+    final aUtc = _toUtcDateOnly(a);
+    final bUtc = _toUtcDateOnly(b);
+    return aUtc.year == bUtc.year &&
+        aUtc.month == bUtc.month &&
+        aUtc.day == bUtc.day;
   }
 
   bool _isSameMonth(DateTime? a, DateTime b) {
     if (a == null) return false;
-    final local = a.toLocal();
-    return local.year == b.year && local.month == b.month;
+    final aUtc = _toUtcDateOnly(a);
+    final bUtc = _toUtcDateOnly(b);
+    return aUtc.year == bUtc.year && aUtc.month == bUtc.month;
   }
 
   bool _isSameYear(DateTime? a, DateTime b) {
     if (a == null) return false;
-    final local = a.toLocal();
-    return local.year == b.year;
+    final aUtc = _toUtcDateOnly(a);
+    final bUtc = _toUtcDateOnly(b);
+    return aUtc.year == bUtc.year;
   }
 
   String _formatRange(DateTimeRange range) {
@@ -288,6 +292,11 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     final e =
         '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
     return '$s to $e';
+  }
+
+  DateTime _toUtcDateOnly(DateTime dt) {
+    final utc = dt.toUtc();
+    return DateTime.utc(utc.year, utc.month, utc.day);
   }
 
   Marker _buildMarker(EmployeeVisit visit, int sequence) {

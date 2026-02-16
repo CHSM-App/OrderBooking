@@ -17,7 +17,12 @@ class MinimalTheme {
 }
 
 class AdminEmployeesPage extends ConsumerStatefulWidget {
-  const AdminEmployeesPage({super.key});
+  const AdminEmployeesPage({
+    super.key,
+    this.activeStatus = 0,
+  });
+
+  final int activeStatus;
 
   @override
   ConsumerState<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
@@ -177,6 +182,12 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
 
     final employees = state.employeeList.when(
           data: (list) => list
+              .where((e) {
+                if (widget.activeStatus == 0 || widget.activeStatus == 1) {
+                  return e.activeStatus == widget.activeStatus;
+                }
+                return true;
+              })
               .map(
                 (e) => {
                   "id": e.empId,
@@ -185,13 +196,13 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                   "email": e.empEmail ?? "",
                   "address": e.empAddress ?? "",
                   "region": e.regionName ?? "",
-                  "status": e.activeStatus == 1 ? "Active" : "Inactive",
+                  "status": e.checkinStatus == 1 ? "Active" : "Inactive",
                 },
               )
               .toList(),
           loading: () => <Map<String, dynamic>>[],
           error: (_, __) => <Map<String, dynamic>>[],
-        ) ;
+        );
 
     final filteredEmployees = employees.where((e) {
       final q = _searchQuery.toLowerCase();
@@ -210,21 +221,23 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
 
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: FloatingActionButton(
-          backgroundColor: MinimalTheme.primaryOrange,
-          elevation: 2,
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
-            );
-            if (result == true) _refreshEmployeeList();
-          },
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-      ),
+      floatingActionButton: widget.activeStatus == 1
+          ? null
+          : Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: FloatingActionButton(
+                backgroundColor: MinimalTheme.primaryOrange,
+                elevation: 2,
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
+                  );
+                  if (result == true) _refreshEmployeeList();
+                },
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              ),
+            ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         color: MinimalTheme.primaryOrange,
@@ -248,52 +261,74 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                 : ListView(
                     children: [
                       // Compact Header with Stats
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                        decoration: BoxDecoration(
-                          color: MinimalTheme.cardWhite,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Title and Stats Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Employees',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: MinimalTheme.textDark,
+                      // if (widget.activeStatus != 1)
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                          decoration: BoxDecoration(
+                            color: MinimalTheme.cardWhite,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              // Title and Stats Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (widget.activeStatus != 0)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.arrow_back,
+                                            color: MinimalTheme.textDark,
+                                            size: 20,
+                                          ),
+                                          onPressed: () => Navigator.pop(context),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          splashRadius: 20,
+                                        ),
+                                      if (widget.activeStatus != 0)
+                                        const SizedBox(width: 8),
+                                      Text(
+                                        widget.activeStatus == 0
+                                            ? 'Employees'
+                                            : 'Deleted Employee',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: MinimalTheme.textDark,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                Row(
-                                  children: [
-                                    _compactStat(
-                                      label: 'Active',
-                                      count: activeCount,
-                                      color: MinimalTheme.successGreen,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _compactStat(
-                                      label: 'Inactive',
-                                      count: inactiveCount,
-                                      color: MinimalTheme.errorRed,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                                  if (widget.activeStatus != 1)
+                                  Row(
+                                    children: [
+                                      _compactStat(
+                                        label: 'Active',
+                                        count: activeCount,
+                                        color: MinimalTheme.successGreen,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      _compactStat(
+                                        label: 'Inactive',
+                                        count: inactiveCount,
+                                        color: MinimalTheme.errorRed,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
                       // Search Bar
                       Padding(
