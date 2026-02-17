@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:pdf/pdf.dart';
 import 'dart:ui';
+import 'dart:math' as math;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 // ─────────────────────────────────────────────
 //  Design tokens
 // ─────────────────────────────────────────────
-class _AppColors {
-  static const bg = Color(0xFFF4F6FB);          // soft off-white
-  static const surface = Color(0xFFFFFFFF);     // pure white
-  static const card = Color(0xFFFFFFFF);        // white cards
-  static const cardBorder = Color(0xFFE4E9F2);  // subtle grey border
 
-  static const accentA = Color(0xFF3B7EF6);     // vivid blue
-  static const accentB = Color(0xFF6C4FEE);     // violet
-  static const accentC = Color(0xFF00B894);     // teal-green
+class _T {
+  // Grey Background
+  static const bg         = Color(0xFFF1F3F6);   // main grey background
+  static const surface    = Color(0xFFFFFFFF);
+  static const card       = Color(0xFFFFFFFF);
+  static const cardBorder = Color(0xFFE4E7EC);
 
-  static const textPrimary = Color(0xFF1A2340);   // deep navy
-  static const textSecondary = Color(0xFF6B7A99); // muted slate
-  static const textTertiary = Color(0xFFB0BAD0);  // light hint
+  // Accent Colors
+  static const cyan       = Color(0xFF00BFA6);
+  static const violet     = Color(0xFF6C63FF);
+  static const rose       = Color(0xFFE5395B);
+  static const amber      = Color(0xFFFFA726);
 
-  static const present = Color(0xFF00B894);
-  static const absent = Color(0xFFFF4D6D);
+  // Text
+  static const textPrimary   = Color(0xFF111827);
+  static const textSecondary = Color(0xFF6B7280);
+  static const textMuted     = Color(0xFF9CA3AF);
+
+  static const present = cyan;
+  static const absent  = rose;
 }
+
+
+
 
 // ─────────────────────────────────────────────
 //  Page
@@ -40,35 +53,31 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
     with TickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
 
-  late AnimationController _headerCtrl;
+  late AnimationController _bgCtrl;
   late AnimationController _listCtrl;
-  late Animation<double> _headerFade;
-  late Animation<Offset> _headerSlide;
+  late Animation<double> _bgAnim;
 
   static const _monthNames = [
-    'January', 'February', 'March', 'April',
-    'May', 'June', 'July', 'August',
-    'September', 'October', 'November', 'December',
+    'JAN','FEB','MAR','APR','MAY','JUN',
+    'JUL','AUG','SEP','OCT','NOV','DEC',
+  ];
+  static const _monthFull = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
   ];
 
   @override
   void initState() {
     super.initState();
 
-    _headerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
+    _bgCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 8))
+      ..repeat(reverse: true);
     _listCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+        vsync: this, duration: const Duration(milliseconds: 500))
+      ..forward();
 
-    _headerFade =
-        CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOut);
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0, -0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOut));
-
-    _headerCtrl.forward();
-    _listCtrl.forward();
+     _bgAnim = CurvedAnimation(parent: _bgCtrl, curve: Curves.easeInOut);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
@@ -79,17 +88,86 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
 
   @override
   void dispose() {
-    _headerCtrl.dispose();
+    _bgCtrl.dispose();
     _listCtrl.dispose();
     super.dispose();
   }
 
+  Future<void> _exportPdf(List<AttendanceReport> employees) async {
+    final filtered = employees
+        .where((emp) => emp.month == _selectedMonthKey)
+        .toList();
+
+    if (filtered.isEmpty) return;
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Attendance Report - ${_monthFull[selectedDate.month - 1]} ${selectedDate.year}',
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            ...filtered.map((emp) {
+              final totalDays = emp.totalWorkingDays ?? 0;
+              final totalHours = emp.totalHours ?? 0.0;
+
+              return pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 10),
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300),
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      emp.empName ?? '—',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('Total Working Days: $totalDays'),
+                        pw.Text('Total Working Hours: ${totalHours.toStringAsFixed(1)}'),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+    );
+  }
+
   void _changeMonth(int delta) {
+    final newDate = DateTime(selectedDate.year, selectedDate.month + delta);
+    final now = DateTime.now();
+    if (newDate.year > now.year ||
+        (newDate.year == now.year && newDate.month > now.month)) return;
+
     _listCtrl.reverse().then((_) {
-      setState(() {
-        selectedDate =
-            DateTime(selectedDate.year, selectedDate.month + delta);
-      });
+      setState(() => selectedDate = newDate);
       _listCtrl.forward();
     });
   }
@@ -97,71 +175,88 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
   String get _selectedMonthKey =>
       '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}';
 
-  String get _monthYearLabel =>
-      '${_monthNames[selectedDate.month - 1]}  ${selectedDate.year}';
+  bool get _disableNext {
+    final now = DateTime.now();
+    return selectedDate.year == now.year && selectedDate.month == now.month;
+  }
 
   @override
   Widget build(BuildContext context) {
     final attendanceState = ref.watch(employeeloginViewModelProvider);
 
     return Scaffold(
-      backgroundColor: _AppColors.bg,
-      // ── AppBar ─────────────────────────────────────────
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
-        child: _GlassAppBar(title: 'Attendance'),
-      ),
-      body: Column(
+      backgroundColor: _T.bg,
+      body: Stack(
         children: [
-          // ── Month navigator ───────────────────────────
-          SlideTransition(
-            position: _headerSlide,
-            child: FadeTransition(
-              opacity: _headerFade,
-              child: _MonthNavigator(
-                label: _monthYearLabel,
-                onPrevious: () => _changeMonth(-1),
-                onNext: () => _changeMonth(1),
-              ),
-            ),
-          ),
+          // ── Animated mesh background ──────────────────
+          _MeshBackground(animation: _bgAnim),
 
-          // ── Divider ───────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(color: _AppColors.cardBorder, height: 1),
-          ),
-          const SizedBox(height: 8),
+          // ── Content ───────────────────────────────────
+          SafeArea(
+            child: Column(
+              children: [
+               _Header(
+  onBack: () => Navigator.pop(context),
+  onExportPdf: () => _exportPdf(
+      attendanceState.attendanceReport.value ?? [],
+  ),
+),
+                _MonthStrip(
+                  month: _monthFull[selectedDate.month - 1],
+                  year: selectedDate.year,
+                  shortMonth: _monthNames[selectedDate.month - 1],
+                  onPrev: () => _changeMonth(-1),
+                  onNext: _disableNext ? null : () => _changeMonth(1),
+                ),
+                Expanded(
+                  child: attendanceState.attendanceReport.when(
+                    loading: () => const _Loader(),
+                    error: (e, _) => _ErrorView(message: e.toString()),
+                    data: (list) {
+                      final filtered = list.map((emp) {
+                        if (emp.month == _selectedMonthKey) return emp;
+                        return AttendanceReport(
+                          companyId: emp.companyId,
+                          empId: emp.empId,
+                          empName: emp.empName,
+                          month: _selectedMonthKey,
+                          totalWorkingDays: 0,
+                          totalHours: 0,
+                        );
+                      }).toList();
 
-          // ── List ──────────────────────────────────────
-          Expanded(
-            child: attendanceState.attendanceReport.when(
-              loading: () => const _LoadingState(),
-              error: (err, _) => _ErrorState(message: err.toString()),
-              data: (attendanceList) {
-                final filtered = attendanceList
-                    .where((i) => i.month == _selectedMonthKey)
-                    .toList();
+                      // stats for header banner
+                      final totalPresent = filtered
+                          .fold<int>(0, (s, e) => s + (e.totalWorkingDays ?? 0));
+                      final avgHours = filtered.isEmpty
+                          ? 0.0
+                          : filtered.fold<double>(
+                                  0, (s, e) => s + (e.totalHours ?? 0)) /
+                              filtered.length;
 
-                if (filtered.isEmpty) {
-                  return const _EmptyState();
-                }
-
-                return FadeTransition(
-                  opacity: _listCtrl,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: filtered.length,
-                    itemBuilder: (ctx, index) {
-                      final item = filtered[index];
-                      return _AttendanceCard(
-                        item: item,
-                        index: index,
+                      return FadeTransition(
+                        opacity: _listCtrl,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          children: [
+                            _StatsBanner(
+                              employeeCount: filtered.length,
+                              totalPresent: totalPresent,
+                              avgHours: avgHours,
+                            ),
+                            const SizedBox(height: 20),
+                            ...filtered.asMap().entries.map((entry) =>
+                                _EmployeeCard(
+                                  item: entry.value,
+                                  index: entry.key,
+                                )),
+                          ],
+                        ),
                       );
                     },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
         ],
@@ -171,188 +266,407 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
 }
 
 // ─────────────────────────────────────────────
-//  Glass AppBar
+//  Animated mesh background
 // ─────────────────────────────────────────────
-class _GlassAppBar extends StatelessWidget {
-  final String title;
-  const _GlassAppBar({required this.title});
+class _MeshBackground extends StatelessWidget {
+  final Animation<double> animation;
+  const _MeshBackground({required this.animation});
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _AppColors.surface.withOpacity(0.92),
-            border: Border(
-              bottom: BorderSide(color: _AppColors.cardBorder, width: 1),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3B7EF6).withOpacity(0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (_, __) {
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _MeshPainter(animation.value),
+        );
+      },
+    );
+  }
+}
+
+class _MeshPainter extends CustomPainter {
+  final double t;
+  _MeshPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Orb 1 – cyan top-left
+    final p1 = Offset(
+      size.width * (0.1 + 0.15 * math.sin(t * math.pi)),
+      size.height * (0.05 + 0.1 * math.cos(t * math.pi)),
+    );
+    canvas.drawCircle(
+      p1,
+      size.width * 0.55,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFF00E5CC).withOpacity(0.10),
+          Colors.transparent,
+        ]).createShader(Rect.fromCircle(center: p1, radius: size.width * 0.55)),
+    );
+
+    // Orb 2 – violet center-right
+    final p2 = Offset(
+      size.width * (0.75 + 0.1 * math.cos(t * math.pi)),
+      size.height * (0.35 + 0.08 * math.sin(t * math.pi * 1.3)),
+    );
+    canvas.drawCircle(
+      p2,
+      size.width * 0.5,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFF7C5CFC).withOpacity(0.12),
+          Colors.transparent,
+        ]).createShader(Rect.fromCircle(center: p2, radius: size.width * 0.5)),
+    );
+
+    // Orb 3 – rose bottom
+    final p3 = Offset(
+      size.width * (0.3 + 0.12 * math.sin(t * math.pi * 0.7)),
+      size.height * (0.75 + 0.07 * math.cos(t * math.pi * 0.9)),
+    );
+    canvas.drawCircle(
+      p3,
+      size.width * 0.45,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          const Color(0xFFFF3D6B).withOpacity(0.08),
+          Colors.transparent,
+        ]).createShader(Rect.fromCircle(center: p3, radius: size.width * 0.45)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MeshPainter old) => old.t != t;
+}
+
+// ─────────────────────────────────────────────
+//  Header
+// ─────────────────────────────────────────────
+class _Header extends StatelessWidget {
+  final VoidCallback onBack;
+  final VoidCallback? onExportPdf; // Add this
+
+  const _Header({
+    required this.onBack,
+    this.onExportPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onBack,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _T.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _T.cardBorder),
               ),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  // Back button
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: _AppColors.bg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _AppColors.cardBorder),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 16,
-                        color: _AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Title
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Georgia',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: _AppColors.textPrimary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Placeholder for symmetry
-                  const SizedBox(width: 36),
-                ],
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: _T.textSecondary,
+                size: 16,
               ),
             ),
           ),
-        ),
+          const Spacer(),
+          RichText(
+            text: const TextSpan(
+              children: [
+                TextSpan(
+                  text: 'ATTENDANCE',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: _T.textPrimary,
+                    letterSpacing: 3,
+                  ),
+                ),
+                TextSpan(
+                  text: ' REPORT',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: _T.cyan,
+                    letterSpacing: 3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          // PDF export button
+          GestureDetector(
+            onTap: onExportPdf,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _T.card,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _T.cardBorder),
+              ),
+              child: const Icon(
+                Icons.picture_as_pdf_rounded,
+                color: _T.rose,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-//  Month navigator
-// ─────────────────────────────────────────────
-class _MonthNavigator extends StatelessWidget {
-  final String label;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
 
-  const _MonthNavigator({
-    required this.label,
-    required this.onPrevious,
+
+// ─────────────────────────────────────────────
+//  Month strip
+// ─────────────────────────────────────────────
+class _MonthStrip extends StatelessWidget {
+  final String month;
+  final String shortMonth;
+  final int year;
+  final VoidCallback onPrev;
+  final VoidCallback? onNext;
+
+  const _MonthStrip({
+    required this.month,
+    required this.shortMonth,
+    required this.year,
+    required this.onPrev,
     required this.onNext,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: _AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B7EF6).withOpacity(0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _NavButton(icon: Icons.chevron_left_rounded, onTap: onPrevious),
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    label.split('  ')[0], // month name
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: _AppColors.textPrimary,
-                      letterSpacing: 0.3,
-                    ),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+      child: Row(
+        children: [
+          _ArrowBtn(icon: Icons.chevron_left_rounded, onTap: onPrev),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  month.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: _T.textPrimary,
+                    letterSpacing: 1.5,
+                    height: 1.1,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label.split('  ').length > 1
-                        ? label.split('  ')[1]
-                        : '',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: _AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                ),
+                Text(
+                  '$year',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: _T.textSecondary,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            _NavButton(icon: Icons.chevron_right_rounded, onTap: onNext),
-          ],
-        ),
+          ),
+          _ArrowBtn(
+            icon: Icons.chevron_right_rounded,
+            onTap: onNext,
+            disabled: onNext == null,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _NavButton extends StatelessWidget {
+class _ArrowBtn extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
-  const _NavButton({required this.icon, required this.onTap});
+  final VoidCallback? onTap;
+  final bool disabled;
+
+  const _ArrowBtn({
+    required this.icon,
+    required this.onTap,
+    this.disabled = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: disabled ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_AppColors.accentA, _AppColors.accentB],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
+          gradient: disabled
+              ? null
+              : const LinearGradient(
+                  colors: [_T.cyan, _T.violet],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          color: disabled ? _T.cardBorder : null,
         ),
-        child: Icon(icon, color: Colors.white, size: 22),
+        child: Icon(
+          icon,
+          color: disabled ? _T.textMuted : Colors.white,
+          size: 22,
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-//  Attendance Card
+//  Stats banner
 // ─────────────────────────────────────────────
-class _AttendanceCard extends StatefulWidget {
-  final dynamic item;
-  final int index;
-  const _AttendanceCard({required this.item, required this.index});
+class _StatsBanner extends StatelessWidget {
+  final int employeeCount;
+  final int totalPresent;
+  final double avgHours;
+
+  const _StatsBanner({
+    required this.employeeCount,
+    required this.totalPresent,
+    required this.avgHours,
+  });
 
   @override
-  State<_AttendanceCard> createState() => _AttendanceCardState();
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            _T.cyan.withOpacity(0.12),
+            _T.violet.withOpacity(0.12),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: _T.cyan.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          _BannerStat(
+            value: '$employeeCount',
+            label: 'EMPLOYEES',
+            color: _T.cyan,
+          ),
+          _BannerDivider(),
+          // _BannerStat(
+          //   value: '$totalPresent',
+          //   label: 'TOTAL DAYS',
+          //   color: _T.violet,
+          // ),
+          _BannerDivider(),
+          _BannerStat(
+            value: '${avgHours.toStringAsFixed(1)}h',
+            label: 'AVG HOURS',
+            color: _T.amber,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _AttendanceCardState extends State<_AttendanceCard>
+class _BannerStat extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color color;
+
+  const _BannerStat({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: color,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: _T.textSecondary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 40,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            _T.cyan.withOpacity(0.3),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Employee Card
+// ─────────────────────────────────────────────
+class _EmployeeCard extends StatefulWidget {
+  final AttendanceReport item;
+  final int index;
+
+  const _EmployeeCard({required this.item, required this.index});
+
+  @override
+  State<_EmployeeCard> createState() => _EmployeeCardState();
+}
+
+class _EmployeeCardState extends State<_EmployeeCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _fade;
@@ -363,15 +677,15 @@ class _AttendanceCardState extends State<_AttendanceCard>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 400 + widget.index * 60),
+      duration: Duration(milliseconds: 450 + widget.index * 70),
     );
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.18),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
 
-    Future.delayed(Duration(milliseconds: widget.index * 60), () {
+    Future.delayed(Duration(milliseconds: widget.index * 70), () {
       if (mounted) _ctrl.forward();
     });
   }
@@ -384,114 +698,191 @@ class _AttendanceCardState extends State<_AttendanceCard>
 
   @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-    final totalDays = item.totalWorkingDays ?? 0;
-    final totalHours = item.totalHours ?? 0.0;
-    // Compute a simple attendance ratio (assuming 26 working days/month)
-    final ratio = (totalDays / 26).clamp(0.0, 1.0);
+    final totalDays  = widget.item.totalWorkingDays ?? 0;
+    final totalHours = widget.item.totalHours ?? 0.0;
+    final ratio      = (totalDays / 26).clamp(0.0, 1.0);
+    final noData     = totalDays == 0;
+
+    final statusColor = noData
+        ? _T.textMuted
+        : ratio >= 0.75
+            ? _T.present
+            : _T.absent;
+
+    final name = widget.item.empName ?? '—';
+    final initials = name.trim().isNotEmpty
+        ? name.trim().split(' ').map((e) => e[0]).take(2).join().toUpperCase()
+        : '?';
 
     return SlideTransition(
       position: _slide,
       child: FadeTransition(
         opacity: _fade,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: _AppColors.card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _AppColors.cardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF3B7EF6).withOpacity(0.07),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: _T.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _T.cardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: statusColor.withOpacity(noData ? 0 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
               children: [
-                // ── Top row ──────────────────────────────
+                // Subtle left accent bar
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: noData
+                            ? [_T.textMuted, _T.textMuted]
+                            : [statusColor, statusColor.withOpacity(0.3)],
+                      ),
+                    ),
+                  ),
+                ),
+
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+                  child: Column(
                     children: [
-                      // Avatar
-                      _Avatar(name: item.empName ?? '?'),
-                      const SizedBox(width: 14),
-                      // Name + badge
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.empName ?? '—',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: _AppColors.textPrimary,
-                                letterSpacing: 0.2,
+                      // ── Row 1: Avatar + Name + Hours chip ──
+                      Row(
+                        children: [
+                          // Gradient avatar
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              gradient: LinearGradient(
+                                colors: noData
+                                    ? [_T.textMuted, _T.cardBorder]
+                                    : [_T.cyan, _T.violet],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            _AttendanceBadge(ratio: ratio),
-                          ],
-                        ),
+                            child: Center(
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Name + badge
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: _T.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                _StatusPill(
+                                  label: noData
+                                      ? 'No Data'
+                                      : ratio >= 0.75
+                                          ? 'Regular'
+                                          : 'Low Attendance',
+                                  color: statusColor,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Hours chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _T.amber.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: _T.amber.withOpacity(0.25)),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  totalHours.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    color: _T.amber,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const Text(
+                                  'HRS',
+                                  style: TextStyle(
+                                    color: _T.amber,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      // Hours chip
-                      _HoursChip(hours: totalHours),
+
+                      const SizedBox(height: 16),
+
+                      // ── Row 2: Stats ──
+                      Row(
+                        children: [
+                          _MiniStat(
+                            icon: Icons.calendar_today_rounded,
+                            value: '$totalDays',
+                            label: 'DAYS',
+                            color: _T.cyan,
+                          ),
+                          const SizedBox(width: 8),
+                          _MiniStat(
+                            icon: Icons.show_chart_rounded,
+                            value: noData
+                                ? '—'
+                                : '${(ratio * 100).toStringAsFixed(0)}%',
+                            label: 'RATE',
+                            color: statusColor,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // ── Progress bar ──
+                      _GlowProgressBar(ratio: noData ? 0 : ratio,
+                          color: statusColor),
                     ],
                   ),
-                ),
-
-                // ── Divider ──────────────────────────────
-                Divider(
-                  color: _AppColors.cardBorder,
-                  height: 1,
-                  indent: 16,
-                  endIndent: 16,
-                ),
-
-                // ── Stats row ─────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                  child: Row(
-                    children: [
-                      _StatItem(
-                        icon: Icons.calendar_today_rounded,
-                        label: 'Working Days',
-                        value: '$totalDays',
-                        color: _AppColors.accentA,
-                      ),
-                      _VerticalDivider(),
-                      _StatItem(
-                        icon: Icons.access_time_rounded,
-                        label: 'Total Hours',
-                        value:
-                            '${totalHours.toStringAsFixed(2)}h',
-                        color: _AppColors.accentC,
-                      ),
-                      _VerticalDivider(),
-                      _StatItem(
-                        icon: Icons.trending_up_rounded,
-                        label: 'Attendance',
-                        value:
-                            '${(ratio * 100).toStringAsFixed(0)}%',
-                        color: _AppColors.accentB,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Progress bar ──────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: _ProgressBar(ratio: ratio),
                 ),
               ],
             ),
@@ -502,69 +893,28 @@ class _AttendanceCardState extends State<_AttendanceCard>
   }
 }
 
-// ─────────────────────────────────────────────
-//  Supporting widgets
-// ─────────────────────────────────────────────
 
-class _Avatar extends StatelessWidget {
-  final String name;
-  const _Avatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final initials = name.trim().isNotEmpty
-        ? name.trim().split(' ').map((e) => e[0]).take(2).join()
-        : '?';
-
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_AppColors.accentA, _AppColors.accentB],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        child: Text(
-          initials.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AttendanceBadge extends StatelessWidget {
-  final double ratio;
-  const _AttendanceBadge({required this.ratio});
+//  Status pill
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusPill({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final isGood = ratio >= 0.75;
-    final color = isGood ? _AppColors.present : _AppColors.absent;
-    final label = isGood ? 'Regular' : 'Low Attendance';
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
@@ -572,45 +922,9 @@ class _AttendanceBadge extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HoursChip extends StatelessWidget {
-  final double hours;
-  const _HoursChip({required this.hours});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _AppColors.accentC.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _AppColors.accentC.withOpacity(0.25)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            hours.toStringAsFixed(2),
-            style: const TextStyle(
-              color: _AppColors.accentC,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const Text(
-            'hrs',
-            style: TextStyle(
-              color: _AppColors.accentC,
               fontSize: 10,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -619,64 +933,58 @@ class _HoursChip extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
+// ─────────────────────────────────────────────
+//  Mini stat
+// ─────────────────────────────────────────────
+class _MiniStat extends StatelessWidget {
   final IconData icon;
-  final String label;
   final String value;
+  final String label;
   final Color color;
 
-  const _StatItem({
+  const _MiniStat({
     required this.icon,
-    required this.label,
     required this.value,
+    required this.label,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: _T.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: _AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VerticalDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 40,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _AppColors.cardBorder.withOpacity(0.2),
-            _AppColors.cardBorder,
-            _AppColors.cardBorder.withOpacity(0.2),
           ],
         ),
       ),
@@ -684,9 +992,13 @@ class _VerticalDivider extends StatelessWidget {
   }
 }
 
-class _ProgressBar extends StatelessWidget {
+// ─────────────────────────────────────────────
+//  Glow progress bar
+// ─────────────────────────────────────────────
+class _GlowProgressBar extends StatelessWidget {
   final double ratio;
-  const _ProgressBar({required this.ratio});
+  final Color color;
+  const _GlowProgressBar({required this.ratio, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -696,49 +1008,60 @@ class _ProgressBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Attendance rate',
+            Text(
+              'Attendance Rate',
               style: TextStyle(
-                color: _AppColors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+                color: _T.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
             Text(
               '${(ratio * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(
-                color: _AppColors.textPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Stack(
-            children: [
-              Container(
-                height: 6,
-                color: _AppColors.bg,
+        Stack(
+          children: [
+            // Track
+            Container(
+              height: 5,
+              decoration: BoxDecoration(
+                color: _T.cardBorder,
+                borderRadius: BorderRadius.circular(3),
               ),
-              FractionallySizedBox(
-                widthFactor: ratio,
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: ratio >= 0.75
-                          ? [_AppColors.accentC, _AppColors.accentA]
-                          : [_AppColors.absent, _AppColors.absent.withOpacity(0.6)],
-                    ),
-                    borderRadius: BorderRadius.circular(4),
+            ),
+            // Fill with glow
+            FractionallySizedBox(
+              widthFactor: ratio,
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  gradient: LinearGradient(
+                    colors: ratio >= 0.75
+                        ? [_T.cyan, _T.cyan.withOpacity(0.6)]
+                        : [_T.rose, _T.rose.withOpacity(0.6)],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.6),
+                      blurRadius: 6,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -746,11 +1069,10 @@ class _ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-//  Loading / Error / Empty states
+//  Loading state
 // ─────────────────────────────────────────────
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
+class _Loader extends StatelessWidget {
+  const _Loader();
 
   @override
   Widget build(BuildContext context) {
@@ -759,18 +1081,23 @@ class _LoadingState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              valueColor: const AlwaysStoppedAnimation(_AppColors.accentA),
-              backgroundColor: _AppColors.cardBorder,
+              strokeWidth: 2,
+              valueColor: const AlwaysStoppedAnimation(_T.cyan),
+              backgroundColor: _T.cardBorder,
             ),
           ),
           const SizedBox(height: 16),
           const Text(
-            'Loading attendance…',
-            style: TextStyle(color: _AppColors.textSecondary, fontSize: 14),
+            'LOADING DATA',
+            style: TextStyle(
+              color: _T.textSecondary,
+              fontSize: 11,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -778,9 +1105,12 @@ class _LoadingState extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
+
+//  Error state
+
+class _ErrorView extends StatelessWidget {
   final String message;
-  const _ErrorState({required this.message});
+  const _ErrorView({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -794,23 +1124,24 @@ class _ErrorState extends StatelessWidget {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: _AppColors.absent.withOpacity(0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: _AppColors.absent.withOpacity(0.3)),
+                color: _T.rose.withOpacity(0.1),
+                border: Border.all(color: _T.rose.withOpacity(0.3)),
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
-                color: _AppColors.absent,
-                size: 30,
+                color: _T.rose,
+                size: 28,
               ),
             ),
             const SizedBox(height: 16),
             const Text(
-              'Something went wrong',
+              'SOMETHING WENT WRONG',
               style: TextStyle(
-                color: _AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                color: _T.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
               ),
             ),
             const SizedBox(height: 8),
@@ -818,59 +1149,12 @@ class _ErrorState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: _AppColors.textSecondary,
-                fontSize: 13,
+                color: _T.textSecondary,
+                fontSize: 12,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: _AppColors.accentA.withOpacity(0.08),
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: _AppColors.accentA.withOpacity(0.2), width: 1.5),
-            ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              color: _AppColors.accentA,
-              size: 36,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'No data for this month',
-            style: TextStyle(
-              color: _AppColors.textPrimary,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Try navigating to a different month.',
-            style: TextStyle(
-              color: _AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ],
       ),
     );
   }
