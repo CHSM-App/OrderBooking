@@ -31,6 +31,34 @@ const _textDark   = Color(0xFF1A1A2E);
 const _textGrey   = Color(0xFF7A7A8A);
 const _divLine    = Color(0xFFEEEEF2);
 const _cardShadow = Color(0x14000000);
+const _blue       = Color(0xFF6C8EFF);
+const _blueLight  = Color(0xFFEEF0FF);
+const _green      = Color(0xFF2ECC71);
+
+// ─────────────────────────────────────────────────────────────
+//  DATE FILTER ENUM
+// ─────────────────────────────────────────────────────────────
+enum DateFilterType { today, monthly, yearly, custom }
+
+extension DateFilterTypeExt on DateFilterType {
+  String get label {
+    switch (this) {
+      case DateFilterType.today:   return 'Today';
+      case DateFilterType.monthly: return 'This Month';
+      case DateFilterType.yearly:  return 'This Year';
+      case DateFilterType.custom:  return 'Custom';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case DateFilterType.today:   return Icons.today_rounded;
+      case DateFilterType.monthly: return Icons.calendar_month_rounded;
+      case DateFilterType.yearly:  return Icons.calendar_today_rounded;
+      case DateFilterType.custom:  return Icons.date_range_rounded;
+    }
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 //  AGGREGATION HELPERS
@@ -49,7 +77,7 @@ class _EmpAgg extends _Agg {
 
 class _RegionAgg extends _Agg {
   final List<_EmpAgg> employees;
-  final List<_Agg> products; // direct region → product aggregation
+  final List<_Agg> products;
   _RegionAgg(super.name, super.total, super.orders, this.employees, this.products);
 }
 
@@ -90,8 +118,8 @@ List<_EmpAgg> _aggregateEmployees(List<ProductData> raw) {
 }
 
 List<_RegionAgg> _aggregateRegions(List<ProductData> raw) {
-  final totals    = <String, Map<String, Map<String, double>>>{};
-  final counts    = <String, Map<String, Map<String, int>>>{};
+  final totals     = <String, Map<String, Map<String, double>>>{};
+  final counts     = <String, Map<String, Map<String, int>>>{};
   final prodTotals = <String, Map<String, double>>{};
   final prodCounts = <String, Map<String, int>>{};
 
@@ -115,8 +143,7 @@ List<_RegionAgg> _aggregateRegions(List<ProductData> raw) {
   return totals.entries.map((r) {
     final emps = r.value.entries.map((emp) {
       final prods = emp.value.entries
-          .map((p) =>
-              _Agg(p.key, p.value, counts[r.key]![emp.key]![p.key] ?? 0))
+          .map((p) => _Agg(p.key, p.value, counts[r.key]![emp.key]![p.key] ?? 0))
           .toList()
         ..sort((a, b) => b.total.compareTo(a.total));
       final t = prods.fold(0.0, (s, p) => s + p.total);
@@ -138,21 +165,33 @@ List<_RegionAgg> _aggregateRegions(List<ProductData> raw) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PDF GENERATOR  ← UPDATED: separate pages per section
+//  ROW-LEVEL FILTERS  (filter raw data to selected item names)
+// ─────────────────────────────────────────────────────────────
+List<ProductData> _keepProducts(List<ProductData> raw, Set<String> names) =>
+    names.isEmpty ? [] : raw.where((e) => names.contains(e.productName)).toList();
+
+List<ProductData> _keepEmployees(List<ProductData> raw, Set<String> names) =>
+    names.isEmpty ? [] : raw.where((e) => names.contains(e.emp_name ?? 'Unknown')).toList();
+
+List<ProductData> _keepRegions(List<ProductData> raw, Set<String> names) =>
+    names.isEmpty ? [] : raw.where((e) => names.contains(e.regionName ?? 'Unknown')).toList();
+
+// ─────────────────────────────────────────────────────────────
+//  PDF GENERATOR
 // ─────────────────────────────────────────────────────────────
 class _PdfGenerator {
-  static final _accentColor = PdfColor.fromHex('#E53935');
-  static final _accentLight = PdfColor.fromHex('#FFEBEA');
-  static final _green       = PdfColor.fromHex('#2ECC71');
-  static final _blue        = PdfColor.fromHex('#6C8EFF');
-  static final _blueLight   = PdfColor.fromHex('#EEF0FF');
-  static final _orange      = PdfColor.fromHex('#F59E0B');
-  static final _textDarkPdf = PdfColor.fromHex('#1A1A2E');
-  static final _textGreyPdf = PdfColor.fromHex('#7A7A8A');
-  static final _divLinePdf  = PdfColor.fromHex('#EEEEEE');
-  static final _bgGrey      = PdfColor.fromHex('#F4F6FA');
+  static final _ac  = PdfColor.fromHex('#E53935');
+  static final _al  = PdfColor.fromHex('#FFEBEA');
+  static final _gn  = PdfColor.fromHex('#2ECC71');
+  static final _bl  = PdfColor.fromHex('#6C8EFF');
+  static final _bll = PdfColor.fromHex('#EEF0FF');
+  static final _or  = PdfColor.fromHex('#F59E0B');
+  static final _td  = PdfColor.fromHex('#1A1A2E');
+  static final _tg  = PdfColor.fromHex('#7A7A8A');
+  static final _dl  = PdfColor.fromHex('#EEEEEE');
+  static final _bgG = PdfColor.fromHex('#F4F6FA');
 
-  static String _fmtPdf(double v) {
+  static String _f(double v) {
     if (v >= 1e7) return '${(v / 1e7).toStringAsFixed(2)} Cr';
     if (v >= 1e5) return '${(v / 1e5).toStringAsFixed(2)} L';
     if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(2)} K';
@@ -160,885 +199,496 @@ class _PdfGenerator {
   }
 
   static Future<File> generate({
-    required List<ProductData> data,
+    required List<ProductData> allData,      // full date-filtered data
     required String companyId,
     required DateTime? startDate,
     required DateTime? endDate,
-    required int activeTabIndex,
+    // Which sections to include
+    required bool includeProduct,
+    required bool includeRegion,
+    required bool includeEmployee,
+    // Which specific items to include (null = all items in that section)
+    required Set<String>? selectedProducts,
+    required Set<String>? selectedRegions,
+    required Set<String>? selectedEmployees,
   }) async {
+    // Build section-specific datasets
+    final productData  = includeProduct  ? (selectedProducts  != null ? _keepProducts(allData,  selectedProducts)  : allData) : <ProductData>[];
+    final regionData   = includeRegion   ? (selectedRegions   != null ? _keepRegions(allData,   selectedRegions)   : allData) : <ProductData>[];
+    final employeeData = includeEmployee ? (selectedEmployees != null ? _keepEmployees(allData, selectedEmployees)  : allData) : <ProductData>[];
+
+    final products  = _aggregateProducts(productData);
+    final regions   = _aggregateRegions(regionData);
+    final employees = _aggregateEmployees(employeeData);
+
+    // Cover page always uses full data for KPIs
+    final allProducts  = _aggregateProducts(allData);
+    final allEmployees = _aggregateEmployees(allData);
+    final grandTotal   = allProducts.fold(0.0, (s, p) => s + p.total);
+    final dateStr      = _buildDateStr(startDate, endDate);
+
     final pdf = pw.Document();
 
-    final products  = _aggregateProducts(data);
-    final employees = _aggregateEmployees(data);
-    final regions   = _aggregateRegions(data);
-
-    final grandTotal  = products.fold(0.0, (s, p) => s + p.total);
-    final totalOrders = data.length;
-    final dateStr     = _buildDateStr(startDate, endDate);
-
-    // ══════════════════════════════════════════════════════════
-    //  PAGE 1 — Cover / Summary
-    // ══════════════════════════════════════════════════════════
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(0),
-        build: (ctx) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: [
-            // Red gradient header
-            pw.Container(
-              height: 150,
-              decoration: pw.BoxDecoration(
-                gradient: pw.LinearGradient(
-                  colors: [_accentColor, PdfColor.fromHex('#C62828')],
-                  begin: pw.Alignment.topLeft,
-                  end: pw.Alignment.bottomRight,
-                ),
-              ),
-              padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 40, vertical: 30),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                mainAxisAlignment: pw.MainAxisAlignment.center,
-                children: [
-                  pw.Text('Sales Report',
-                      style: pw.TextStyle(
-                          color: PdfColors.white,
-                          fontSize: 30,
-                          fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 8),
-                  pw.Text(
-                    'Company: ${data.first.companyName}',
-                    style: pw.TextStyle(color: PdfColors.white, fontSize: 10),
-                  ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                    'Generated: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}',
-                    style: pw.TextStyle(color: PdfColors.white, fontSize: 10),
-                  ),
-                  if (dateStr.isNotEmpty) ...[
-                    pw.SizedBox(height: 4),
-                    pw.Text('Period: $dateStr',
-                        style: pw.TextStyle(color: PdfColors.white, fontSize: 10)),
-                  ],
-                ],
+    // ── PAGE 1: Cover / Summary ──────────────────────────────
+    pdf.addPage(pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(0),
+      build: (ctx) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Container(
+            height: 150,
+            decoration: pw.BoxDecoration(
+              gradient: pw.LinearGradient(
+                colors: [_ac, PdfColor.fromHex('#C62828')],
+                begin: pw.Alignment.topLeft, end: pw.Alignment.bottomRight,
               ),
             ),
-
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(40),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  // KPI row
-                  pw.Row(
-                    children: [
-                      _kpiBox('Total Revenue', 'Rs. ${_fmtPdf(grandTotal)}', _green),
-                      pw.SizedBox(width: 14),
-                      _kpiBox('Total Orders', totalOrders.toString(), _accentColor),
-                      pw.SizedBox(width: 14),
-                      _kpiBox('Products', products.length.toString(), _orange),
-                      pw.SizedBox(width: 14),
-                      _kpiBox('Employees', employees.length.toString(), _blue),
-                    ],
-                  ),
-
-                  pw.SizedBox(height: 30),
-
-                  // Table of contents / index
-                  _sectionHeader('Report Index', _accentColor),
-                  pw.SizedBox(height: 12),
-                  _indexTable(regions.isNotEmpty, employees.isNotEmpty),
-
-                  pw.SizedBox(height: 30),
-
-                  // Mini summary stats
-                  _sectionHeader('Quick Summary', _textGreyPdf),
-                  pw.SizedBox(height: 12),
-                  _summaryGrid(products, employees, regions, grandTotal),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              children: [
+                pw.Text('Sales Report', style: pw.TextStyle(color: PdfColors.white, fontSize: 30, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 8),
+                pw.Text('Company: ${allData.isNotEmpty ? allData.first.companyName : ''}', style: pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                pw.SizedBox(height: 4),
+                pw.Text('Generated: ${DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now())}', style: pw.TextStyle(color: PdfColors.white, fontSize: 10)),
+                if (dateStr.isNotEmpty) ...[
+                  pw.SizedBox(height: 4),
+                  pw.Text('Period: $dateStr', style: pw.TextStyle(color: PdfColors.white, fontSize: 10)),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-
-    // ══════════════════════════════════════════════════════════
-    //  PAGE 2 — Product Wise 
-    // ══════════════════════════════════════════════════════════
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
-        header: (ctx) => _multiPageHeader(
-          'Product Wise Report',
-          dateStr,
-          _accentColor,
-          Icons.inventory_2_outlined,
-        ),
-        footer: (ctx) => _pageFooter(ctx, 'Product Wise'),
-        build: (ctx) => [
-          pw.SizedBox(height: 16),
-
-          // Product KPIs
-          pw.Row(
-            children: [
-              _kpiBox('Total Products', products.length.toString(), _accentColor),
-              pw.SizedBox(width: 14),
-              _kpiBox('Total Orders', totalOrders.toString(), _orange),
-              pw.SizedBox(width: 14),
-              _kpiBox('Total Revenue', 'Rs. ${_fmtPdf(grandTotal)}', _green),
-            ],
           ),
-          pw.SizedBox(height: 20),
-
-          _sectionHeader('Product Performance', _accentColor),
-          pw.SizedBox(height: 10),
-
-          // Full product table
-          _productTableFull(products, grandTotal),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(40),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(children: [
+                  _kpi('Total Revenue', 'Rs. ${_f(grandTotal)}', _gn),
+                  pw.SizedBox(width: 14),
+                  _kpi('Total Orders', allData.length.toString(), _ac),
+                  pw.SizedBox(width: 14),
+                  _kpi('Products', allProducts.length.toString(), _or),
+                  pw.SizedBox(width: 14),
+                  _kpi('Employees', allEmployees.length.toString(), _bl),
+                ]),
+                pw.SizedBox(height: 30),
+                _sh('Report Index', _ac),
+                pw.SizedBox(height: 12),
+                _indexTable(
+                  includeProduct:  includeProduct  && products.isNotEmpty,
+                  includeRegion:   includeRegion   && regions.isNotEmpty,
+                  includeEmployee: includeEmployee && employees.isNotEmpty,
+                  selectedProducts:  selectedProducts,
+                  selectedRegions:   selectedRegions,
+                  selectedEmployees: selectedEmployees,
+                ),
+                pw.SizedBox(height: 30),
+                _sh('Quick Summary', _tg),
+                pw.SizedBox(height: 12),
+                _summaryGrid(allProducts, allEmployees, grandTotal),
+              ],
+            ),
+          ),
         ],
       ),
-    );
+    ));
 
-    // ══════════════════════════════════════════════════════════
-    //  PAGE 3 — Region Wise
-    // ══════════════════════════════════════════════════════════
-    if (regions.isNotEmpty) {
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          header: (ctx) => _multiPageHeader(
-            'Region Wise Report',
-            dateStr,
-            _accentColor,
-            Icons.location_on_outlined,
-          ),
-          footer: (ctx) => _pageFooter(ctx, 'Region Wise'),
-          build: (ctx) => [
-            pw.SizedBox(height: 16),
-
-            // Region KPIs
-            pw.Row(
-              children: [
-                _kpiBox('Total Regions', regions.length.toString(), _accentColor),
-                pw.SizedBox(width: 14),
-                _kpiBox('Total Orders', totalOrders.toString(), _orange),
-                pw.SizedBox(width: 14),
-                _kpiBox('Total Revenue', 'Rs. ${_fmtPdf(grandTotal)}', _green),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-
-            _sectionHeader('Region Breakdown', _accentColor),
-            pw.SizedBox(height: 10),
-
-            // Region summary table
-            _regionSummaryTable(regions, grandTotal),
-            pw.SizedBox(height: 24),
-
-            _sectionHeader('Region Detail (with Products)', _textGreyPdf),
-            pw.SizedBox(height: 10),
-
-            // Detailed region blocks
-            ...regions.map((r) => _regionDetailBlock(r, grandTotal)),
-          ],
-        ),
-      );
+    // ── PAGE 2: Product Wise ─────────────────────────────────
+    if (includeProduct && products.isNotEmpty) {
+      final sTotal = products.fold(0.0, (s, p) => s + p.total);
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (ctx) => _hdr('Product Wise Report', dateStr, _ac),
+        footer: (ctx) => _ftr(ctx, 'Product Wise'),
+        build: (ctx) => [
+          pw.SizedBox(height: 16),
+          // Selection badge
+          if (selectedProducts != null && selectedProducts.isNotEmpty)
+            _selBadge('Selected Products', selectedProducts.toList(), _ac),
+          pw.SizedBox(height: 12),
+          pw.Row(children: [
+            _kpi('Products', products.length.toString(), _ac),
+            pw.SizedBox(width: 14),
+            _kpi('Orders', productData.length.toString(), _or),
+            pw.SizedBox(width: 14),
+            _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
+          ]),
+          pw.SizedBox(height: 20),
+          _sh('Product Performance', _ac),
+          pw.SizedBox(height: 10),
+          _prodTable(products, sTotal),
+        ],
+      ));
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  PAGE 4 — Employee Wise 
-    // ══════════════════════════════════════════════════════════
-    if (employees.isNotEmpty) {
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          header: (ctx) => _multiPageHeader(
-            'Employee Wise Report',
-            dateStr,
-            _blue,
-            Icons.person_outline,
-          ),
-          footer: (ctx) => _pageFooter(ctx, 'Employee Wise'),
-          build: (ctx) => [
-            pw.SizedBox(height: 16),
-
-            // Employee KPIs
-            pw.Row(
-              children: [
-                _kpiBox('Total Employees', employees.length.toString(), _blue),
-                pw.SizedBox(width: 14),
-                _kpiBox('Total Orders', totalOrders.toString(), _orange),
-                pw.SizedBox(width: 14),
-                _kpiBox('Total Revenue', 'Rs. ${_fmtPdf(grandTotal)}', _green),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-
-            _sectionHeader('Employee Summary', _blue),
-            pw.SizedBox(height: 10),
-
-            // Employee summary table
-            _employeeTableFull(employees),
-            pw.SizedBox(height: 24),
-
-            _sectionHeader('Employee Detail (with Products)', _textGreyPdf),
-            pw.SizedBox(height: 10),
-
-            // Detailed employee blocks
-            ...employees.map((e) => _employeeDetailBlock(e)),
-          ],
-        ),
-      );
+    // ── PAGE 3: Region Wise ──────────────────────────────────
+    if (includeRegion && regions.isNotEmpty) {
+      final sTotal = regions.fold(0.0, (s, r) => s + r.total);
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (ctx) => _hdr('Region Wise Report', dateStr, _ac),
+        footer: (ctx) => _ftr(ctx, 'Region Wise'),
+        build: (ctx) => [
+          pw.SizedBox(height: 16),
+          if (selectedRegions != null && selectedRegions.isNotEmpty)
+            _selBadge('Selected Regions', selectedRegions.toList(), _ac),
+          pw.SizedBox(height: 12),
+          pw.Row(children: [
+            _kpi('Regions', regions.length.toString(), _ac),
+            pw.SizedBox(width: 14),
+            _kpi('Orders', regionData.length.toString(), _or),
+            pw.SizedBox(width: 14),
+            _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
+          ]),
+          pw.SizedBox(height: 20),
+          _sh('Region Breakdown', _ac),
+          pw.SizedBox(height: 10),
+          _regTable(regions, sTotal),
+          pw.SizedBox(height: 24),
+          _sh('Region Detail (with Products)', _tg),
+          pw.SizedBox(height: 10),
+          ...regions.map((r) => _regBlock(r, sTotal)),
+        ],
+      ));
     }
 
-    // ── Save ──────────────────────────────────────────────────
-    final dir = await getTemporaryDirectory();
-    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-    final file = File('${dir.path}/report_$timestamp.pdf');
+    // ── PAGE 4: Employee Wise ────────────────────────────────
+    if (includeEmployee && employees.isNotEmpty) {
+      final sTotal = employees.fold(0.0, (s, e) => s + e.total);
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (ctx) => _hdr('Employee Wise Report', dateStr, _bl),
+        footer: (ctx) => _ftr(ctx, 'Employee Wise'),
+        build: (ctx) => [
+          pw.SizedBox(height: 16),
+          if (selectedEmployees != null && selectedEmployees.isNotEmpty)
+            _selBadge('Selected Employees', selectedEmployees.toList(), _bl),
+          pw.SizedBox(height: 12),
+          pw.Row(children: [
+            _kpi('Employees', employees.length.toString(), _bl),
+            pw.SizedBox(width: 14),
+            _kpi('Orders', employeeData.length.toString(), _or),
+            pw.SizedBox(width: 14),
+            _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
+          ]),
+          pw.SizedBox(height: 20),
+          _sh('Employee Summary', _bl),
+          pw.SizedBox(height: 10),
+          _empTable(employees),
+          pw.SizedBox(height: 24),
+          _sh('Employee Detail (with Products)', _tg),
+          pw.SizedBox(height: 10),
+          ...employees.map((e) => _empBlock(e)),
+        ],
+      ));
+    }
+
+    final dir  = await getTemporaryDirectory();
+    final ts   = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final file = File('${dir.path}/report_$ts.pdf');
     await file.writeAsBytes(await pdf.save());
     return file;
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  SHARED WIDGETS
-  // ────────────────────────────────────────────────────────────
-
-  /// KPI Box
-  static pw.Widget _kpiBox(String label, String value, PdfColor color) {
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  // ── selection badge row shown at top of each section page ──
+  static pw.Widget _selBadge(String label, List<String> names, PdfColor color) =>
+      pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 4),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: pw.BoxDecoration(
-          color: PdfColors.white,
-          borderRadius: pw.BorderRadius.circular(10),
-          border: pw.Border.all(color: PdfColor.fromHex('#EEEEEE')),
-          boxShadow: [
-            pw.BoxShadow(
-                color: PdfColor.fromHex('#1A000000'),
-                blurRadius: 6,
-                offset: const PdfPoint(0, 2)),
-          ],
+          color: PdfColor.fromHex('#FFF5F5'),
+          borderRadius: pw.BorderRadius.circular(8),
+          border: pw.Border.all(color: color, width: 0.5),
         ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+        child: pw.Wrap(
+          spacing: 6, runSpacing: 4,
           children: [
-            pw.Text(value,
-                style: pw.TextStyle(
-                    color: color, fontSize: 15, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 3),
-            pw.Text(label,
-                style: pw.TextStyle(color: _textGreyPdf, fontSize: 9)),
+            pw.Text('$label: ', style: pw.TextStyle(color: _tg, fontSize: 8)),
+            ...names.map((n) => pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: pw.BoxDecoration(color: color, borderRadius: pw.BorderRadius.circular(4)),
+              child: pw.Text(n, style: pw.TextStyle(color: PdfColors.white, fontSize: 8, fontWeight: pw.FontWeight.bold)),
+            )),
           ],
         ),
-      ),
-    );
-  }
+      );
 
-  /// Section header with left border
-  static pw.Widget _sectionHeader(String title, PdfColor color) {
-    return pw.Row(
-      children: [
-        pw.Container(width: 4, height: 18, color: color),
-        pw.SizedBox(width: 8),
-        pw.Text(title,
-            style: pw.TextStyle(
-                color: _textDarkPdf,
-                fontSize: 13,
-                fontWeight: pw.FontWeight.bold)),
-      ],
-    );
-  }
-
-  /// MultiPage header (appears on every page of that section)
-  static pw.Widget _multiPageHeader(
-      String title, String dateStr, PdfColor color, IconData _) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 10),
+  // ── shared widgets ──────────────────────────────────────────
+  static pw.Widget _kpi(String label, String value, PdfColor color) => pw.Expanded(
+    child: pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: color, width: 2)),
+        color: PdfColors.white, borderRadius: pw.BorderRadius.circular(10),
+        border: pw.Border.all(color: _dl),
+        boxShadow: [pw.BoxShadow(color: PdfColor.fromHex('#1A000000'), blurRadius: 6, offset: const PdfPoint(0, 2))],
       ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 8,
-                height: 24,
-                decoration: pw.BoxDecoration(
-                  color: color,
-                  borderRadius: pw.BorderRadius.circular(4),
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Text(title,
-                  style: pw.TextStyle(
-                      color: _textDarkPdf,
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold)),
-            ],
-          ),
-          pw.Text(dateStr,
-              style: pw.TextStyle(color: _textGreyPdf, fontSize: 9)),
-        ],
-      ),
-    );
-  }
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Text(value, style: pw.TextStyle(color: color, fontSize: 15, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 3),
+        pw.Text(label, style: pw.TextStyle(color: _tg, fontSize: 9)),
+      ]),
+    ),
+  );
 
-  /// Footer with page number
-  static pw.Widget _pageFooter(pw.Context ctx, String section) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(top: 8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border(
-            top: pw.BorderSide(color: PdfColor.fromHex('#EEEEEE'))),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(section,
-              style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-          pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}',
-              style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-        ],
-      ),
-    );
-  }
+  static pw.Widget _sh(String title, PdfColor color) => pw.Row(children: [
+    pw.Container(width: 4, height: 18, color: color),
+    pw.SizedBox(width: 8),
+    pw.Text(title, style: pw.TextStyle(color: _td, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+  ]);
 
-  // ────────────────────────────────────────────────────────────
-  //  PAGE 1 — Index Table & Summary Grid
-  // ────────────────────────────────────────────────────────────
-  static pw.Widget _indexTable(bool hasRegions, bool hasEmployees) {
-    final rows = <Map<String, String>>[
-      {'page': 'Page 2', 'section': 'Product Wise Report', 'desc': 'All products sorted by revenue'},
-      if (hasRegions)
-        {'page': 'Page 3', 'section': 'Region Wise Report', 'desc': 'Region breakdown with employee details'},
-      if (hasEmployees)
-        {'page': hasRegions ? 'Page 4' : 'Page 3', 'section': 'Employee Wise Report', 'desc': 'Employee performance with product breakdown'},
-    ];
+  static pw.Widget _hdr(String title, String dateStr, PdfColor color) => pw.Container(
+    padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 10),
+    decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: color, width: 2))),
+    child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+      pw.Row(children: [
+        pw.Container(width: 8, height: 24, decoration: pw.BoxDecoration(color: color, borderRadius: pw.BorderRadius.circular(4))),
+        pw.SizedBox(width: 10),
+        pw.Text(title, style: pw.TextStyle(color: _td, fontSize: 16, fontWeight: pw.FontWeight.bold)),
+      ]),
+      pw.Text(dateStr, style: pw.TextStyle(color: _tg, fontSize: 9)),
+    ]),
+  );
 
+  static pw.Widget _ftr(pw.Context ctx, String section) => pw.Container(
+    padding: const pw.EdgeInsets.only(top: 8),
+    decoration: pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: _dl))),
+    child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+      pw.Text(section, style: pw.TextStyle(color: _tg, fontSize: 8)),
+      pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: pw.TextStyle(color: _tg, fontSize: 8)),
+    ]),
+  );
+
+  static pw.Widget _indexTable({
+    required bool includeProduct,
+    required bool includeRegion,
+    required bool includeEmployee,
+    required Set<String>? selectedProducts,
+    required Set<String>? selectedRegions,
+    required Set<String>? selectedEmployees,
+  }) {
+    int pn = 2;
+    final rows = <Map<String, String>>[];
+
+    if (includeProduct) {
+      final hint = selectedProducts != null ? ' (${selectedProducts.length} selected)' : '';
+      rows.add({'page': 'Page $pn', 'section': 'Product Wise Report$hint', 'desc': 'Products sorted by revenue'});
+      pn++;
+    }
+    if (includeRegion) {
+      final hint = selectedRegions != null ? ' (${selectedRegions.length} selected)' : '';
+      rows.add({'page': 'Page $pn', 'section': 'Region Wise Report$hint', 'desc': 'Region breakdown with products'});
+      pn++;
+    }
+    if (includeEmployee) {
+      final hint = selectedEmployees != null ? ' (${selectedEmployees.length} selected)' : '';
+      rows.add({'page': 'Page $pn', 'section': 'Employee Wise Report$hint', 'desc': 'Employee performance'});
+    }
+    if (rows.isEmpty) return pw.Text('No sections selected.', style: pw.TextStyle(color: _tg, fontSize: 9));
+
+    final h = pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
     return pw.Table(
-      border: pw.TableBorder.all(color: _divLinePdf, width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1),
-        1: const pw.FlexColumnWidth(2.5),
-        2: const pw.FlexColumnWidth(3.5),
-      },
+      border: pw.TableBorder.all(color: _dl, width: 0.5),
+      columnWidths: {0: const pw.FlexColumnWidth(1), 1: const pw.FlexColumnWidth(3), 2: const pw.FlexColumnWidth(3)},
       children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: _accentColor),
-          children: [
-            _cell('Page', pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            _cell('Section', pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            _cell('Description', pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-          ],
-        ),
+        pw.TableRow(decoration: pw.BoxDecoration(color: _ac), children: [_c('Page', h), _c('Section', h), _c('Description', h)]),
         ...rows.asMap().entries.map((e) => pw.TableRow(
-          decoration: pw.BoxDecoration(
-              color: e.key % 2 == 0 ? PdfColors.white : _bgGrey),
+          decoration: pw.BoxDecoration(color: e.key % 2 == 0 ? PdfColors.white : _bgG),
           children: [
-            _cell(e.value['page']!, pw.TextStyle(color: _accentColor, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            _cell(e.value['section']!, pw.TextStyle(color: _textDarkPdf, fontSize: 9)),
-            _cell(e.value['desc']!, pw.TextStyle(color: _textGreyPdf, fontSize: 9)),
+            _c(e.value['page']!, pw.TextStyle(color: _ac, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            _c(e.value['section']!, pw.TextStyle(color: _td, fontSize: 9)),
+            _c(e.value['desc']!,    pw.TextStyle(color: _tg, fontSize: 9)),
           ],
         )),
       ],
     );
   }
 
-  static pw.Widget _summaryGrid(
-    List<_Agg> products,
-    List<_EmpAgg> employees,
-    List<_RegionAgg> regions,
-    double grandTotal,
-  ) {
-    // Top 3 products
-    final top3 = products.take(3).toList();
-    return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Top Products',
-                  style: pw.TextStyle(
-                      color: _textDarkPdf,
-                      fontSize: 10,
-                      fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 6),
-              ...top3.asMap().entries.map((e) => pw.Padding(
-                    padding: const pw.EdgeInsets.only(bottom: 4),
-                    child: pw.Row(
-                      children: [
-                        pw.Text('${e.key + 1}. ',
-                            style: pw.TextStyle(
-                                color: _accentColor, fontSize: 9,
-                                fontWeight: pw.FontWeight.bold)),
-                        pw.Expanded(
-                          child: pw.Text(e.value.name,
-                              style: pw.TextStyle(
-                                  color: _textDarkPdf, fontSize: 9)),
-                        ),
-                        pw.Text('Rs. ${_fmtPdf(e.value.total)}',
-                            style: pw.TextStyle(
-                                color: _green, fontSize: 9,
-                                fontWeight: pw.FontWeight.bold)),
-                      ],
-                    ),
-                  )),
-            ],
-          ),
-        ),
-        pw.SizedBox(width: 20),
-        pw.Container(width: 1, height: 80, color: _divLinePdf),
-        pw.SizedBox(width: 20),
-        pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Top Employees',
-                  style: pw.TextStyle(
-                      color: _textDarkPdf,
-                      fontSize: 10,
-                      fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 6),
-              ...employees.take(3).toList().asMap().entries.map((e) =>
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.only(bottom: 4),
-                    child: pw.Row(
-                      children: [
-                        pw.Text('${e.key + 1}. ',
-                            style: pw.TextStyle(
-                                color: _blue, fontSize: 9,
-                                fontWeight: pw.FontWeight.bold)),
-                        pw.Expanded(
-                          child: pw.Text(e.value.name,
-                              style: pw.TextStyle(
-                                  color: _textDarkPdf, fontSize: 9)),
-                        ),
-                        pw.Text('Rs. ${_fmtPdf(e.value.total)}',
-                            style: pw.TextStyle(
-                                color: _green, fontSize: 9,
-                                fontWeight: pw.FontWeight.bold)),
-                      ],
-                    ),
-                  )),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  static pw.Widget _summaryGrid(List<_Agg> prods, List<_EmpAgg> emps, double grand) =>
+      pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Text('Top Products', style: pw.TextStyle(color: _td, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          ...prods.take(3).toList().asMap().entries.map((e) => pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 4),
+            child: pw.Row(children: [
+              pw.Text('${e.key + 1}. ', style: pw.TextStyle(color: _ac, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+              pw.Expanded(child: pw.Text(e.value.name, style: pw.TextStyle(color: _td, fontSize: 9))),
+              pw.Text('Rs. ${_f(e.value.total)}', style: pw.TextStyle(color: _gn, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ]),
+          )),
+        ])),
+        pw.SizedBox(width: 20), pw.Container(width: 1, height: 80, color: _dl), pw.SizedBox(width: 20),
+        pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Text('Top Employees', style: pw.TextStyle(color: _td, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          ...emps.take(3).toList().asMap().entries.map((e) => pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 4),
+            child: pw.Row(children: [
+              pw.Text('${e.key + 1}. ', style: pw.TextStyle(color: _bl, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+              pw.Expanded(child: pw.Text(e.value.name, style: pw.TextStyle(color: _td, fontSize: 9))),
+              pw.Text('Rs. ${_f(e.value.total)}', style: pw.TextStyle(color: _gn, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ]),
+          )),
+        ])),
+      ]);
 
-  // ────────────────────────────────────────────────────────────
-  //  PAGE 2 — Full Product Table
-  // ────────────────────────────────────────────────────────────
-  static pw.Widget _productTableFull(List<_Agg> items, double grand) {
-    final headerStyle = pw.TextStyle(
-        color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
-    final rowStyle = pw.TextStyle(color: _textDarkPdf, fontSize: 9);
-    final greyStyle = pw.TextStyle(color: _textGreyPdf, fontSize: 9);
-
+  static pw.Widget _prodTable(List<_Agg> items, double grand) {
+    final h = pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
+    final r = pw.TextStyle(color: _td, fontSize: 9);
+    final g = pw.TextStyle(color: _tg, fontSize: 9);
     return pw.Table(
-      border: pw.TableBorder.all(color: _divLinePdf, width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(0.5),
-        1: const pw.FlexColumnWidth(3.5),
-        2: const pw.FlexColumnWidth(1.8),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1.2),
-      },
+      border: pw.TableBorder.all(color: _dl, width: 0.5),
+      columnWidths: {0: const pw.FlexColumnWidth(0.5), 1: const pw.FlexColumnWidth(3.5), 2: const pw.FlexColumnWidth(1.8), 3: const pw.FlexColumnWidth(1), 4: const pw.FlexColumnWidth(1.2)},
       children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: _accentColor),
-          children: [
-            _cell('#', headerStyle),
-            _cell('Product Name', headerStyle),
-            _cell('Revenue', headerStyle, align: pw.TextAlign.right),
-            _cell('Orders', headerStyle, align: pw.TextAlign.center),
-            _cell('Share %', headerStyle, align: pw.TextAlign.right),
-          ],
-        ),
+        pw.TableRow(decoration: pw.BoxDecoration(color: _ac), children: [_c('#', h), _c('Product Name', h), _c('Revenue', h, a: pw.TextAlign.right), _c('Orders', h, a: pw.TextAlign.center), _c('Share %', h, a: pw.TextAlign.right)]),
         ...items.asMap().entries.map((e) {
-          final isEven = e.key % 2 == 0;
           final pct = grand > 0 ? e.value.total / grand * 100 : 0;
           return pw.TableRow(
-            decoration: pw.BoxDecoration(
-                color: isEven ? PdfColors.white : _bgGrey),
-            children: [
-              _cell('${e.key + 1}', greyStyle, align: pw.TextAlign.center),
-              _cell(e.value.name, rowStyle),
-              _cell('Rs. ${_fmtPdf(e.value.total)}', rowStyle,
-                  align: pw.TextAlign.right),
-              _cell(e.value.orders.toString(), rowStyle,
-                  align: pw.TextAlign.center),
-              _cell('${pct.toStringAsFixed(1)}%', greyStyle,
-                  align: pw.TextAlign.right),
-            ],
+            decoration: pw.BoxDecoration(color: e.key % 2 == 0 ? PdfColors.white : _bgG),
+            children: [_c('${e.key + 1}', g, a: pw.TextAlign.center), _c(e.value.name, r), _c('Rs. ${_f(e.value.total)}', r, a: pw.TextAlign.right), _c(e.value.orders.toString(), r, a: pw.TextAlign.center), _c('${pct.toStringAsFixed(1)}%', g, a: pw.TextAlign.right)],
           );
         }),
-        // Total row
         pw.TableRow(
           decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8F8F1')),
-          children: [
-            _cell('', pw.TextStyle(fontSize: 9)),
-            _cell('TOTAL', pw.TextStyle(
-                color: _textDarkPdf, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            _cell('Rs. ${_fmtPdf(grand)}', pw.TextStyle(
-                color: _green, fontSize: 9, fontWeight: pw.FontWeight.bold),
-                align: pw.TextAlign.right),
-            _cell(items.fold(0, (s, i) => s + i.orders).toString(),
-                pw.TextStyle(color: _textDarkPdf, fontSize: 9, fontWeight: pw.FontWeight.bold),
-                align: pw.TextAlign.center),
-            _cell('100%', pw.TextStyle(
-                color: _textGreyPdf, fontSize: 9), align: pw.TextAlign.right),
-          ],
+          children: [_c('', pw.TextStyle(fontSize: 9)), _c('TOTAL', pw.TextStyle(color: _td, fontSize: 9, fontWeight: pw.FontWeight.bold)), _c('Rs. ${_f(grand)}', pw.TextStyle(color: _gn, fontSize: 9, fontWeight: pw.FontWeight.bold), a: pw.TextAlign.right), _c(items.fold(0, (s, i) => s + i.orders).toString(), pw.TextStyle(color: _td, fontSize: 9, fontWeight: pw.FontWeight.bold), a: pw.TextAlign.center), _c('100%', pw.TextStyle(color: _tg, fontSize: 9), a: pw.TextAlign.right)],
         ),
       ],
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  PAGE 3 — Region Summary Table + Detail Blocks
-  // ────────────────────────────────────────────────────────────
-  static pw.Widget _regionSummaryTable(
-      List<_RegionAgg> regions, double grand) {
-    final headerStyle = pw.TextStyle(
-        color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
-    final rowStyle = pw.TextStyle(color: _textDarkPdf, fontSize: 9);
-    final greyStyle = pw.TextStyle(color: _textGreyPdf, fontSize: 9);
-
+  static pw.Widget _regTable(List<_RegionAgg> regions, double grand) {
+    final h = pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
+    final r = pw.TextStyle(color: _td, fontSize: 9);
+    final g = pw.TextStyle(color: _tg, fontSize: 9);
     return pw.Table(
-      border: pw.TableBorder.all(color: _divLinePdf, width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(0.5),
-        1: const pw.FlexColumnWidth(2.5),
-        2: const pw.FlexColumnWidth(1.8),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1),
-        5: const pw.FlexColumnWidth(1.2),
-      },
+      border: pw.TableBorder.all(color: _dl, width: 0.5),
+      columnWidths: {0: const pw.FlexColumnWidth(0.5), 1: const pw.FlexColumnWidth(2.5), 2: const pw.FlexColumnWidth(1.8), 3: const pw.FlexColumnWidth(1), 4: const pw.FlexColumnWidth(1), 5: const pw.FlexColumnWidth(1.2)},
       children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: _accentColor),
-          children: [
-            _cell('#', headerStyle),
-            _cell('Region', headerStyle),
-            _cell('Revenue', headerStyle, align: pw.TextAlign.right),
-            _cell('Orders', headerStyle, align: pw.TextAlign.center),
-            _cell('Products', headerStyle, align: pw.TextAlign.center),
-            _cell('Share %', headerStyle, align: pw.TextAlign.right),
-          ],
-        ),
+        pw.TableRow(decoration: pw.BoxDecoration(color: _ac), children: [_c('#', h), _c('Region', h), _c('Revenue', h, a: pw.TextAlign.right), _c('Orders', h, a: pw.TextAlign.center), _c('Products', h, a: pw.TextAlign.center), _c('Share %', h, a: pw.TextAlign.right)]),
         ...regions.asMap().entries.map((e) {
-          final isEven = e.key % 2 == 0;
           final pct = grand > 0 ? e.value.total / grand * 100 : 0;
           return pw.TableRow(
-            decoration: pw.BoxDecoration(
-                color: isEven ? PdfColors.white : _bgGrey),
-            children: [
-              _cell('${e.key + 1}', greyStyle, align: pw.TextAlign.center),
-              _cell(e.value.name, rowStyle),
-              _cell('Rs. ${_fmtPdf(e.value.total)}', rowStyle,
-                  align: pw.TextAlign.right),
-              _cell(e.value.orders.toString(), rowStyle,
-                  align: pw.TextAlign.center),
-              _cell(e.value.products.length.toString(), greyStyle,
-                  align: pw.TextAlign.center),
-              _cell('${pct.toStringAsFixed(1)}%', greyStyle,
-                  align: pw.TextAlign.right),
-            ],
+            decoration: pw.BoxDecoration(color: e.key % 2 == 0 ? PdfColors.white : _bgG),
+            children: [_c('${e.key + 1}', g, a: pw.TextAlign.center), _c(e.value.name, r), _c('Rs. ${_f(e.value.total)}', r, a: pw.TextAlign.right), _c(e.value.orders.toString(), r, a: pw.TextAlign.center), _c(e.value.products.length.toString(), g, a: pw.TextAlign.center), _c('${pct.toStringAsFixed(1)}%', g, a: pw.TextAlign.right)],
           );
         }),
       ],
     );
   }
 
-  static pw.Widget _regionDetailBlock(_RegionAgg r, double grand) {
+  static pw.Widget _regBlock(_RegionAgg r, double grand) {
     final pct = grand > 0 ? r.total / grand * 100 : 0;
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 16),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: _divLinePdf),
-        borderRadius: pw.BorderRadius.circular(8),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Region header
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: pw.BoxDecoration(
-              color: _accentLight,
-              borderRadius: const pw.BorderRadius.only(
-                topLeft: pw.Radius.circular(8),
-                topRight: pw.Radius.circular(8),
-              ),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(r.name,
-                    style: pw.TextStyle(
-                        color: _textDarkPdf,
-                        fontSize: 11,
-                        fontWeight: pw.FontWeight.bold)),
-                pw.Text(
-                  'Rs. ${_fmtPdf(r.total)}  |  ${r.orders} orders  |  ${pct.toStringAsFixed(1)}%',
-                  style: pw.TextStyle(color: _accentColor, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-          // Product rows (same style as employee detail block)
-          ...r.products.asMap().entries.map((entry) {
-            final p = entry.value;
-            final prodPct = r.total > 0 ? p.total / r.total * 100 : 0;
-            return pw.Container(
-              decoration: pw.BoxDecoration(
-                color: entry.key % 2 == 0 ? PdfColors.white : _bgGrey,
-                border: pw.Border(
-                    bottom: pw.BorderSide(color: _divLinePdf, width: 0.5)),
-              ),
-              padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: pw.Row(
-                children: [
-                  pw.Container(
-                    width: 5,
-                    height: 5,
-                    decoration: pw.BoxDecoration(
-                      color: _accentColor,
-                      borderRadius: pw.BorderRadius.circular(3),
-                    ),
-                  ),
-                  pw.SizedBox(width: 8),
-                  pw.Expanded(
-                    child: pw.Text(p.name,
-                        style: pw.TextStyle(color: _textDarkPdf, fontSize: 9)),
-                  ),
-                  pw.Text('${p.orders} orders',
-                      style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-                  pw.SizedBox(width: 12),
-                  pw.Text('${prodPct.toStringAsFixed(1)}%',
-                      style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-                  pw.SizedBox(width: 12),
-                  pw.Text('Rs. ${_fmtPdf(p.total)}',
-                      style: pw.TextStyle(
-                          color: _accentColor,
-                          fontSize: 9,
-                          fontWeight: pw.FontWeight.bold)),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: _dl), borderRadius: pw.BorderRadius.circular(8)),
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: pw.BoxDecoration(color: _al, borderRadius: const pw.BorderRadius.only(topLeft: pw.Radius.circular(8), topRight: pw.Radius.circular(8))),
+          child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text(r.name, style: pw.TextStyle(color: _td, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Rs. ${_f(r.total)}  |  ${r.orders} orders  |  ${pct.toStringAsFixed(1)}%', style: pw.TextStyle(color: _ac, fontSize: 9)),
+          ]),
+        ),
+        ...r.products.asMap().entries.map((entry) {
+          final p = entry.value; final pp = r.total > 0 ? p.total / r.total * 100 : 0;
+          return pw.Container(
+            decoration: pw.BoxDecoration(color: entry.key % 2 == 0 ? PdfColors.white : _bgG, border: pw.Border(bottom: pw.BorderSide(color: _dl, width: 0.5))),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: pw.Row(children: [
+              pw.Container(width: 5, height: 5, decoration: pw.BoxDecoration(color: _ac, borderRadius: pw.BorderRadius.circular(3))),
+              pw.SizedBox(width: 8),
+              pw.Expanded(child: pw.Text(p.name, style: pw.TextStyle(color: _td, fontSize: 9))),
+              pw.Text('${p.orders} orders', style: pw.TextStyle(color: _tg, fontSize: 8)),
+              pw.SizedBox(width: 12),
+              pw.Text('${pp.toStringAsFixed(1)}%', style: pw.TextStyle(color: _tg, fontSize: 8)),
+              pw.SizedBox(width: 12),
+              pw.Text('Rs. ${_f(p.total)}', style: pw.TextStyle(color: _ac, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ]),
+          );
+        }),
+      ]),
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  PAGE 4 — Employee Summary Table + Detail Blocks
-  // ────────────────────────────────────────────────────────────
-  static pw.Widget _employeeTableFull(List<_EmpAgg> emps) {
-    final headerStyle = pw.TextStyle(
-        color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
-    final rowStyle = pw.TextStyle(color: _textDarkPdf, fontSize: 9);
-    final greyStyle = pw.TextStyle(color: _textGreyPdf, fontSize: 9);
-
+  static pw.Widget _empTable(List<_EmpAgg> emps) {
+    final h = pw.TextStyle(color: PdfColors.white, fontSize: 9, fontWeight: pw.FontWeight.bold);
+    final r = pw.TextStyle(color: _td, fontSize: 9);
+    final g = pw.TextStyle(color: _tg, fontSize: 9);
     final grand = emps.fold(0.0, (s, e) => s + e.total);
-
     return pw.Table(
-      border: pw.TableBorder.all(color: _divLinePdf, width: 0.5),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(0.5),
-        1: const pw.FlexColumnWidth(2.5),
-        2: const pw.FlexColumnWidth(1.8),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1),
-        5: const pw.FlexColumnWidth(1.2),
-      },
+      border: pw.TableBorder.all(color: _dl, width: 0.5),
+      columnWidths: {0: const pw.FlexColumnWidth(0.5), 1: const pw.FlexColumnWidth(2.5), 2: const pw.FlexColumnWidth(1.8), 3: const pw.FlexColumnWidth(1), 4: const pw.FlexColumnWidth(1), 5: const pw.FlexColumnWidth(1.2)},
       children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: _blue),
-          children: [
-            _cell('#', headerStyle),
-            _cell('Employee', headerStyle),
-            _cell('Revenue', headerStyle, align: pw.TextAlign.right),
-            _cell('Orders', headerStyle, align: pw.TextAlign.center),
-            _cell('Products', headerStyle, align: pw.TextAlign.center),
-            _cell('Share %', headerStyle, align: pw.TextAlign.right),
-          ],
-        ),
+        pw.TableRow(decoration: pw.BoxDecoration(color: _bl), children: [_c('#', h), _c('Employee', h), _c('Revenue', h, a: pw.TextAlign.right), _c('Orders', h, a: pw.TextAlign.center), _c('Products', h, a: pw.TextAlign.center), _c('Share %', h, a: pw.TextAlign.right)]),
         ...emps.asMap().entries.map((e) {
-          final isEven = e.key % 2 == 0;
           final pct = grand > 0 ? e.value.total / grand * 100 : 0;
           return pw.TableRow(
-            decoration: pw.BoxDecoration(
-                color: isEven ? PdfColors.white : _bgGrey),
-            children: [
-              _cell('${e.key + 1}', greyStyle, align: pw.TextAlign.center),
-              _cell(e.value.name, rowStyle),
-              _cell('Rs. ${_fmtPdf(e.value.total)}', rowStyle,
-                  align: pw.TextAlign.right),
-              _cell(e.value.orders.toString(), rowStyle,
-                  align: pw.TextAlign.center),
-              _cell(e.value.products.length.toString(), greyStyle,
-                  align: pw.TextAlign.center),
-              _cell('${pct.toStringAsFixed(1)}%', greyStyle,
-                  align: pw.TextAlign.right),
-            ],
+            decoration: pw.BoxDecoration(color: e.key % 2 == 0 ? PdfColors.white : _bgG),
+            children: [_c('${e.key + 1}', g, a: pw.TextAlign.center), _c(e.value.name, r), _c('Rs. ${_f(e.value.total)}', r, a: pw.TextAlign.right), _c(e.value.orders.toString(), r, a: pw.TextAlign.center), _c(e.value.products.length.toString(), g, a: pw.TextAlign.center), _c('${pct.toStringAsFixed(1)}%', g, a: pw.TextAlign.right)],
           );
         }),
-        // Total row
         pw.TableRow(
           decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8F8F1')),
-          children: [
-            _cell('', pw.TextStyle(fontSize: 9)),
-            _cell('TOTAL', pw.TextStyle(
-                color: _textDarkPdf, fontSize: 9, fontWeight: pw.FontWeight.bold)),
-            _cell('Rs. ${_fmtPdf(grand)}', pw.TextStyle(
-                color: _green, fontSize: 9, fontWeight: pw.FontWeight.bold),
-                align: pw.TextAlign.right),
-            _cell(emps.fold(0, (s, e) => s + e.orders).toString(),
-                pw.TextStyle(color: _textDarkPdf, fontSize: 9, fontWeight: pw.FontWeight.bold),
-                align: pw.TextAlign.center),
-            _cell('', pw.TextStyle(fontSize: 9)),
-            _cell('100%', pw.TextStyle(
-                color: _textGreyPdf, fontSize: 9), align: pw.TextAlign.right),
-          ],
+          children: [_c('', pw.TextStyle(fontSize: 9)), _c('TOTAL', pw.TextStyle(color: _td, fontSize: 9, fontWeight: pw.FontWeight.bold)), _c('Rs. ${_f(grand)}', pw.TextStyle(color: _gn, fontSize: 9, fontWeight: pw.FontWeight.bold), a: pw.TextAlign.right), _c(emps.fold(0, (s, e) => s + e.orders).toString(), pw.TextStyle(color: _td, fontSize: 9, fontWeight: pw.FontWeight.bold), a: pw.TextAlign.center), _c('', pw.TextStyle(fontSize: 9)), _c('100%', pw.TextStyle(color: _tg, fontSize: 9), a: pw.TextAlign.right)],
         ),
       ],
     );
   }
 
-  static pw.Widget _employeeDetailBlock(_EmpAgg emp) {
+  static pw.Widget _empBlock(_EmpAgg emp) {
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 14),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: _divLinePdf),
-        borderRadius: pw.BorderRadius.circular(8),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Employee header
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: pw.BoxDecoration(
-              color: _blueLight,
-              borderRadius: const pw.BorderRadius.only(
-                topLeft: pw.Radius.circular(8),
-                topRight: pw.Radius.circular(8),
-              ),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Row(
-                  children: [
-                    pw.Container(
-                      width: 24,
-                      height: 24,
-                      decoration: pw.BoxDecoration(
-                        color: _blue,
-                        borderRadius: pw.BorderRadius.circular(12),
-                      ),
-                      alignment: pw.Alignment.center,
-                      child: pw.Text(
-                          emp.name.isNotEmpty
-                              ? emp.name[0].toUpperCase()
-                              : '?',
-                          style: pw.TextStyle(
-                              color: PdfColors.white,
-                              fontSize: 10,
-                              fontWeight: pw.FontWeight.bold)),
-                    ),
-                    pw.SizedBox(width: 8),
-                    pw.Text(emp.name,
-                        style: pw.TextStyle(
-                            color: _textDarkPdf,
-                            fontSize: 11,
-                            fontWeight: pw.FontWeight.bold)),
-                  ],
-                ),
-                pw.Text(
-                  'Rs. ${_fmtPdf(emp.total)}  |  ${emp.orders} orders  |  ${emp.products.length} products',
-                  style: pw.TextStyle(color: _blue, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-          // Product rows
-          ...emp.products.asMap().entries.map((entry) {
-            final p = entry.value;
-            final pct = emp.total > 0 ? p.total / emp.total * 100 : 0;
-            return pw.Container(
-              decoration: pw.BoxDecoration(
-                color: entry.key % 2 == 0 ? PdfColors.white : _bgGrey,
-                border: pw.Border(
-                    bottom: pw.BorderSide(color: _divLinePdf, width: 0.5)),
-              ),
-              padding:
-                  const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: pw.Row(
-                children: [
-                  pw.Container(
-                    width: 5,
-                    height: 5,
-                    decoration: pw.BoxDecoration(
-                      color: _accentColor,
-                      borderRadius: pw.BorderRadius.circular(3),
-                    ),
-                  ),
-                  pw.SizedBox(width: 8),
-                  pw.Expanded(
-                    child: pw.Text(p.name,
-                        style:
-                            pw.TextStyle(color: _textDarkPdf, fontSize: 9)),
-                  ),
-                  pw.Text('${p.orders} orders',
-                      style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-                  pw.SizedBox(width: 12),
-                  pw.Text('${pct.toStringAsFixed(1)}%',
-                      style: pw.TextStyle(color: _textGreyPdf, fontSize: 8)),
-                  pw.SizedBox(width: 12),
-                  pw.Text('Rs. ${_fmtPdf(p.total)}',
-                      style: pw.TextStyle(
-                          color: _accentColor,
-                          fontSize: 9,
-                          fontWeight: pw.FontWeight.bold)),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: _dl), borderRadius: pw.BorderRadius.circular(8)),
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: pw.BoxDecoration(color: _bll, borderRadius: const pw.BorderRadius.only(topLeft: pw.Radius.circular(8), topRight: pw.Radius.circular(8))),
+          child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Row(children: [
+              pw.Container(width: 24, height: 24, decoration: pw.BoxDecoration(color: _bl, borderRadius: pw.BorderRadius.circular(12)), alignment: pw.Alignment.center,
+                child: pw.Text(emp.name.isNotEmpty ? emp.name[0].toUpperCase() : '?', style: pw.TextStyle(color: PdfColors.white, fontSize: 10, fontWeight: pw.FontWeight.bold))),
+              pw.SizedBox(width: 8),
+              pw.Text(emp.name, style: pw.TextStyle(color: _td, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            ]),
+            pw.Text('Rs. ${_f(emp.total)}  |  ${emp.orders} orders  |  ${emp.products.length} products', style: pw.TextStyle(color: _bl, fontSize: 9)),
+          ]),
+        ),
+        ...emp.products.asMap().entries.map((entry) {
+          final p = entry.value; final pct = emp.total > 0 ? p.total / emp.total * 100 : 0;
+          return pw.Container(
+            decoration: pw.BoxDecoration(color: entry.key % 2 == 0 ? PdfColors.white : _bgG, border: pw.Border(bottom: pw.BorderSide(color: _dl, width: 0.5))),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: pw.Row(children: [
+              pw.Container(width: 5, height: 5, decoration: pw.BoxDecoration(color: _ac, borderRadius: pw.BorderRadius.circular(3))),
+              pw.SizedBox(width: 8),
+              pw.Expanded(child: pw.Text(p.name, style: pw.TextStyle(color: _td, fontSize: 9))),
+              pw.Text('${p.orders} orders', style: pw.TextStyle(color: _tg, fontSize: 8)),
+              pw.SizedBox(width: 12),
+              pw.Text('${pct.toStringAsFixed(1)}%', style: pw.TextStyle(color: _tg, fontSize: 8)),
+              pw.SizedBox(width: 12),
+              pw.Text('Rs. ${_f(p.total)}', style: pw.TextStyle(color: _ac, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ]),
+          );
+        }),
+      ]),
     );
   }
 
-  // ── Table cell helper ──────────────────────────────────────
-  static pw.Widget _cell(String text, pw.TextStyle style,
-      {pw.TextAlign align = pw.TextAlign.left}) {
-    return pw.Padding(
-      padding:
-          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      child: pw.Text(text, style: style, textAlign: align),
-    );
-  }
+  static pw.Widget _c(String text, pw.TextStyle style, {pw.TextAlign a = pw.TextAlign.left}) =>
+      pw.Padding(padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5), child: pw.Text(text, style: style, textAlign: a));
 
   static String _buildDateStr(DateTime? start, DateTime? end) {
     if (start == null && end == null) return 'All time';
     final fmt = DateFormat('dd MMM yyyy');
-    if (start != null && end != null) {
-      return '${fmt.format(start)} – ${fmt.format(end)}';
-    }
+    if (start != null && end != null) return '${fmt.format(start)} – ${fmt.format(end)}';
     if (start != null) return 'From ${fmt.format(start)}';
     return 'Up to ${fmt.format(end!)}';
   }
@@ -1058,8 +708,10 @@ class ReportPage extends ConsumerStatefulWidget {
 class _ReportPageState extends ConsumerState<ReportPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-  DateTime? _startDate;
-  DateTime? _endDate;
+
+  DateFilterType _filterType = DateFilterType.today;
+  DateTime? _customStart;
+  DateTime? _customEnd;
   bool _pdfLoading = false;
 
   @override
@@ -1067,106 +719,370 @@ class _ReportPageState extends ConsumerState<ReportPage>
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(reportTabProvider.notifier)
-          .getProductReport(widget.companyId);
+      ref.read(reportTabProvider.notifier).getProductReport(widget.companyId);
     });
   }
 
   @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
+  void dispose() { _tabCtrl.dispose(); super.dispose(); }
+
+  DateTime? get _effectiveStart {
+    final now = DateTime.now();
+    switch (_filterType) {
+      case DateFilterType.today:   return DateTime(now.year, now.month, now.day);
+      case DateFilterType.monthly: return DateTime(now.year, now.month, 1);
+      case DateFilterType.yearly:  return DateTime(now.year, 1, 1);
+      case DateFilterType.custom:  return _customStart;
+    }
+  }
+
+  DateTime? get _effectiveEnd {
+    final now = DateTime.now();
+    switch (_filterType) {
+      case DateFilterType.today:   return DateTime(now.year, now.month, now.day);
+      case DateFilterType.monthly: return DateTime(now.year, now.month + 1, 0);
+      case DateFilterType.yearly:  return DateTime(now.year, 12, 31);
+      case DateFilterType.custom:  return _customEnd;
+    }
   }
 
   List<ProductData> _filter(List<ProductData> raw) {
-    if (_startDate == null && _endDate == null) return raw;
+    final start = _effectiveStart; final end = _effectiveEnd;
+    if (start == null && end == null) return raw;
     return raw.where((e) {
-      final d = DateTime(
-          e.orderDate.year, e.orderDate.month, e.orderDate.day);
-      if (_startDate != null && d.isBefore(_startDate!)) return false;
-      if (_endDate != null && d.isAfter(_endDate!)) return false;
+      final d = DateTime(e.orderDate.year, e.orderDate.month, e.orderDate.day);
+      if (start != null && d.isBefore(start)) return false;
+      if (end   != null && d.isAfter(end))    return false;
       return true;
     }).toList();
   }
 
-  Future<void> _pickDate({required bool isStart}) async {
-    final now = DateTime.now();
+  Future<void> _pickCustomDate({required bool isStart}) async {
+    final now    = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStart ? (_startDate ?? now) : (_endDate ?? now),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      initialDate: isStart ? (_customStart ?? now) : (_customEnd ?? now),
+      firstDate: DateTime(2020), lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: _red,
-            onPrimary: _white,
-            surface: _white,
-            onSurface: _textDark,
-          ),
-        ),
+        data: Theme.of(ctx).copyWith(colorScheme: const ColorScheme.light(primary: _red, onPrimary: _white, surface: _white, onSurface: _textDark)),
         child: child!,
       ),
     );
     if (picked == null) return;
     setState(() {
-      if (isStart) {
-        _startDate = picked;
-        if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-          _endDate = null;
-        }
-      } else {
-        _endDate = picked;
-        if (_startDate != null && _endDate!.isBefore(_startDate!)) {
-          _startDate = null;
-        }
-      }
+      if (isStart) { _customStart = picked; if (_customEnd != null && _customEnd!.isBefore(picked)) _customEnd = null; }
+      else         { _customEnd   = picked; if (_customStart != null && picked.isBefore(_customStart!)) _customStart = null; }
     });
   }
 
-  void _clearFilter() => setState(() {
-        _startDate = null;
-        _endDate = null;
-      });
-
-  String _fmt(DateTime? d) =>
-      d == null ? 'Select date' : DateFormat('dd MMM yyyy').format(d);
-
-  Future<void> _downloadPdf(List<ProductData> filtered) async {
+  // ────────────────────────────────────────────────────────────
+  //  DOWNLOAD SHEET  —  individual item selection
+  // ────────────────────────────────────────────────────────────
+  Future<void> _showDownloadSheet(List<ProductData> filtered) async {
     if (_pdfLoading) return;
-    setState(() => _pdfLoading = true);
 
+    // Available items in each section
+    final allP = _aggregateProducts(filtered);
+    final allR = _aggregateRegions(filtered);
+    final allE = _aggregateEmployees(filtered);
+
+    // Section-level: which sections to include
+    bool inclP = _tabCtrl.index == 0;
+    bool inclR = _tabCtrl.index == 1 && allR.isNotEmpty;
+    bool inclE = _tabCtrl.index == 2 && allE.isNotEmpty;
+
+    // Item-level: which individual items are selected (start all selected)
+    Set<String> selP = Set.from(allP.map((x) => x.name));
+    Set<String> selR = Set.from(allR.map((x) => x.name));
+    Set<String> selE = Set.from(allE.map((x) => x.name));
+
+    // Which tab is currently visible inside the sheet
+    int sheetTab = _tabCtrl.index; // 0 = product, 1 = region, 2 = employee
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, ss) {
+        // ── Helpers ─────────────────────────────────────────
+        Color   tabClr(int i) => i == 2 ? _blue : _red;
+        IconData tabIco(int i) { if (i == 0) return Icons.inventory_2_outlined; if (i == 1) return Icons.location_on_outlined; return Icons.person_outline_rounded; }
+        String  tabLbl(int i) { if (i == 0) return 'Product'; if (i == 1) return 'Region'; return 'Employee'; }
+        bool    tabAvail(int i) { if (i == 1) return allR.isNotEmpty; if (i == 2) return allE.isNotEmpty; return true; }
+        bool    sectOn(int i) { if (i == 0) return inclP; if (i == 1) return inclR; return inclE; }
+
+        List<String> curNames() { if (sheetTab == 0) return allP.map((x) => x.name).toList(); if (sheetTab == 1) return allR.map((x) => x.name).toList(); return allE.map((x) => x.name).toList(); }
+        Set<String>  curSel()   { if (sheetTab == 0) return selP; if (sheetTab == 1) return selR; return selE; }
+
+        void toggleSect(bool v) => ss(() { if (sheetTab == 0) inclP = v; else if (sheetTab == 1) inclR = v && allR.isNotEmpty; else inclE = v && allE.isNotEmpty; });
+        void toggleItem(String n) => ss(() { final s = curSel(); if (s.contains(n)) s.remove(n); else s.add(n); });
+        void selAll()  => ss(() => curSel().addAll(curNames()));
+        void selNone() => ss(() => curSel().clear());
+
+        final names    = curNames();
+        final selected = curSel();
+        final anyOn    = inclP || inclR || inclE;
+        final totalSel = selP.length + selR.length + selE.length;
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.80,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          builder: (_, ctrl) => Column(children: [
+
+            // ── Fixed header ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Column(children: [
+                // drag handle
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: _divLine, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 14),
+
+                // Title row
+                Row(children: [
+                  Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.picture_as_pdf_rounded, color: _red, size: 22)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Download Report', style: TextStyle(color: _textDark, fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text('$totalSel item${totalSel == 1 ? '' : 's'} selected', style: const TextStyle(color: _textGrey, fontSize: 11)),
+                  ])),
+                  // Select All button
+                  GestureDetector(
+                    onTap: () => ss(() {
+                      inclP = true; inclR = allR.isNotEmpty; inclE = allE.isNotEmpty;
+                      selP = Set.from(allP.map((x) => x.name));
+                      selR = Set.from(allR.map((x) => x.name));
+                      selE = Set.from(allE.map((x) => x.name));
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(20)),
+                      child: const Text('All ✓', style: TextStyle(color: _red, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+
+                // 3-tab switcher
+                Container(
+                  height: 42,
+                  decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12)),
+                  child: Row(children: List.generate(3, (i) {
+                    final isSel  = sheetTab == i;
+                    final avail  = tabAvail(i);
+                    return Expanded(child: GestureDetector(
+                      onTap: avail ? () => ss(() => sheetTab = i) : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        margin: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: isSel ? tabClr(i) : Colors.transparent, borderRadius: BorderRadius.circular(9)),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(tabIco(i), size: 13, color: isSel ? _white : (avail ? _textGrey : _divLine)),
+                          const SizedBox(width: 4),
+                          Text(tabLbl(i), style: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.w700 : FontWeight.w500, color: isSel ? _white : (avail ? _textGrey : _divLine))),
+                          if (avail) ...[
+                            const SizedBox(width: 4),
+                            Container(width: 7, height: 7, decoration: BoxDecoration(shape: BoxShape.circle, color: sectOn(i) ? tabClr(i) : _divLine)),
+                          ],
+                        ]),
+                      ),
+                    ));
+                  })),
+                ),
+                const SizedBox(height: 10),
+
+                // Section toggle + All / None
+                Row(children: [
+                  GestureDetector(
+                    onTap: () => toggleSect(!sectOn(sheetTab)),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: sectOn(sheetTab) ? tabClr(sheetTab).withOpacity(0.10) : _bg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: sectOn(sheetTab) ? tabClr(sheetTab).withOpacity(0.4) : _divLine),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(sectOn(sheetTab) ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 15, color: sectOn(sheetTab) ? tabClr(sheetTab) : _textGrey),
+                        const SizedBox(width: 6),
+                        Text(sectOn(sheetTab) ? 'Include in PDF' : 'Excluded', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sectOn(sheetTab) ? tabClr(sheetTab) : _textGrey)),
+                      ]),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(onTap: selAll,  child: Text('All ✓',   style: TextStyle(color: tabClr(sheetTab), fontSize: 12, fontWeight: FontWeight.w700))),
+                  const SizedBox(width: 14),
+                  GestureDetector(onTap: selNone, child: const Text('None ✗', style: TextStyle(color: _textGrey, fontSize: 12, fontWeight: FontWeight.w600))),
+                ]),
+              ]),
+            ),
+
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: _divLine),
+
+            // ── Scrollable item list ──────────────────────
+            Expanded(
+              child: names.isEmpty
+                  ? const Center(child: Text('No data', style: TextStyle(color: _textGrey)))
+                  : ListView.separated(
+                      controller: ctrl,
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                      itemCount: names.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, i) {
+                        final name  = names[i];
+                        final isSel = selected.contains(name);
+
+                        // subtitle values
+                        double val = 0; int ords = 0;
+                        if (sheetTab == 0)      { final a = allP.firstWhere((x) => x.name == name, orElse: () => _Agg('', 0, 0)); val = a.total; ords = a.orders; }
+                        else if (sheetTab == 1) { final a = allR.firstWhere((x) => x.name == name, orElse: () => _RegionAgg('', 0, 0, [], [])); val = a.total; ords = a.orders; }
+                        else                    { final a = allE.firstWhere((x) => x.name == name, orElse: () => _EmpAgg('', 0, 0, [])); val = a.total; ords = a.orders; }
+
+                        return GestureDetector(
+                          onTap: () => toggleItem(name),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 130),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: isSel ? tabClr(sheetTab).withOpacity(0.06) : _bg,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: isSel ? tabClr(sheetTab).withOpacity(0.35) : _divLine),
+                            ),
+                            child: Row(children: [
+                              // avatar
+                              Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(color: isSel ? tabClr(sheetTab).withOpacity(0.12) : _divLine.withOpacity(0.4), borderRadius: BorderRadius.circular(10)),
+                                alignment: Alignment.center,
+                                child: sheetTab == 2
+                                    ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(color: isSel ? _blue : _textGrey, fontSize: 14, fontWeight: FontWeight.w800))
+                                    : Icon(sheetTab == 0 ? Icons.shopping_bag_outlined : Icons.location_on_outlined, size: 16, color: isSel ? tabClr(sheetTab) : _textGrey),
+                              ),
+                              const SizedBox(width: 12),
+                              // name + stats
+                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(name, style: TextStyle(color: isSel ? _textDark : _textGrey, fontSize: 13, fontWeight: FontWeight.w700)),
+                                Text('$ords orders  •  ₹${_fmt(val)}', style: TextStyle(color: isSel ? _textGrey : _divLine, fontSize: 11)),
+                              ])),
+                              // animated checkbox
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 130),
+                                width: 22, height: 22,
+                                decoration: BoxDecoration(
+                                  color: isSel ? tabClr(sheetTab) : _white,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: isSel ? tabClr(sheetTab) : _divLine, width: 1.5),
+                                ),
+                                child: isSel ? const Icon(Icons.check_rounded, size: 14, color: _white) : null,
+                              ),
+                            ]),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+
+            // ── Bottom summary + Generate button ──────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+              child: Column(children: [
+                // mini summary row
+                if (anyOn)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12)),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                      if (inclP) _miniStat('📦 Products',  '${selP.length}/${allP.length}', _red),
+                      if (inclR) _miniStat('📍 Regions',   '${selR.length}/${allR.length}', _red),
+                      if (inclE) _miniStat('👤 Employees', '${selE.length}/${allE.length}', _blue),
+                    ]),
+                  ),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: anyOn ? _red : _textGrey,
+                      foregroundColor: _white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: !anyOn ? null : () async {
+                      Navigator.of(ctx).pop();
+                      await _generateAndShow(
+                        filtered:  filtered,
+                        inclP: inclP, inclR: inclR, inclE: inclE,
+                        selP: selP.length < allP.length ? selP : null,
+                        selR: selR.length < allR.length ? selR : null,
+                        selE: selE.length < allE.length ? selE : null,
+                        allP: allP, allR: allR, allE: allE,
+                      );
+                    },
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: Text(anyOn ? 'Generate PDF' : 'Select at least one item', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ]),
+            ),
+
+          ]),
+        );
+      }),
+    );
+  }
+
+  static Widget _miniStat(String label, String val, Color color) => Column(children: [
+    Text(val, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w800)),
+    Text(label, style: const TextStyle(color: _textGrey, fontSize: 10)),
+  ]);
+
+  Future<void> _generateAndShow({
+    required List<ProductData> filtered,
+    required bool inclP, required bool inclR, required bool inclE,
+    required Set<String>? selP, required Set<String>? selR, required Set<String>? selE,
+    required List<_Agg> allP, required List<_RegionAgg> allR, required List<_EmpAgg> allE,
+  }) async {
+    setState(() => _pdfLoading = true);
     try {
       final file = await _PdfGenerator.generate(
-        data: filtered,
+        allData:  filtered,
         companyId: widget.companyId,
-        startDate: _startDate,
-        endDate: _endDate,
-        activeTabIndex: _tabCtrl.index,
+        startDate: _effectiveStart, endDate: _effectiveEnd,
+        includeProduct:  inclP,
+        includeRegion:   inclR,
+        includeEmployee: inclE,
+        selectedProducts:  selP,
+        selectedRegions:   selR,
+        selectedEmployees: selE,
       );
-
       if (!mounted) return;
+
+      final badges = <_PageBadge>[];
+      int pn = 1;
+      badges.add(_PageBadge('Page $pn', 'Summary & Index', _green)); pn++;
+      if (inclP) { badges.add(_PageBadge('Page $pn', 'Product Wise${selP  != null ? ' (${selP.length}/${allP.length})'  : ''}', _red));  pn++; }
+      if (inclR) { badges.add(_PageBadge('Page $pn', 'Region Wise${selR   != null ? ' (${selR.length}/${allR.length})'   : ''}', _red));  pn++; }
+      if (inclE) { badges.add(_PageBadge('Page $pn', 'Employee Wise${selE != null ? ' (${selE.length}/${allE.length})'  : ''}', _blue)); }
 
       await showModalBottomSheet(
         context: context,
         backgroundColor: _white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (_) => _PdfBottomSheet(file: file),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (_) => _PdfReadySheet(file: file, badges: badges),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate PDF: $e'),
-          backgroundColor: _red,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed: $e'), backgroundColor: _red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
     } finally {
       if (mounted) setState(() => _pdfLoading = false);
     }
@@ -1175,558 +1091,223 @@ class _ReportPageState extends ConsumerState<ReportPage>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(reportTabProvider);
-    final hasFilter = _startDate != null || _endDate != null;
-
     return Scaffold(
       backgroundColor: _bg,
-      body: Column(
-        children: [
-          _Header(
-            companyId: widget.companyId,
-            pdfLoading: _pdfLoading,
-            onDownload: () {
-              final s = state.productReport;
-              if (s == null) return;
-              s.whenData((rawList) => _downloadPdf(_filter(rawList)));
-            },
-          ),
-          _DateFilterCard(
-            startDate: _startDate,
-            endDate: _endDate,
-            hasFilter: hasFilter,
-            fmtStart: _fmt(_startDate),
-            fmtEnd: _fmt(_endDate),
-            onPickStart: () => _pickDate(isStart: true),
-            onPickEnd: () => _pickDate(isStart: false),
-            onClear: _clearFilter,
-          ),
-          _TabBar(controller: _tabCtrl),
-          Expanded(
-            child: state.productReport == null
-                ? _emptyView()
-                : state.productReport!.when(
-                    loading: () => _loadingView(),
-                    error: (e, _) => _errorView(e.toString()),
-                    data: (rawList) {
-                      final filtered = _filter(rawList);
-                      return TabBarView(
-                        controller: _tabCtrl,
-                        children: [
-                          _ProductTab(
-                              data: filtered,
-                              hasFilter: hasFilter,
-                              onClear: _clearFilter),
-                          _RegionTab(
-                              data: filtered,
-                              hasFilter: hasFilter,
-                              onClear: _clearFilter),
-                          _EmployeeTab(
-                              data: filtered,
-                              hasFilter: hasFilter,
-                              onClear: _clearFilter),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+      body: Column(children: [
+        _Header(
+          companyId: widget.companyId,
+          pdfLoading: _pdfLoading,
+          onDownload: () {
+            final s = state.productReport;
+            if (s == null) return;
+            s.whenData((rawList) => _showDownloadSheet(_filter(rawList)));
+          },
+        ),
+        _DateFilterBar(
+          filterType: _filterType, customStart: _customStart, customEnd: _customEnd,
+          onTypeChanged: (t) => setState(() { _filterType = t; if (t != DateFilterType.custom) { _customStart = null; _customEnd = null; } }),
+          onPickCustomStart: () => _pickCustomDate(isStart: true),
+          onPickCustomEnd:   () => _pickCustomDate(isStart: false),
+          effectiveStart: _effectiveStart, effectiveEnd: _effectiveEnd,
+        ),
+        _TabBar(controller: _tabCtrl),
+        Expanded(
+          child: state.productReport == null
+              ? _emptyView()
+              : state.productReport!.when(
+                  loading: () => _loadingView(),
+                  error:   (e, _) => _errorView(e.toString()),
+                  data: (rawList) {
+                    final filtered = _filter(rawList);
+                    return TabBarView(controller: _tabCtrl, children: [
+                      _ProductTab(data: filtered, filterType: _filterType),
+                      _RegionTab(data: filtered,  filterType: _filterType),
+                      _EmployeeTab(data: filtered, filterType: _filterType),
+                    ]);
+                  },
+                ),
+        ),
+      ]),
     );
   }
 
-  Widget _loadingView() => const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: _red, strokeWidth: 2.5),
-            SizedBox(height: 14),
-            Text('Loading report…',
-                style: TextStyle(color: _textGrey, fontSize: 13)),
-          ],
-        ),
-      );
+  Widget _loadingView() => const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+    CircularProgressIndicator(color: _red, strokeWidth: 2.5), SizedBox(height: 14),
+    Text('Loading report…', style: TextStyle(color: _textGrey, fontSize: 13)),
+  ]));
 
-  Widget _errorView(String msg) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: const BoxDecoration(
-                    color: _redLight, shape: BoxShape.circle),
-                child: const Icon(Icons.error_outline_rounded,
-                    color: _red, size: 34),
-              ),
-              const SizedBox(height: 14),
-              const Text('Something went wrong',
-                  style: TextStyle(
-                      color: _textDark,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Text(msg,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: _textGrey, fontSize: 12)),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: _red,
-                    foregroundColor: _white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                onPressed: () => ref
-                    .read(reportTabProvider.notifier)
-                    .getProductReport(widget.companyId),
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
+  Widget _errorView(String msg) => Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+    Container(padding: const EdgeInsets.all(18), decoration: const BoxDecoration(color: _redLight, shape: BoxShape.circle), child: const Icon(Icons.error_outline_rounded, color: _red, size: 34)),
+    const SizedBox(height: 14), const Text('Something went wrong', style: TextStyle(color: _textDark, fontSize: 15, fontWeight: FontWeight.w700)),
+    const SizedBox(height: 6), Text(msg, textAlign: TextAlign.center, style: const TextStyle(color: _textGrey, fontSize: 12)), const SizedBox(height: 20),
+    ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: _red, foregroundColor: _white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+      onPressed: () => ref.read(reportTabProvider.notifier).getProductReport(widget.companyId),
+      icon: const Icon(Icons.refresh_rounded, size: 16), label: const Text('Retry')),
+  ])));
 
-  Widget _emptyView() => const Center(
-        child: Text('No data',
-            style: TextStyle(color: _textGrey, fontSize: 14)));
+  Widget _emptyView() => const Center(child: Text('No data', style: TextStyle(color: _textGrey, fontSize: 14)));
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PDF DOWNLOAD BOTTOM SHEET
+//  DATE FILTER BAR
 // ─────────────────────────────────────────────────────────────
-class _PdfBottomSheet extends StatelessWidget {
-  final File file;
-  const _PdfBottomSheet({required this.file});
+class _DateFilterBar extends StatelessWidget {
+  final DateFilterType filterType;
+  final DateTime? customStart, customEnd, effectiveStart, effectiveEnd;
+  final ValueChanged<DateFilterType> onTypeChanged;
+  final VoidCallback onPickCustomStart, onPickCustomEnd;
+
+  const _DateFilterBar({required this.filterType, required this.customStart, required this.customEnd, required this.effectiveStart, required this.effectiveEnd, required this.onTypeChanged, required this.onPickCustomStart, required this.onPickCustomEnd});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: _divLine,
-              borderRadius: BorderRadius.circular(2),
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 12, offset: const Offset(0, 3))], border: filterType != DateFilterType.today ? Border.all(color: _red.withOpacity(0.25)) : null),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: DateFilterType.values.map((t) {
+        final sel = filterType == t;
+        return Expanded(child: GestureDetector(onTap: () => onTypeChanged(t), child: AnimatedContainer(duration: const Duration(milliseconds: 180), margin: const EdgeInsets.symmetric(horizontal: 3), padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(color: sel ? _red : _bg, borderRadius: BorderRadius.circular(10), border: sel ? null : Border.all(color: _divLine)),
+          child: Column(children: [Icon(t.icon, size: 14, color: sel ? _white : _textGrey), const SizedBox(height: 3), Text(t.label, style: TextStyle(fontSize: 10, fontWeight: sel ? FontWeight.w700 : FontWeight.w500, color: sel ? _white : _textGrey), textAlign: TextAlign.center)]))));
+      }).toList()),
+      if (filterType == DateFilterType.custom) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: _DatePill(label: 'From', value: customStart == null ? 'Select date' : DateFormat('dd MMM yyyy').format(customStart!), selected: customStart != null, onTap: onPickCustomStart)),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Icon(Icons.arrow_forward_rounded, color: _textGrey.withOpacity(0.5), size: 16)),
+          Expanded(child: _DatePill(label: 'To', value: customEnd == null ? 'Select date' : DateFormat('dd MMM yyyy').format(customEnd!), selected: customEnd != null, onTap: onPickCustomEnd)),
+        ]),
+      ],
+      if (effectiveStart != null || effectiveEnd != null) ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(20)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.filter_alt_rounded, color: _red, size: 13), const SizedBox(width: 5),
+            Text(
+              effectiveStart != null && effectiveEnd != null && effectiveStart == effectiveEnd
+                  ? DateFormat('dd MMM yyyy').format(effectiveStart!)
+                  : '${effectiveStart != null ? DateFormat('dd MMM').format(effectiveStart!) : '...'}  →  ${effectiveEnd != null ? DateFormat('dd MMM yyyy').format(effectiveEnd!) : '...'}',
+              style: const TextStyle(color: _red, fontSize: 11, fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _redLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.picture_as_pdf_rounded,
-                color: _red, size: 36),
-          ),
-          const SizedBox(height: 14),
-          const Text('Report Ready!',
-              style: TextStyle(
-                  color: _textDark,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-
-          // Show page structure info
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: _bg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Column(
-              children: [
-                _PageBadge('Page 1', 'Summary & Index', Color(0xFF2ECC71)),
-                _PageBadge('Page 2', 'Product Wise', _red),
-                _PageBadge('Page 3', 'Region Wise', _red),
-                _PageBadge('Page 4', 'Employee Wise', Color(0xFF6C8EFF)),
-              ],
-            ),
-          ),
-
-          Text(
-            file.path.split('/').last,
-            style: const TextStyle(color: _textGrey, fontSize: 11),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _red,
-                foregroundColor: _white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                OpenFile.open(file.path);
-              },
-              icon: const Icon(Icons.open_in_new_rounded, size: 18),
-              label: const Text('Open PDF',
-                  style:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _red,
-                side: BorderSide(color: _red.withOpacity(0.4)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                share_plus.Share.shareXFiles(
-                    [share_plus.XFile(file.path)],
-                    subject: 'Sales Report');
-              },
-              icon: const Icon(Icons.share_rounded, size: 18),
-              label: const Text('Share',
-                  style:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+          ]),
+        ),
+      ],
+    ]),
+  );
 }
 
-// Small page badge widget for bottom sheet
+// ─────────────────────────────────────────────────────────────
+//  PDF READY SHEET
+// ─────────────────────────────────────────────────────────────
+class _PdfReadySheet extends StatelessWidget {
+  final File file;
+  final List<_PageBadge> badges;
+  const _PdfReadySheet({required this.file, required this.badges});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 40, height: 4, decoration: BoxDecoration(color: _divLine, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(height: 20),
+      Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(16)), child: const Icon(Icons.picture_as_pdf_rounded, color: _red, size: 36)),
+      const SizedBox(height: 14),
+      const Text('Report Ready!', style: TextStyle(color: _textDark, fontSize: 17, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4),
+      Container(margin: const EdgeInsets.symmetric(vertical: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10)), child: Column(children: badges)),
+      Text(file.path.split('/').last, style: const TextStyle(color: _textGrey, fontSize: 11), textAlign: TextAlign.center),
+      const SizedBox(height: 20),
+      SizedBox(width: double.infinity, child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(backgroundColor: _red, foregroundColor: _white, elevation: 0, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+        onPressed: () { Navigator.of(context).pop(); OpenFile.open(file.path); },
+        icon: const Icon(Icons.open_in_new_rounded, size: 18), label: const Text('Open PDF', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+      )),
+      const SizedBox(height: 10),
+      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(foregroundColor: _red, side: BorderSide(color: _red.withOpacity(0.4)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+        onPressed: () { Navigator.of(context).pop(); share_plus.Share.shareXFiles([share_plus.XFile(file.path)], subject: 'Sales Report'); },
+        icon: const Icon(Icons.share_rounded, size: 18), label: const Text('Share', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+      )),
+    ]),
+  );
+}
+
 class _PageBadge extends StatelessWidget {
-  final String page;
-  final String label;
-  final Color color;
+  final String page, label; final Color color;
   const _PageBadge(this.page, this.label, this.color);
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(page,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: 8),
-          Text(label,
-              style:
-                  const TextStyle(color: _textDark, fontSize: 11)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(children: [
+      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)), child: Text(page, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700))),
+      const SizedBox(width: 8),
+      Text(label, style: const TextStyle(color: _textDark, fontSize: 11)),
+    ]),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  RED HEADER
+//  HEADER
 // ─────────────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
-  final String companyId;
-  final bool pdfLoading;
-  final VoidCallback onDownload;
-
-  const _Header({
-    required this.companyId,
-    required this.pdfLoading,
-    required this.onDownload,
-  });
+  final String companyId; final bool pdfLoading; final VoidCallback onDownload;
+  const _Header({required this.companyId, required this.pdfLoading, required this.onDownload});
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_red, _redDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    decoration: const BoxDecoration(gradient: LinearGradient(colors: [_red, _redDark], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+    padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 16, right: 16, bottom: 18),
+    child: Row(children: [
+      IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _white, size: 18), onPressed: () => Navigator.of(context).maybePop(), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+      const SizedBox(width: 10),
+      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Reports', style: TextStyle(color: _white, fontSize: 20, fontWeight: FontWeight.w800)),
+        Text('Product • Region • Employee', style: TextStyle(color: Colors.white70, fontSize: 11)),
+      ])),
+      GestureDetector(
+        onTap: pdfLoading ? null : onDownload,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white30)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            pdfLoading ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: _white, strokeWidth: 2)) : const Icon(Icons.picture_as_pdf_rounded, color: _white, size: 16),
+            const SizedBox(width: 6),
+            Text(pdfLoading ? 'Generating…' : 'Download', style: const TextStyle(color: _white, fontSize: 12, fontWeight: FontWeight.w600)),
+          ]),
         ),
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 10,
-          left: 16,
-          right: 16,
-          bottom: 18,
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: _white, size: 18),
-              onPressed: () => Navigator.of(context).maybePop(),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Reports',
-                      style: TextStyle(
-                          color: _white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800)),
-                  Text('Product • Region • Employee',
-                      style: TextStyle(color: Colors.white70, fontSize: 11)),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: pdfLoading ? null : onDownload,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white30),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    pdfLoading
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              color: _white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.picture_as_pdf_rounded,
-                            color: _white, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      pdfLoading ? 'Generating…' : 'Download',
-                      style: const TextStyle(
-                          color: _white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      ),
+    ]),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  DATE FILTER CARD
+//  DATE PILL
 // ─────────────────────────────────────────────────────────────
-class _DateFilterCard extends StatelessWidget {
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final bool hasFilter;
-  final String fmtStart;
-  final String fmtEnd;
-  final VoidCallback onPickStart;
-  final VoidCallback onPickEnd;
-  final VoidCallback onClear;
-
-  const _DateFilterCard({
-    required this.startDate,
-    required this.endDate,
-    required this.hasFilter,
-    required this.fmtStart,
-    required this.fmtEnd,
-    required this.onPickStart,
-    required this.onPickEnd,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: _white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: _cardShadow,
-                blurRadius: 12,
-                offset: const Offset(0, 3))
-          ],
-          border:
-              hasFilter ? Border.all(color: _red.withOpacity(0.3)) : null,
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: _redLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.date_range_rounded,
-                      color: _red, size: 14),
-                ),
-                const SizedBox(width: 8),
-                const Text('Date Filter',
-                    style: TextStyle(
-                        color: _textDark,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700)),
-                if (hasFilter) ...[
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: onClear,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _redLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('Clear',
-                          style: TextStyle(
-                              color: _red,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _DatePill(
-                    label: 'From',
-                    value: fmtStart,
-                    selected: startDate != null,
-                    onTap: onPickStart,
-                  ),
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward_rounded,
-                      color: _textGrey.withOpacity(0.5), size: 16),
-                ),
-                Expanded(
-                  child: _DatePill(
-                    label: 'To',
-                    value: fmtEnd,
-                    selected: endDate != null,
-                    onTap: onPickEnd,
-                  ),
-                ),
-              ],
-            ),
-            if (hasFilter) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _redLight,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.filter_alt_rounded,
-                        color: _red, size: 13),
-                    const SizedBox(width: 5),
-                    Text(
-                      '$fmtStart  →  $fmtEnd',
-                      style: const TextStyle(
-                          color: _red,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-}
-
 class _DatePill extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool selected;
-  final VoidCallback onTap;
-  const _DatePill(
-      {required this.label,
-      required this.value,
-      required this.selected,
-      required this.onTap});
+  final String label, value; final bool selected; final VoidCallback onTap;
+  const _DatePill({required this.label, required this.value, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: selected ? _redLight : _bg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: selected ? _red.withOpacity(0.4) : _divLine),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.calendar_today_rounded,
-                  color: selected ? _red : _textGrey, size: 13),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: TextStyle(
-                            color: selected ? _red : _textGrey,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600)),
-                    Text(value,
-                        style: TextStyle(
-                            color: selected ? _textDark : _textGrey,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(color: selected ? _redLight : _bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: selected ? _red.withOpacity(0.4) : _divLine)),
+      child: Row(children: [
+        Icon(Icons.calendar_today_rounded, color: selected ? _red : _textGrey, size: 13),
+        const SizedBox(width: 7),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: TextStyle(color: selected ? _red : _textGrey, fontSize: 10, fontWeight: FontWeight.w600)),
+          Text(value, style: TextStyle(color: selected ? _textDark : _textGrey, fontSize: 11, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+        ])),
+      ]),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1738,435 +1319,124 @@ class _TabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-        height: 44,
-        decoration: BoxDecoration(
-          color: _white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-                color: _cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: TabBar(
-          controller: controller,
-          indicator: BoxDecoration(
-            color: _red,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          indicatorPadding: const EdgeInsets.all(3),
-          labelColor: _white,
-          unselectedLabelColor: _textGrey,
-          labelStyle:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          unselectedLabelStyle:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          dividerColor: Colors.transparent,
-          tabs: const [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inventory_2_outlined, size: 13),
-                  SizedBox(width: 5),
-                  Text('Product'),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.location_on_outlined, size: 13),
-                  SizedBox(width: 5),
-                  Text('Region'),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_outline_rounded, size: 13),
-                  SizedBox(width: 5),
-                  Text('Employee'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+    margin: const EdgeInsets.fromLTRB(16, 14, 16, 0), height: 44,
+    decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 8, offset: const Offset(0, 2))]),
+    child: TabBar(controller: controller,
+      indicator: BoxDecoration(color: _red, borderRadius: BorderRadius.circular(11)),
+      indicatorSize: TabBarIndicatorSize.tab, indicatorPadding: const EdgeInsets.all(3),
+      labelColor: _white, unselectedLabelColor: _textGrey,
+      labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+      unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      dividerColor: Colors.transparent,
+      tabs: const [
+        Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.inventory_2_outlined, size: 13), SizedBox(width: 5), Text('Product')])),
+        Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.location_on_outlined, size: 13), SizedBox(width: 5), Text('Region')])),
+        Tab(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.person_outline_rounded, size: 13), SizedBox(width: 5), Text('Employee')])),
+      ]),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
 //  TAB 1: PRODUCT WISE
 // ─────────────────────────────────────────────────────────────
 class _ProductTab extends StatelessWidget {
-  final List<ProductData> data;
-  final bool hasFilter;
-  final VoidCallback onClear;
-  const _ProductTab(
-      {required this.data,
-      required this.hasFilter,
-      required this.onClear});
+  final List<ProductData> data; final DateFilterType filterType;
+  const _ProductTab({required this.data, required this.filterType});
 
   @override
   Widget build(BuildContext context) {
     final items = _aggregateProducts(data);
     final grand = items.fold(0.0, (s, i) => s + i.total);
-
-    if (items.isEmpty) return _noData(hasFilter, onClear);
-
-    return Column(
-      children: [
-        _SummaryRow(
-          items: [
-            _SumItem(Icons.inventory_2_outlined, 'Products',
-                items.length.toString(), _red),
-            _SumItem(Icons.receipt_long_outlined, 'Orders',
-                data.length.toString(), _textGrey),
-            _SumItem(Icons.currency_rupee_rounded, 'Total',
-                '₹${_fmt(grand)}', const Color(0xFF2ECC71)),
-          ],
-        ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _ProductCard(
-              item: items[i],
-              index: i,
-              grand: grand,
-            ),
-          ),
-        ),
-      ],
-    );
+    if (items.isEmpty) return _noData(filterType);
+    return Column(children: [
+      _SummaryRow(items: [_SumItem(Icons.inventory_2_outlined, 'Products', items.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: items.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _ProductCard(item: items[i], index: i, grand: grand))),
+    ]);
   }
 }
 
 class _ProductCard extends StatelessWidget {
-  final _Agg item;
-  final int index;
-  final double grand;
-  const _ProductCard(
-      {required this.item, required this.index, required this.grand});
-
-  static const _rankColors = [
-    Color(0xFFF59E0B),
-    Color(0xFF94A3B8),
-    Color(0xFFCD7F32),
-  ];
+  final _Agg item; final int index; final double grand;
+  const _ProductCard({required this.item, required this.index, required this.grand});
+  static const _rankColors = [Color(0xFFF59E0B), Color(0xFF94A3B8), Color(0xFFCD7F32)];
 
   @override
   Widget build(BuildContext context) {
-    final pct   = grand > 0 ? item.total / grand : 0.0;
+    final pct = grand > 0 ? item.total / grand : 0.0;
     final isTop = index < 3;
-    final rankColor =
-        isTop ? _rankColors[index] : const Color(0xFF94A3B8);
-
+    final rankColor = isTop ? _rankColors[index] : const Color(0xFF94A3B8);
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: _cardShadow,
-              blurRadius: 10,
-              offset: const Offset(0, 3))
-        ],
-        border: isTop
-            ? Border.all(color: rankColor.withOpacity(0.25))
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: rankColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: isTop
-                    ? Icon(_rankIcon(index), color: rankColor, size: 16)
-                    : Text('#${index + 1}',
-                        style: TextStyle(
-                            color: rankColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.name,
-                        style: const TextStyle(
-                            color: _textDark,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700)),
-                    Text('${item.orders} orders',
-                        style: const TextStyle(
-                            color: _textGrey, fontSize: 11)),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F8F1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '₹${_fmt(item.total)}',
-                  style: const TextStyle(
-                      color: Color(0xFF2ECC71),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: pct),
-              duration: Duration(milliseconds: 600 + index * 40),
-              curve: Curves.easeOut,
-              builder: (_, v, __) => LinearProgressIndicator(
-                value: v,
-                minHeight: 5,
-                backgroundColor: _divLine,
-                valueColor:
-                    AlwaysStoppedAnimation(isTop ? rankColor : _red),
-              ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '${(pct * 100).toStringAsFixed(1)}% of total sales',
-            style: const TextStyle(color: _textGrey, fontSize: 10),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 10, offset: const Offset(0, 3))], border: isTop ? Border.all(color: rankColor.withOpacity(0.25)) : null),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(width: 34, height: 34, decoration: BoxDecoration(color: rankColor.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), alignment: Alignment.center,
+            child: isTop ? Icon(_rankIcon(index), color: rankColor, size: 16) : Text('#${index + 1}', style: TextStyle(color: rankColor, fontSize: 11, fontWeight: FontWeight.w700))),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.name, style: const TextStyle(color: _textDark, fontSize: 14, fontWeight: FontWeight.w700)), Text('${item.orders} orders', style: const TextStyle(color: _textGrey, fontSize: 11))])),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFFE8F8F1), borderRadius: BorderRadius.circular(10)), child: Text('₹${_fmt(item.total)}', style: const TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(borderRadius: BorderRadius.circular(4), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: pct), duration: Duration(milliseconds: 600 + index * 40), curve: Curves.easeOut, builder: (_, v, __) => LinearProgressIndicator(value: v, minHeight: 5, backgroundColor: _divLine, valueColor: AlwaysStoppedAnimation(isTop ? rankColor : _red)))),
+        const SizedBox(height: 5),
+        Text('${(pct * 100).toStringAsFixed(1)}% of total sales', style: const TextStyle(color: _textGrey, fontSize: 10)),
+      ]),
     );
   }
 
-  IconData _rankIcon(int r) {
-    switch (r) {
-      case 0:
-        return Icons.emoji_events_rounded;
-      case 1:
-        return Icons.military_tech_rounded;
-      default:
-        return Icons.workspace_premium_rounded;
-    }
-  }
+  IconData _rankIcon(int r) { switch (r) { case 0: return Icons.emoji_events_rounded; case 1: return Icons.military_tech_rounded; default: return Icons.workspace_premium_rounded; } }
 }
 
 // ─────────────────────────────────────────────────────────────
 //  TAB 2: REGION WISE
 // ─────────────────────────────────────────────────────────────
 class _RegionTab extends StatelessWidget {
-  final List<ProductData> data;
-  final bool hasFilter;
-  final VoidCallback onClear;
-  const _RegionTab(
-      {required this.data,
-      required this.hasFilter,
-      required this.onClear});
+  final List<ProductData> data; final DateFilterType filterType;
+  const _RegionTab({required this.data, required this.filterType});
 
   @override
   Widget build(BuildContext context) {
     final regions = _aggregateRegions(data);
     final grand   = regions.fold(0.0, (s, r) => s + r.total);
-
-    if (regions.isEmpty) return _noData(hasFilter, onClear);
-
-    return Column(
-      children: [
-        _SummaryRow(items: [
-          _SumItem(Icons.map_outlined, 'Regions',
-              regions.length.toString(), _red),
-          _SumItem(Icons.receipt_long_outlined, 'Orders',
-              data.length.toString(), _textGrey),
-          _SumItem(Icons.currency_rupee_rounded, 'Total',
-              '₹${_fmt(grand)}', const Color(0xFF2ECC71)),
-        ]),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: regions.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _RegionProductCard(
-              region: regions[i],
-              grand: grand,
-            ),
-          ),
-        ),
-      ],
-    );
+    if (regions.isEmpty) return _noData(filterType);
+    return Column(children: [
+      _SummaryRow(items: [_SumItem(Icons.map_outlined, 'Regions', regions.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: regions.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _RegionProductCard(region: regions[i], grand: grand))),
+    ]);
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  REGION → PRODUCT CARD  (tap to expand products)
-// ─────────────────────────────────────────────────────────────
 class _RegionProductCard extends StatefulWidget {
-  final _RegionAgg region;
-  final double grand;
+  final _RegionAgg region; final double grand;
   const _RegionProductCard({required this.region, required this.grand});
-
-  @override
-  State<_RegionProductCard> createState() => _RegionProductCardState();
+  @override State<_RegionProductCard> createState() => _RegionProductCardState();
 }
-
 class _RegionProductCardState extends State<_RegionProductCard> {
   bool _expanded = false;
-
   @override
   Widget build(BuildContext context) {
     final pct = widget.grand > 0 ? widget.region.total / widget.grand : 0.0;
-
     return Container(
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: _cardShadow, blurRadius: 10, offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        children: [
-          // ── Region header (tappable) ──
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: _redLight,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.location_on_rounded,
-                              color: _red, size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(widget.region.name,
-                                  style: const TextStyle(
-                                      color: _textDark,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700)),
-                              Text(
-                                '${widget.region.products.length} products  •  ${widget.region.orders} orders',
-                                style: const TextStyle(
-                                    color: _textGrey, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F8F1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '₹${_fmt(widget.region.total)}',
-                            style: const TextStyle(
-                                color: Color(0xFF2ECC71),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        AnimatedRotation(
-                          turns: _expanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 220),
-                          child: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: _textGrey, size: 20),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: pct),
-                        duration: const Duration(milliseconds: 650),
-                        curve: Curves.easeOut,
-                        builder: (_, v, __) => LinearProgressIndicator(
-                          value: v,
-                          minHeight: 5,
-                          backgroundColor: _divLine,
-                          valueColor: const AlwaysStoppedAnimation(_red),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${(pct * 100).toStringAsFixed(1)}% of total',
-                      style: const TextStyle(color: _textGrey, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ── Products list (animated expand) ──
-          AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeInOut,
-            child: _expanded
-                ? Container(
-                    decoration: const BoxDecoration(
-                        border: Border(top: BorderSide(color: _divLine))),
-                    child: Column(
-                      children: widget.region.products
-                          .asMap()
-                          .entries
-                          .map((e) => _ProductLeafRow(
-                                product: e.value,
-                                empTotal: widget.region.total,
-                                isLast:
-                                    e.key == widget.region.products.length - 1,
-                              ))
-                          .toList(),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 10, offset: const Offset(0, 3))]),
+      child: Column(children: [
+        Material(color: Colors.transparent, child: InkWell(onTap: () => setState(() => _expanded = !_expanded), borderRadius: BorderRadius.circular(14),
+          child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 36, height: 36, decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(10)), alignment: Alignment.center, child: const Icon(Icons.location_on_rounded, color: _red, size: 18)),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.region.name, style: const TextStyle(color: _textDark, fontSize: 14, fontWeight: FontWeight.w700)), Text('${widget.region.products.length} products  •  ${widget.region.orders} orders', style: const TextStyle(color: _textGrey, fontSize: 11))])),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFFE8F8F1), borderRadius: BorderRadius.circular(10)), child: Text('₹${_fmt(widget.region.total)}', style: const TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w800))),
+              const SizedBox(width: 6),
+              AnimatedRotation(turns: _expanded ? 0.5 : 0, duration: const Duration(milliseconds: 220), child: const Icon(Icons.keyboard_arrow_down_rounded, color: _textGrey, size: 20)),
+            ]),
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(4), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: pct), duration: const Duration(milliseconds: 650), curve: Curves.easeOut, builder: (_, v, __) => LinearProgressIndicator(value: v, minHeight: 5, backgroundColor: _divLine, valueColor: const AlwaysStoppedAnimation(_red)))),
+            const SizedBox(height: 4),
+            Text('${(pct * 100).toStringAsFixed(1)}% of total', style: const TextStyle(color: _textGrey, fontSize: 10)),
+          ])))),
+        AnimatedSize(duration: const Duration(milliseconds: 280), curve: Curves.easeInOut,
+          child: _expanded ? Container(decoration: const BoxDecoration(border: Border(top: BorderSide(color: _divLine))), child: Column(children: widget.region.products.asMap().entries.map((e) => _ProductLeafRow(product: e.value, empTotal: widget.region.total, isLast: e.key == widget.region.products.length - 1)).toList())) : const SizedBox.shrink()),
+      ]),
     );
   }
 }
@@ -2175,198 +1445,52 @@ class _RegionProductCardState extends State<_RegionProductCard> {
 //  TAB 3: EMPLOYEE WISE
 // ─────────────────────────────────────────────────────────────
 class _EmployeeTab extends StatelessWidget {
-  final List<ProductData> data;
-  final bool hasFilter;
-  final VoidCallback onClear;
-  const _EmployeeTab(
-      {required this.data,
-      required this.hasFilter,
-      required this.onClear});
+  final List<ProductData> data; final DateFilterType filterType;
+  const _EmployeeTab({required this.data, required this.filterType});
 
   @override
   Widget build(BuildContext context) {
     final emps  = _aggregateEmployees(data);
     final grand = emps.fold(0.0, (s, e) => s + e.total);
-
-    if (emps.isEmpty) return _noData(hasFilter, onClear);
-
-    return Column(
-      children: [
-        _SummaryRow(items: [
-          _SumItem(Icons.people_outline_rounded, 'Employees',
-              emps.length.toString(), _red),
-          _SumItem(Icons.receipt_long_outlined, 'Orders',
-              data.length.toString(), _textGrey),
-          _SumItem(Icons.currency_rupee_rounded, 'Total',
-              '₹${_fmt(grand)}', const Color(0xFF2ECC71)),
-        ]),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: emps.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _EmpProductCard(
-              emp: emps[i],
-              grand: grand,
-            ),
-          ),
-        ),
-      ],
-    );
+    if (emps.isEmpty) return _noData(filterType);
+    return Column(children: [
+      _SummaryRow(items: [_SumItem(Icons.people_outline_rounded, 'Employees', emps.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: emps.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _EmpProductCard(emp: emps[i], grand: grand))),
+    ]);
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  EMPLOYEE → PRODUCT CARD  (tap to expand products)
-// ─────────────────────────────────────────────────────────────
 class _EmpProductCard extends StatefulWidget {
-  final _EmpAgg emp;
-  final double grand;
+  final _EmpAgg emp; final double grand;
   const _EmpProductCard({required this.emp, required this.grand});
-
-  @override
-  State<_EmpProductCard> createState() => _EmpProductCardState();
+  @override State<_EmpProductCard> createState() => _EmpProductCardState();
 }
-
 class _EmpProductCardState extends State<_EmpProductCard> {
   bool _expanded = false;
-
-  static const _blue = Color(0xFF6C8EFF);
-  static const _blueLight = Color(0xFFEEF0FF);
-
   @override
   Widget build(BuildContext context) {
     final pct = widget.grand > 0 ? widget.emp.total / widget.grand : 0.0;
-
     return Container(
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: _cardShadow, blurRadius: 10, offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        children: [
-          // ── Employee header (tappable) ──
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: _blue.withOpacity(0.13),
-                          child: Text(
-                            widget.emp.name.isNotEmpty
-                                ? widget.emp.name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                                color: _blue,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(widget.emp.name,
-                                  style: const TextStyle(
-                                      color: _textDark,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700)),
-                              Text(
-                                '${widget.emp.products.length} products  •  ${widget.emp.orders} orders',
-                                style: const TextStyle(
-                                    color: _textGrey, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F8F1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '₹${_fmt(widget.emp.total)}',
-                            style: const TextStyle(
-                                color: Color(0xFF2ECC71),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        AnimatedRotation(
-                          turns: _expanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 220),
-                          child: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: _textGrey, size: 20),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: pct),
-                        duration: const Duration(milliseconds: 650),
-                        curve: Curves.easeOut,
-                        builder: (_, v, __) => LinearProgressIndicator(
-                          value: v,
-                          minHeight: 5,
-                          backgroundColor: _divLine,
-                          valueColor: const AlwaysStoppedAnimation(_blue),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${(pct * 100).toStringAsFixed(1)}% of total',
-                      style: const TextStyle(color: _textGrey, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ── Products list (animated expand) ──
-          AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeInOut,
-            child: _expanded
-                ? Container(
-                    decoration: const BoxDecoration(
-                        border: Border(top: BorderSide(color: _divLine))),
-                    child: Column(
-                      children: widget.emp.products
-                          .asMap()
-                          .entries
-                          .map((e) => _ProductLeafRow(
-                                product: e.value,
-                                empTotal: widget.emp.total,
-                                isLast:
-                                    e.key == widget.emp.products.length - 1,
-                              ))
-                          .toList(),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 10, offset: const Offset(0, 3))]),
+      child: Column(children: [
+        Material(color: Colors.transparent, child: InkWell(onTap: () => setState(() => _expanded = !_expanded), borderRadius: BorderRadius.circular(14),
+          child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              CircleAvatar(radius: 18, backgroundColor: _blue.withOpacity(0.13), child: Text(widget.emp.name.isNotEmpty ? widget.emp.name[0].toUpperCase() : '?', style: const TextStyle(color: _blue, fontSize: 14, fontWeight: FontWeight.w800))),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(widget.emp.name, style: const TextStyle(color: _textDark, fontSize: 14, fontWeight: FontWeight.w700)), Text('${widget.emp.products.length} products  •  ${widget.emp.orders} orders', style: const TextStyle(color: _textGrey, fontSize: 11))])),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: const Color(0xFFE8F8F1), borderRadius: BorderRadius.circular(10)), child: Text('₹${_fmt(widget.emp.total)}', style: const TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w800))),
+              const SizedBox(width: 6),
+              AnimatedRotation(turns: _expanded ? 0.5 : 0, duration: const Duration(milliseconds: 220), child: const Icon(Icons.keyboard_arrow_down_rounded, color: _textGrey, size: 20)),
+            ]),
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(4), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: pct), duration: const Duration(milliseconds: 650), curve: Curves.easeOut, builder: (_, v, __) => LinearProgressIndicator(value: v, minHeight: 5, backgroundColor: _divLine, valueColor: const AlwaysStoppedAnimation(_blue)))),
+            const SizedBox(height: 4),
+            Text('${(pct * 100).toStringAsFixed(1)}% of total', style: const TextStyle(color: _textGrey, fontSize: 10)),
+          ])))),
+        AnimatedSize(duration: const Duration(milliseconds: 280), curve: Curves.easeInOut,
+          child: _expanded ? Container(decoration: const BoxDecoration(border: Border(top: BorderSide(color: _divLine))), child: Column(children: widget.emp.products.asMap().entries.map((e) => _ProductLeafRow(product: e.value, empTotal: widget.emp.total, isLast: e.key == widget.emp.products.length - 1)).toList())) : const SizedBox.shrink()),
+      ]),
     );
   }
 }
@@ -2375,102 +1499,35 @@ class _EmpProductCardState extends State<_EmpProductCard> {
 //  PRODUCT LEAF ROW
 // ─────────────────────────────────────────────────────────────
 class _ProductLeafRow extends StatelessWidget {
-  final _Agg product;
-  final double empTotal;
-  final bool isLast;
-
-  const _ProductLeafRow({
-    required this.product,
-    required this.empTotal,
-    this.isLast = false,
-  });
+  final _Agg product; final double empTotal; final bool isLast;
+  const _ProductLeafRow({required this.product, required this.empTotal, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
     final pct = empTotal > 0 ? product.total / empTotal : 0.0;
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: _redLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.shopping_bag_outlined,
-                    color: _red, size: 14),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(product.name,
-                        style: const TextStyle(
-                            color: _textDark,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 3),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: pct),
-                        duration:
-                            const Duration(milliseconds: 500),
-                        curve: Curves.easeOut,
-                        builder: (_, v, __) =>
-                            LinearProgressIndicator(
-                          value: v,
-                          minHeight: 3,
-                          backgroundColor: _divLine,
-                          valueColor:
-                              const AlwaysStoppedAnimation(_red),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${(pct * 100).toStringAsFixed(1)}%  •  '
-                      '${product.orders} order${product.orders == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                          color: _textGrey, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text('₹${_fmt(product.total)}',
-                  style: const TextStyle(
-                      color: _red,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
-        if (!isLast)
-          const Divider(
-              height: 1, color: _divLine, indent: 50),
-      ],
-    );
+    return Column(children: [
+      Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 10), child: Row(children: [
+        Container(width: 28, height: 28, decoration: BoxDecoration(color: _redLight, borderRadius: BorderRadius.circular(8)), alignment: Alignment.center, child: const Icon(Icons.shopping_bag_outlined, color: _red, size: 14)),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(product.name, style: const TextStyle(color: _textDark, fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 3),
+          ClipRRect(borderRadius: BorderRadius.circular(2), child: TweenAnimationBuilder<double>(tween: Tween(begin: 0, end: pct), duration: const Duration(milliseconds: 500), curve: Curves.easeOut, builder: (_, v, __) => LinearProgressIndicator(value: v, minHeight: 3, backgroundColor: _divLine, valueColor: const AlwaysStoppedAnimation(_red)))),
+          const SizedBox(height: 2),
+          Text('${(pct * 100).toStringAsFixed(1)}%  •  ${product.orders} order${product.orders == 1 ? '' : 's'}', style: const TextStyle(color: _textGrey, fontSize: 10)),
+        ])),
+        const SizedBox(width: 8),
+        Text('₹${_fmt(product.total)}', style: const TextStyle(color: _red, fontSize: 12, fontWeight: FontWeight.w700)),
+      ])),
+      if (!isLast) const Divider(height: 1, color: _divLine, indent: 50),
+    ]);
   }
 }
 
 // ─────────────────────────────────────────────────────────────
 //  SUMMARY ROW
 // ─────────────────────────────────────────────────────────────
-class _SumItem {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  const _SumItem(this.icon, this.label, this.value, this.color);
-}
+class _SumItem { final IconData icon; final String label, value; final Color color; const _SumItem(this.icon, this.label, this.value, this.color); }
 
 class _SummaryRow extends StatelessWidget {
   final List<_SumItem> items;
@@ -2478,87 +1535,27 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 12, 16, 2),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        decoration: BoxDecoration(
-          color: _white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-                color: _cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: Row(
-          children: items.asMap().entries.expand((e) {
-            final widgets = <Widget>[
-              Expanded(
-                child: Column(
-                  children: [
-                    Icon(e.value.icon,
-                        color: e.value.color, size: 16),
-                    const SizedBox(height: 3),
-                    Text(e.value.value,
-                        style: TextStyle(
-                            color: e.value.color,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800)),
-                    Text(e.value.label,
-                        style: const TextStyle(
-                            color: _textGrey, fontSize: 10)),
-                  ],
-                ),
-              ),
-            ];
-            if (e.key < items.length - 1) {
-              widgets.add(
-                  Container(width: 1, height: 32, color: _divLine));
-            }
-            return widgets;
-          }).toList(),
-        ),
-      );
+    margin: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+    decoration: BoxDecoration(color: _white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: _cardShadow, blurRadius: 8, offset: const Offset(0, 2))]),
+    child: Row(children: items.asMap().entries.expand((e) {
+      final ws = <Widget>[Expanded(child: Column(children: [Icon(e.value.icon, color: e.value.color, size: 16), const SizedBox(height: 3), Text(e.value.value, style: TextStyle(color: e.value.color, fontSize: 13, fontWeight: FontWeight.w800)), Text(e.value.label, style: const TextStyle(color: _textGrey, fontSize: 10))]))];
+      if (e.key < items.length - 1) ws.add(Container(width: 1, height: 32, color: _divLine));
+      return ws;
+    }).toList()),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  NO DATA / EMPTY STATE
+//  NO DATA
 // ─────────────────────────────────────────────────────────────
-Widget _noData(bool hasFilter, VoidCallback onClear) => Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-                color: _redLight, shape: BoxShape.circle),
-            child: const Icon(Icons.search_off_rounded,
-                color: _red, size: 36),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            hasFilter ? 'No data in this date range' : 'No data found',
-            style: const TextStyle(
-                color: _textDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w600),
-          ),
-          if (hasFilter) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: onClear,
-              child: const Text('Clear filter',
-                  style: TextStyle(
-                      color: _red,
-                      fontSize: 13,
-                      decoration: TextDecoration.underline,
-                      decorationColor: _red)),
-            ),
-          ],
-        ],
-      ),
-    );
+Widget _noData(DateFilterType ft) => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+  Container(padding: const EdgeInsets.all(20), decoration: const BoxDecoration(color: _redLight, shape: BoxShape.circle), child: const Icon(Icons.search_off_rounded, color: _red, size: 36)),
+  const SizedBox(height: 14),
+  Text(ft == DateFilterType.today ? 'No orders today' : ft == DateFilterType.monthly ? 'No orders this month' : ft == DateFilterType.yearly ? 'No orders this year' : 'No data in selected range', style: const TextStyle(color: _textDark, fontSize: 14, fontWeight: FontWeight.w600)),
+  const SizedBox(height: 6),
+  const Text('Try selecting a different date range', style: TextStyle(color: _textGrey, fontSize: 12)),
+]));
 
 // ─────────────────────────────────────────────────────────────
 //  UTILITY
