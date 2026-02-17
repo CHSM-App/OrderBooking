@@ -14,24 +14,22 @@ CheckInStatusRequest _$CheckInStatusRequestFromJson(
   message: json['message'] as String?,
   success: (json['success'] as num?)?.toInt(),
   empId: (json['emp_id'] as num?)?.toInt(),
-  inDate: json['in_date'] as String?,
-  inTime: json['in_time'] as String?,
-  outDate: json['out_date'] as String?,
-  outTime: json['out_time'] as String?,
+  inDate: json['checkIn'] as String?,
+  outDate: json['checkOut'] as String?,
   checkinStatus: (json['checkin_status'] as num?)?.toInt(),
+  totalDistance: (json['total_distance_km'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$CheckInStatusRequestToJson(
   CheckInStatusRequest instance,
 ) => <String, dynamic>{
   'emp_id': instance.empId,
-  'in_date': instance.inDate,
-  'in_time': instance.inTime,
-  'out_date': instance.outDate,
-  'out_time': instance.outTime,
+  'checkIn': instance.inDate,
+  'checkOut': instance.outDate,
   'checkin_status': instance.checkinStatus,
   'message': instance.message,
   'success': instance.success,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
+  'total_distance_km': instance.totalDistance,
 };
