@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
@@ -15,6 +16,8 @@ class EmployeeloginState {
   final AsyncValue<List<EmployeeLogin>> employeeDetails;
   final AsyncValue<List<VisitPayload>> employeeVisits;
   final AsyncValue<List<EmployeeVisit>> employeeVisitLocation;
+  final AsyncValue<List<AttendanceReport>> attendanceReport;
+
   final int? empId;
   final String? companyId;
   final bool? isPhoneNoExists;
@@ -31,6 +34,7 @@ class EmployeeloginState {
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
     this.employeeVisits = const AsyncValue.loading(),
+    this.attendanceReport = const AsyncValue.loading(),
   });
 
   EmployeeloginState copyWith({
@@ -42,6 +46,7 @@ class EmployeeloginState {
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
     AsyncValue<List<VisitPayload>>? employeeVisits,
     AsyncValue<List<EmployeeVisit>>? employeeVisitLocation,
+    AsyncValue<List<AttendanceReport>>? attendanceReport,
     String? companyId,
     int? empId
   }) {
@@ -54,6 +59,7 @@ class EmployeeloginState {
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
       employeeVisits: employeeVisits ?? this.employeeVisits,
+      attendanceReport: attendanceReport ?? this.attendanceReport,
       companyId: companyId ?? this.companyId,
       empId: empId ?? this.empId
     );
@@ -100,6 +106,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   /// GET EMPLOYEE LIST
   /// -----------------------
   Future<void> getEmployeeList(
+
     String companyId, {
     bool useCacheFirst = true,
   }) async {
@@ -243,10 +250,32 @@ Future<void> getEmployeeVisitLocation(int empId) async {
       );
     }
   }
+
+
+   Future<void> getAttendanceReport(String companyId) async {
+     state = state.copyWith(isLoading: true, error: null);
+    try {
+      final employeesReport = await usecase.getAttendanceReport(companyId);
+      for (var employee in employeesReport){
+        print(employee);
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        attendanceReport: AsyncValue.data(employeesReport),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+         attendanceReport: AsyncValue.error(e, StackTrace.current),
+      );
+    }
+  }
   
 void resetPhoneExistStatus() {
   state = state.copyWith(isPhoneNoExists: null);
 }
+
 
 }
 

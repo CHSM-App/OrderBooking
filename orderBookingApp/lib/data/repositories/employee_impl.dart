@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
@@ -55,5 +56,10 @@ class EmployeeloginImpl implements EmployeeloginRepository {
   @override
   Future<List<EmployeeVisit>> getEmployeeVisitLocation(int empId) {
     return apiService.getEmployeeVisitLocation(empId);
+  }
+
+   @override
+  Future<List<AttendanceReport>> getAttendanceReport(String companyId) {
+    return apiService.getAttendanceReport(companyId);
   }
 }

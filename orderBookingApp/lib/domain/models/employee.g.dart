@@ -23,7 +23,7 @@ EmployeeLogin _$EmployeeLoginFromJson(Map<String, dynamic> json) =>
       adminId: (json['admin_id'] as num?)?.toInt(),
       regionName: json['region_name'] as String?,
       companyName: json['company_name'] as String?,
-      checkinStatus: json['checkin_status'] as int?,
+      checkinStatus: (json['checkin_status'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$EmployeeLoginToJson(EmployeeLogin instance) =>

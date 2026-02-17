@@ -45,11 +45,17 @@
 
   @JsonKey(name: 'region_name')
   final String? regionName;
+
    @JsonKey(name: 'company_name')
   final String? companyName;
 
   @JsonKey(name : 'checkin_status')
   final int? checkinStatus;
+
+
+
+
+
 
  
   EmployeeLogin({
