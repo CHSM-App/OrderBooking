@@ -2,57 +2,81 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/usecase/checkin_usecase.dart';
 
-/// STATE
 class CheckinState {
-  final bool isLoading;
-  final String? error;
-  final String? message; // ✅ Added message state
-  final AsyncValue<CheckInStatusRequest?> attendance;
-  final AsyncValue<List<CheckInStatusRequest>> attendanceList;
   final bool isCheckedIn;
+  final bool isLoading;
+  final String? message;
+  final String? error;
+  final AsyncValue<CheckInStatusRequest?> todayStatus;
+  final AsyncValue<List<CheckInStatusRequest>> attendanceList;
 
   const CheckinState({
     this.isCheckedIn = false,
     this.isLoading = false,
-    this.error,
     this.message,
-    this.attendance = const AsyncValue.loading(),
-    this.attendanceList = const AsyncValue.loading(),
+    this.error,
+    this.todayStatus = const AsyncValue.data(null),
+    this.attendanceList = const AsyncValue.data([]),
   });
 
   CheckinState copyWith({
     bool? isCheckedIn,
     bool? isLoading,
-    String? error,
     String? message,
-    AsyncValue<CheckInStatusRequest?>? attendance,
+    String? error,
+    AsyncValue<CheckInStatusRequest?>? todayStatus,
     AsyncValue<List<CheckInStatusRequest>>? attendanceList,
   }) {
     return CheckinState(
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
       message: message,
-      attendance: attendance ?? this.attendance,
+      error: error,
+      todayStatus: todayStatus ?? this.todayStatus,
       attendanceList: attendanceList ?? this.attendanceList,
     );
   }
 }
-
-/// VIEWMODEL
 class CheckinViewmodel extends StateNotifier<CheckinState> {
   final CheckinUsecase usecase;
 
   CheckinViewmodel(this.usecase) : super(const CheckinState());
 
-  /// LOAD TODAY STATUS
+  Future<void> checkIn(int empId, double lat, double long) async {
+    state = state.copyWith(isLoading: true, error: null, message: null);
+    try {
+      final response = await usecase.checkIn(empId, lat, long);
+      state = state.copyWith(
+          isLoading: false,
+          isCheckedIn: true,
+          message: response.message,
+          error: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> checkOut(int empId, double lat, double long) async {
+    state = state.copyWith(isLoading: true, error: null, message: null);
+    try {
+      final response = await usecase.checkOut(empId, lat, long);
+      state = state.copyWith(
+          isLoading: false,
+          isCheckedIn: false,
+          message: response.message,
+          error: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<void> loadTodayStatus(int empId) async {
     state = state.copyWith(isLoading: true, error: null, message: null);
     try {
       final result = await usecase.fetchTodayStatus(empId);
       state = state.copyWith(
         isLoading: false,
-        attendance: AsyncValue.data(result),
+        todayStatus: AsyncValue.data(result),
         isCheckedIn: result?.checkinStatus == 1,
         error: null,
         message: null,
@@ -62,85 +86,18 @@ class CheckinViewmodel extends StateNotifier<CheckinState> {
         isLoading: false,
         error: e.toString(),
         message: null,
-        attendance: const AsyncValue.data(null),
+        todayStatus: const AsyncValue.data(null),
       );
     }
   }
-
-  /// CHECK-IN
-  Future<void> checkIn(int empId, double latitude, double longitude) async {
-    state = state.copyWith(isLoading: true, error: null, message: null);
-    try {
-      // ✅ Get response from usecase
-      final response = await usecase.checkIn(empId, latitude, longitude);
-
-      // ✅ Extract message from response
-      final message = response.message ?? 'Checked in successfully!';
-      // ✅ Update state with message
-      state = state.copyWith(
-        isLoading: false,
-        isCheckedIn: true,
-        message: message,
-        error: null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        message: null,
-      );
-      rethrow;
-    }
-  }
-
-  /// CHECK-OUT
-  Future<void> checkOut(int empId, double latitude, double longitude) async {
-    state = state.copyWith(isLoading: true, error: null, message: null);
-    try {
-      // ✅ Get response from usecase
-      final response = await usecase.checkOut(empId, latitude, longitude);
-      // ✅ Extract message from response
-      final message = response.message ?? 'Checked out successfully!';
-
-      // ✅ Update state with message
-      state = state.copyWith(
-        isLoading: false,
-        isCheckedIn: false,
-        message: message,
-        error: null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        message: null,
-      );
-      rethrow;
-    }
-  }
-
   Future<void> getAttendance(int empId) async {
-    state = state.copyWith(isLoading: true, error: null, message: null);
-    try {
-      final attendanceL = await usecase.getAttendance(empId);
-      // You can handle the attendance list as needed, e.g., store it in state
-      state = state.copyWith(
-        isLoading: false,
-        attendanceList: AsyncValue.data(attendanceL),
-        error: null,
-        message: 'Attendance fetched successfully!',
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-        message: null,
-      );
-    }
+    state = state.copyWith(isLoading: true);
+    final list = await usecase.getAttendance(empId);
+    state = state.copyWith(
+        isLoading: false, attendanceList: AsyncValue.data(list));
   }
 
-  /// Clear message (call after showing snackbar)
-  void clearMessage() {
-    state = state.copyWith(message: null, error: null);
-  }
+    void clearMessage() {
+      state = state.copyWith(message: null, error: null);
+    }
 }

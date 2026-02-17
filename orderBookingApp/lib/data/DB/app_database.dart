@@ -10,41 +10,39 @@ class AppDatabase {
     return _db!;
   }
 
-  static Future<Database> _init() async {
-    final path = join(await getDatabasesPath(), 'offline_queue.db');
 
-    return openDatabase(
-      path,
-      version: 3, // incremented version
-      onCreate: (db, _) async {
-        await _createOfflineVisitsTable(db);
-        await _createShopsTable(db);
-        await _createRegionTable(db);
-        await _createProductsTable(db);
-        await _createProductSubtypesTable(db);
-        await _createOfflineOrdersTable(db);
-        await _createOfflineOrdersItemsTable(db);
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        /// VERSION 2 Changes
-        if (oldVersion < 2) {
-          // Example: Adding new column
-          // await db.execute(
-          //   "ALTER TABLE shops ADD COLUMN gst_number TEXT"
-          // );
+static Future<Database> _init() async {
+  final path = join(await getDatabasesPath(), 'offline_queue.db');
 
-          //  Example: Creating new table
-          // await db.execute('''
-          //   CREATE TABLE IF NOT EXISTS new_table (
-          //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-          //     name TEXT
-          //   )
-          // ''');
-        }
-
-      },
-    );
-  }
+  return openDatabase(
+    path,
+    version: 4, // increment whenever adding new tables
+    onCreate: (db, _) async {
+      // Create all tables for new installs
+      await _createOfflineVisitsTable(db);
+      await _createShopsTable(db);
+      await _createRegionTable(db);
+      await _createProductsTable(db);
+      await _createProductSubtypesTable(db);
+      await _createOfflineOrdersTable(db);
+      await _createOfflineOrdersItemsTable(db);
+      await _createOfflineAttendanceTable(db);
+    },
+    onUpgrade: (db, oldVersion, newVersion) async {
+      // For older databases, create any missing tables
+      if (oldVersion < 2) {
+        // Example: new tables added in v2
+      }
+      if (oldVersion < 3) {
+        // Example: new tables added in v3
+      }
+      if (oldVersion < 4) {
+        // v4 added offline_attendance
+        await _createOfflineAttendanceTable(db);
+      }
+    },
+  );
+}
 
   static Future<void> _createOfflineVisitsTable(Database db) async {
     await db.execute('''
@@ -186,6 +184,22 @@ static Future<void> _createRegionTable(Database db) async {
     )
   ''');
   }
+static Future<void> _createOfflineAttendanceTable(Database db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS offline_attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      emp_id INTEGER,
+      type INTEGER, -- 1 = checkin, 0 = checkout
+      checkin_datetime TEXT,
+      checkout_datetime TEXT,
+      latitude REAL,
+      longitude REAL,
+      created_at TEXT
+    )
+  ''');
+}
+
+
 
   static Future<void> clearAllTables() async {
   final db = await database;
@@ -200,6 +214,7 @@ static Future<void> _createRegionTable(Database db) async {
     await txn.delete('offline_visits');
     await txn.delete('shops');
     await txn.delete('offline_regions');
+      await txn.delete('offline_attendance');
 
   });
 }
