@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +18,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
   final int initialIndex;
 
   const MainNavigationScreen({Key? key, this.initialIndex = 0})
-    : super(key: key);
+      : super(key: key);
 
   @override
   ConsumerState<MainNavigationScreen> createState() =>
@@ -35,7 +37,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     ProfilePage(),
   ];
 
-  // Nav items: icon + label
   final List<_NavItem> _navItems = const [
     _NavItem(
       icon: Icons.home_outlined,
@@ -90,6 +91,24 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final userId = loginState.userId;
 
     try {
+      final isConnected =
+          await ref.read(networkServiceProvider).checkConnection();
+      if (!isConnected) {
+        if (mounted) {
+          final actionText =
+              checkInState.isCheckedIn ? 'check out' : 'check in';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'You are offline. Please go online to $actionText.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
       if (mounted) {
         setState(() => _isLocating = true);
       }
@@ -165,7 +184,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Location permission is required to check in.'),
+              content:
+                  Text('Location permission is required to check in.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -233,7 +253,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               automaticallyImplyLeading: false,
               titleSpacing: 12,
 
-              /// PROFILE + NAME
               title: Row(
                 children: [
                   CircleAvatar(
@@ -257,7 +276,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     children: [
                       const Text(
                         "Hello,",
-                        style: TextStyle(color: Colors.white, fontSize: 15),
+                        style:
+                            TextStyle(color: Colors.white, fontSize: 15),
                       ),
                       Text(
                         employeeName,
@@ -272,9 +292,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ],
               ),
 
-              /// ACTIONS
               actions: [
-                /// CHECK IN / OUT BUTTON
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: InkWell(
@@ -332,52 +350,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                   ),
                 ),
-
-                // /// NOTIFICATIONS
-                // if (isCheckedIn)
-                //   Stack(
-                //     children: [
-                //       IconButton(
-                //         icon: const Icon(Icons.notifications_outlined),
-                //         color: Colors.white,
-                //         iconSize: 26,
-                //         onPressed: () {
-                //           Navigator.push(
-                //             context,
-                //             MaterialPageRoute(
-                //               builder: (_) => const NotificationPage(),
-                //             ),
-                //           );
-                //         },
-                //       ),
-                //       if (_notificationCount > 0)
-                //         Positioned(
-                //           right: 6,
-                //           top: 6,
-                //           child: Container(
-                //             padding: const EdgeInsets.all(3),
-                //             decoration: const BoxDecoration(
-                //               color: Colors.red,
-                //               shape: BoxShape.circle,
-                //             ),
-                //             constraints: const BoxConstraints(
-                //               minWidth: 16,
-                //               minHeight: 16,
-                //             ),
-                //             child: Text(
-                //               _notificationCount > 9
-                //                   ? '9+'
-                //                   : '$_notificationCount',
-                //               style: const TextStyle(
-                //                 color: Colors.white,
-                //                 fontSize: 9,
-                //                 fontWeight: FontWeight.bold,
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //     ],
-                //   ),
                 const SizedBox(width: 6),
               ],
             ),
@@ -389,16 +361,18 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           children: [
             IgnorePointer(
               ignoring: !isCheckedIn,
-              child: IndexedStack(index: _currentIndex, children: _pages),
+              child:
+                  IndexedStack(index: _currentIndex, children: _pages),
             ),
             if (!isCheckedIn)
               Container(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 child: const Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.lock_outline, size: 50, color: Colors.white),
+                      Icon(Icons.lock_outline,
+                          size: 50, color: Colors.white),
                       SizedBox(height: 10),
                       Text(
                         "Please Check In to Continue",
@@ -444,9 +418,15 @@ class _NavItem {
 }
 
 // ─────────────────────────────────────────────
-// Custom Pill Bottom Navigation Bar
+// Enum: what the banner is currently showing
 // ─────────────────────────────────────────────
-class _PillBottomNavBar extends StatelessWidget {
+enum _BannerMode { hidden, offline, online }
+
+// ─────────────────────────────────────────────
+// Custom Pill Bottom Navigation Bar
+// Now with an integrated network status banner
+// ─────────────────────────────────────────────
+class _PillBottomNavBar extends ConsumerStatefulWidget {
   final int currentIndex;
   final bool isEnabled;
   final List<_NavItem> items;
@@ -462,84 +442,259 @@ class _PillBottomNavBar extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_PillBottomNavBar> createState() =>
+      _PillBottomNavBarState();
+}
+
+class _PillBottomNavBarState extends ConsumerState<_PillBottomNavBar>
+    with SingleTickerProviderStateMixin {
+  _BannerMode _bannerMode = _BannerMode.hidden;
+
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnim;
+
+  Timer? _hideTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _handleNetworkChange(bool? previous, bool current) {
+    if (previous == false && current == true) {
+      // Just came back online → show green "Back Online" briefly
+      _hideTimer?.cancel();
+      setState(() => _bannerMode = _BannerMode.online);
+      _animController.forward(from: 0);
+
+      _hideTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) _hideBanner();
+      });
+    } else if (previous == true && current == false) {
+      // Just went offline → show grey "No Internet" persistently
+      _hideTimer?.cancel();
+      setState(() => _bannerMode = _BannerMode.offline);
+      _animController.forward(from: 0);
+    } else if (previous == null && current == false) {
+      // Initial load and already offline
+      setState(() => _bannerMode = _BannerMode.offline);
+      _animController.forward(from: 0);
+    }
+  }
+
+  void _hideBanner() {
+    _animController.reverse().then((_) {
+      if (mounted) setState(() => _bannerMode = _BannerMode.hidden);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Derive a soft background color from activeColor (low opacity)
-    final Color pillBg = activeColor.withOpacity(0.12);
+    // Listen to network status changes
+    ref.listen<AsyncValue<bool>>(networkStatusProvider, (previous, next) {
+      next.whenData((isConnected) {
+        _handleNetworkChange(previous?.value, isConnected);
+      });
+    });
+
+    // Also react on first load if already offline
+    final networkStatus = ref.watch(networkStatusProvider);
+    networkStatus.whenData((isConnected) {
+      if (!isConnected &&
+          _bannerMode == _BannerMode.hidden &&
+          _animController.isDismissed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() => _bannerMode = _BannerMode.offline);
+            _animController.forward(from: 0);
+          }
+        });
+      }
+    });
+
+    final Color pillBg = widget.activeColor.withValues(alpha: 0.12);
     final Color inactiveColor = Colors.grey.shade500;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      // Outer container: white background with top border shadow
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
         ],
       ),
-      // Add bottom safe-area padding
-      padding: EdgeInsets.only(
-        top: 14,
-        bottom: MediaQuery.of(context).padding.bottom + 14,
-        left: 8,
-        right: 8,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (index) {
-          final item = items[index];
-          final bool isActive = currentIndex == index;
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Nav icons row ──
+          Padding(
+            padding: EdgeInsets.only(
+              top: 14,
+              bottom: _bannerMode != _BannerMode.hidden ? 8 : 14,
+              left: 8,
+              right: 8,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(widget.items.length, (index) {
+                final item = widget.items[index];
+                final bool isActive = widget.currentIndex == index;
 
-          return GestureDetector(
-            onTap: isEnabled ? () => onTap(index) : null,
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              // Pill stretches to fit icon + label when active, shrinks to icon-only when inactive
-              padding: isActive
-                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isActive ? pillBg : Colors.transparent,
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isActive ? item.activeIcon : item.icon,
-                    size: 26,
-                    color: isActive ? activeColor : inactiveColor,
-                  ),
-                  // Animate label in/out
-                  AnimatedSize(
+                return GestureDetector(
+                  onTap:
+                      widget.isEnabled ? () => widget.onTap(index) : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
-                    child: isActive
-                        ? Row(
-                            children: [
-                              const SizedBox(width: 6),
-                              Text(
-                                item.label,
-                                style: TextStyle(
-                                  color: activeColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          )
-                        : const SizedBox.shrink(),
+                    padding: isActive
+                        ? const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isActive ? pillBg : Colors.transparent,
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isActive ? item.activeIcon : item.icon,
+                          size: 26,
+                          color: isActive
+                              ? widget.activeColor
+                              : inactiveColor,
+                        ),
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: isActive
+                              ? Row(
+                                  children: [
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      item.label,
+                                      style: TextStyle(
+                                        color: widget.activeColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              }),
             ),
-          );
-        }),
+          ),
+
+          // ── Network banner — AnimatedSize grows the nav bar upward ──
+          // so the entire bottom bar shifts up smoothly when banner appears
+          AnimatedSize(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            child: _bannerMode != _BannerMode.hidden
+                ? FadeTransition(
+                    opacity: _fadeAnim,
+                    child: _NetworkBannerStrip(
+                      mode: _bannerMode,
+                      bottomPadding: bottomPadding,
+                    ),
+                  )
+                : SizedBox(
+                    // Preserve safe-area padding even when banner is hidden
+                    // so the nav icons don't shift down when it disappears
+                    width: double.infinity,
+                    height: bottomPadding,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// The thin strip that shows inside the nav bar
+// ─────────────────────────────────────────────
+class _NetworkBannerStrip extends StatelessWidget {
+  final _BannerMode mode;
+  final double bottomPadding;
+
+  const _NetworkBannerStrip({
+    required this.mode,
+    required this.bottomPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isOffline = mode == _BannerMode.offline;
+
+    final Color bgColor = isOffline
+        ? const Color(0xFFEEEEEE)
+        : const Color.fromARGB(255, 0, 163, 14);
+
+    final Color textColor = isOffline
+        ? const Color(0xFF757575)
+        : const Color.fromARGB(255, 255, 255, 255);
+
+    final IconData icon =
+        isOffline ? Icons.wifi_off_rounded : Icons.wifi_rounded;
+
+    final String message =
+        isOffline ? 'No internet connection' : 'Back online';
+
+    return Container(
+      width: double.infinity,
+      color: bgColor,
+      padding: EdgeInsets.only(
+        top: 5,
+        bottom: bottomPadding,
+        left: 16,
+        right: 16,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: textColor),
+          const SizedBox(width: 5),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 11,
+              color: textColor,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
       ),
     );
   }

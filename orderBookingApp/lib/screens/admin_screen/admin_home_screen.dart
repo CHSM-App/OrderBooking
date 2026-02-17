@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'admin_addEmployee.dart';
+import 'package:order_booking_app/screens/employee_screen/product_report.dart';
 import 'admin_addProduct.dart';
 import 'admin_regionDetails.dart';
 import 'admin_shopDetails.dart';
@@ -391,13 +391,19 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage> {
             const SizedBox(width: 12),
             Expanded(
               child: _quickActionCard(
-                title: "New Employee",
-                icon: Icons.person_add_outlined,
+                title: "Reports",
+                icon: Icons.bar_chart_outlined,
                 color: const Color(0xFF00897B),
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
+                    MaterialPageRoute(
+                      builder: (context) => ReportPage(
+                        companyId:
+                            ref.read(adminloginViewModelProvider).companyId ??
+                                '',
+                      ),
+                    ),
                   );
                 },
               ),

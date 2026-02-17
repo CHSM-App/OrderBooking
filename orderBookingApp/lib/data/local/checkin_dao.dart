@@ -1,79 +1,56 @@
-import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+
+import 'package:order_booking_app/data/DB/app_database.dart';
+import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:sqflite/sqflite.dart';
-import '../DB/app_database.dart';
 
 class OfflineAttendanceDao {
 
-  /// INSERT CHECKIN / CHECKOUT
-  Future<void> insertAttendance({
+  
+  Future<void> upsertStatus({
     required int empId,
-    required int type, // 1 = checkin, 0 = checkout
-    required double latitude,
-    required double longitude,
+    required CheckInStatusRequest status,
   }) async {
-
     final db = await AppDatabase.database;
+    final capturedAt = DateTime.now().toIso8601String();
+    final dayKey = status.inDate ?? status.outDate ?? capturedAt.substring(0, 10);
+    final localId = '$empId-$dayKey';
 
     await db.insert(
-      'offline_attendance',
+      'offline_checkin_status',
       {
+        'local_id': localId,
         'emp_id': empId,
-        'type': type,
-        'checkin_datetime':
-            type == 1 ? DateTime.now().toIso8601String() : null,
-        'checkout_datetime':
-            type == 0 ? DateTime.now().toIso8601String() : null,
-        'latitude': latitude,
-        'longitude': longitude,
-        'created_at': DateTime.now().toIso8601String(),
+        'in_date': status.inDate,
+        'in_time': status.inTime,
+        'out_date': status.outDate,
+        'out_time': status.outTime,
+        'checkin_status': status.success,
+        'latitude': status.latitude,
+        'longitude': status.longitude,
+        'payload': jsonEncode(status.toJson()),
+        'captured_at': capturedAt,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-
-    debugPrintAttendance();
   }
 
-  /// FETCH ALL
-  Future<List<Map<String, dynamic>>> fetchAll() async {
-
+  Future<CheckInStatusRequest?> fetchLatest(int empId) async {
     final db = await AppDatabase.database;
-
-    return await db.query(
-      'offline_attendance',
-      orderBy: 'id DESC',
-    );
-  }
-
-  /// FETCH LAST STATUS
-  Future<int?> getLastStatus(int empId) async {
-
-    final db = await AppDatabase.database;
-
-    final result = await db.query(
-      'offline_attendance',
+    final rows = await db.query(
+      'offline_checkin_status',
       where: 'emp_id = ?',
       whereArgs: [empId],
-      orderBy: 'id DESC',
+      orderBy: 'captured_at DESC',
       limit: 1,
     );
 
-    if (result.isEmpty) return null;
+    if (rows.isEmpty) return null;
+    final payload = rows.first['payload'] as String?;
+    if (payload == null) return null;
 
-    return result.first['type'] as int;
+    return CheckInStatusRequest.fromJson(
+      jsonDecode(payload) as Map<String, dynamic>,
+    );
   }
-
-  /// DEBUG PRINT
-  Future<void> debugPrintAttendance() async {
-
-    final db = await AppDatabase.database;
-
-    final rows = await db.query('offline_attendance');
-
-    debugPrint('---- OFFLINE ATTENDANCE TABLE ----');
-
-    for (final row in rows) {
-      debugPrint(row.toString());
-    }
-  }
-
 }

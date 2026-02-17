@@ -2,6 +2,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
+import 'package:order_booking_app/data/local/checkin_dao.dart';
+import 'package:order_booking_app/data/local/employee_dao.dart';
 import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/data/local/offline_order_dao.dart';
 import 'package:order_booking_app/data/local/offline_region_dao.dart';
@@ -43,7 +45,8 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final employeeloginRepositoryProvider = Provider<EmployeeloginRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return EmployeeloginImpl(api);
+  final local = EmployeeDao();
+  return EmployeeloginImpl(api,local);
 });
 
 //Adminlogin Repository 
@@ -67,7 +70,8 @@ final shopRepositoryProvider = Provider<ShopRepository>((ref) {
 final checkInRepositoryProvider = Provider<CheckinRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return CheckinRepositoryImpl(api, ref);
+  final local = OfflineAttendanceDao();
+  return CheckinStatusRequestImpl(api, local);
 });
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {

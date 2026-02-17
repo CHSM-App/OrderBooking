@@ -117,30 +117,32 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productViewModelProvider);
+    final hasProducts = state.productList?.value != null;
 
     return Scaffold(
       backgroundColor: _kBackground,
       body: SafeArea(
-        child: state.isLoading
+        child: (state.isLoading && !hasProducts)
             ? _buildLoading()
-            : state.productList!.when(
-                data: (products) {
-                  if (_filteredProducts.isEmpty &&
-                      _searchController.text.isEmpty) {
-                    _filteredProducts = List.from(products)
-                      ..sort((a, b) => (a.productName ?? '')
-                          .compareTo(b.productName ?? ''));
-                  }
-                  return Column(
-                    children: [
-                      _buildHeader(products),
-                      Expanded(child: _buildList()),
-                    ],
-                  );
-                },
-                loading: _buildLoading,
-                error: (e, _) => _buildError(e.toString()),
-              ),
+            : (state.productList?.when(
+                  data: (products) {
+                    if (_filteredProducts.isEmpty &&
+                        _searchController.text.isEmpty) {
+                      _filteredProducts = List.from(products)
+                        ..sort((a, b) => (a.productName ?? '')
+                            .compareTo(b.productName ?? ''));
+                    }
+                    return Column(
+                      children: [
+                        _buildHeader(products),
+                        Expanded(child: _buildList()),
+                      ],
+                    );
+                  },
+                  loading: _buildLoading,
+                  error: (e, _) => _buildError(e.toString()),
+                ) ??
+                _buildLoading()),
       ),
     );
   }

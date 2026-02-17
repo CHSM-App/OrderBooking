@@ -477,23 +477,23 @@ Widget build(BuildContext context) {
                 },
               ),
             ),
-             const SizedBox(width: 12),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.bar_chart_rounded,
-                label: 'Reports',
-                backgroundColor: const Color(0xFFD4F4E7),
-                iconColor: const Color.fromARGB(255, 180, 29, 12),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                     builder: (context) => ReportPage(companyId: ref.read(adminloginViewModelProvider).companyId ?? ''),
-                    ),
-                  );
-                },
-              ),
-            ),
+            //  const SizedBox(width: 12),
+            // Expanded(
+            //   child: _QuickActionButton(
+            //     icon: Icons.bar_chart_rounded,
+            //     label: 'Reports',
+            //     backgroundColor: const Color(0xFFD4F4E7),
+            //     iconColor: const Color.fromARGB(255, 180, 29, 12),
+            //     onTap: () {
+            //       Navigator.push(
+            //         context,
+            //         MaterialPageRoute(
+            //          builder: (context) => ReportPage(companyId: ref.read(adminloginViewModelProvider).companyId ?? ''),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
           ],
         ),
       ],

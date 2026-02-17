@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/controllers/sync_controller.dart';
-import 'package:order_booking_app/screens/network_banner.dart';
 import 'package:order_booking_app/screens/splash_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
  
@@ -39,7 +38,7 @@ class EmployeePortalApp extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: kBottomNavigationBarHeight),
             child: const Align(
               alignment: Alignment.bottomCenter,
-              child: NetworkBanner(),
+              // child: NetworkBanner(),
             ),
           ),
         ],

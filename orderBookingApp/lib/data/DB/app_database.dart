@@ -1,4 +1,4 @@
-import 'package:path/path.dart';
+﻿import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
@@ -10,39 +10,48 @@ class AppDatabase {
     return _db!;
   }
 
+  static Future<Database> _init() async {
+    final path = join(await getDatabasesPath(), 'offline_queue.db');
 
-static Future<Database> _init() async {
-  final path = join(await getDatabasesPath(), 'offline_queue.db');
+    return openDatabase(
+      path,
+      version: 4, // incremented version
+      onCreate: (db, _) async {
+        await _createOfflineVisitsTable(db);
+        await _createShopsTable(db);
+        await _createRegionTable(db);
+        await _createProductsTable(db);
+        await _createProductSubtypesTable(db);
+        await _createOfflineOrdersTable(db);
+        await _createOfflineOrdersItemsTable(db);
+        await _createOfflineCheckinStatusTable(db);
+        await createEmployeeTable(db);
+      },
+      
+      onUpgrade: (db, oldVersion, newVersion) async {
+        /// VERSION 2 Changes
+        if (oldVersion < 2) {
+          // Example: Adding new column
+          // await db.execute(
+          //   "ALTER TABLE shops ADD COLUMN gst_number TEXT"
+          // );
 
-  return openDatabase(
-    path,
-    version: 4, // increment whenever adding new tables
-    onCreate: (db, _) async {
-      // Create all tables for new installs
-      await _createOfflineVisitsTable(db);
-      await _createShopsTable(db);
-      await _createRegionTable(db);
-      await _createProductsTable(db);
-      await _createProductSubtypesTable(db);
-      await _createOfflineOrdersTable(db);
-      await _createOfflineOrdersItemsTable(db);
-      await _createOfflineAttendanceTable(db);
-    },
-    onUpgrade: (db, oldVersion, newVersion) async {
-      // For older databases, create any missing tables
-      if (oldVersion < 2) {
-        // Example: new tables added in v2
-      }
-      if (oldVersion < 3) {
-        // Example: new tables added in v3
-      }
-      if (oldVersion < 4) {
-        // v4 added offline_attendance
-        await _createOfflineAttendanceTable(db);
-      }
-    },
-  );
-}
+          //  Example: Creating new table
+          // await db.execute('''
+          //   CREATE TABLE IF NOT EXISTS new_table (
+          //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+          //     name TEXT
+          //   )
+          // ''');
+        }
+
+        if (oldVersion < 4) {
+          await _createOfflineCheckinStatusTable(db);
+        }
+
+      },
+    );
+  }
 
   static Future<void> _createOfflineVisitsTable(Database db) async {
     await db.execute('''
@@ -110,7 +119,7 @@ static Future<void> _createRegionTable(Database db) async {
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       local_id TEXT UNIQUE,
-      product_id INTEGER UNIQUE,  -- 🔥 IMPORTANT
+      product_id INTEGER UNIQUE,  -- ðŸ”¥ IMPORTANT
       product_name TEXT,
       product_type TEXT,
       created_by INTEGER,
@@ -168,6 +177,25 @@ static Future<void> _createRegionTable(Database db) async {
   ''');
   }
           
+  static Future<void> _createOfflineCheckinStatusTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS offline_checkin_status (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        local_id TEXT UNIQUE,
+        emp_id INTEGER,
+        in_date TEXT,
+        in_time TEXT,
+        out_date TEXT,
+        out_time TEXT,
+        checkin_status INTEGER,
+        latitude REAL,
+        longitude REAL,
+        payload TEXT NOT NULL,
+        captured_at TEXT NOT NULL
+      )
+    ''');
+  }
+
   static Future<void> _createOfflineOrdersItemsTable(Database db) async {
     await db.execute('''
       CREATE TABLE offline_order_items (
@@ -184,21 +212,29 @@ static Future<void> _createRegionTable(Database db) async {
     )
   ''');
   }
-static Future<void> _createOfflineAttendanceTable(Database db) async {
+
+  static Future<void> createEmployeeTable(Database db) async {
   await db.execute('''
-    CREATE TABLE IF NOT EXISTS offline_attendance (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      emp_id INTEGER,
-      type INTEGER, -- 1 = checkin, 0 = checkout
-      checkin_datetime TEXT,
-      checkout_datetime TEXT,
-      latitude REAL,
-      longitude REAL,
-      created_at TEXT
+    CREATE TABLE IF NOT EXISTS employee (
+      emp_id INTEGER PRIMARY KEY,
+      emp_name TEXT,
+      emp_mobile TEXT,
+      emp_address TEXT,
+      emp_email TEXT,
+      region_id INTEGER,
+      image_url TEXT,
+      id_proof TEXT,
+      active_status INTEGER,
+      joining_date TEXT,
+      role_id INTEGER,
+      company_id TEXT,
+      admin_id INTEGER,
+      region_name TEXT,
+      company_name TEXT,
+      checkin_status INTEGER
     )
   ''');
 }
-
 
 
   static Future<void> clearAllTables() async {
@@ -206,15 +242,16 @@ static Future<void> _createOfflineAttendanceTable(Database db) async {
 
   await db.transaction((txn) async {
 
-    // 👇 Add every table here
+    // ðŸ‘‡ Add every table here
     await txn.delete('products');
     await txn.delete('product_subtypes');
     await txn.delete('offline_orders');
     await txn.delete('offline_order_items');
     await txn.delete('offline_visits');
+    await txn.delete('offline_checkin_status');
     await txn.delete('shops');
     await txn.delete('offline_regions');
-      await txn.delete('offline_attendance');
+    await txn.delete('employee');
 
   });
 }

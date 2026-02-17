@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/offline_region_dao.dart';

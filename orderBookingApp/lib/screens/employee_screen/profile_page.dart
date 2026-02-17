@@ -96,6 +96,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     // build() re-runs and we catch it here.
     final mobileNo = ref.watch(adminloginViewModelProvider).mobileNo;
     final employeeState = ref.watch(employeeloginViewModelProvider);
+    final details = employeeState.employeeDetails.value ?? const <EmployeeLogin>[];
+    final hasDetails = details.isNotEmpty;
 
     // ✅ Trigger fetch exactly once, as soon as mobileNo is available.
     // addPostFrameCallback safely defers the side-effect outside of build().
@@ -110,8 +112,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       });
     }
 
-    // Show loading while mobileNo isn't ready yet, or the fetch is running.
-    if (!_hasFetchedOnce || employeeState.isLoading) {
+    // Show loading only when we don't already have data to render.
+    if (!_hasFetchedOnce && !hasDetails) {
+      return Scaffold(
+        backgroundColor: ProfileTheme.backgroundGray,
+        body: _buildLoadingState(),
+      );
+    }
+    if (employeeState.isLoading && !hasDetails) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
         body: _buildLoadingState(),
@@ -119,7 +127,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     }
 
     // Error state
-    if (employeeState.error != null) {
+    if (employeeState.error != null && !hasDetails) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
         body: _buildErrorState(employeeState.error!, mobileNo ?? ""),
@@ -127,8 +135,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     }
 
     // Empty state
-    final list = employeeState.employeeDetails.value ?? [];
-    if (list.isEmpty) {
+    if (!hasDetails) {
       return Scaffold(
         backgroundColor: ProfileTheme.backgroundGray,
         body: _buildEmptyStateWithRefresh(mobileNo ?? ""),
@@ -138,7 +145,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     // Success
     return Scaffold(
       backgroundColor: ProfileTheme.backgroundGray,
-      body: _buildProfileContent(list.first, mobileNo ?? ""),
+      body: _buildProfileContent(details.first, mobileNo ?? ""),
     );
   }
 

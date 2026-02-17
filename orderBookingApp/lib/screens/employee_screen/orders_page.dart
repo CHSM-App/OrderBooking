@@ -274,8 +274,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   // ── Body ───────────────────────────────────────────────────────────────────
   Widget _buildBody(ordersState state) {
-    if (state.isLoading) return _buildLoading();
-    if (state.errorMessage != null) return _buildError(state.errorMessage!);
+    final hasOrders = state.orders?.value != null;
+    if (state.isLoading && !hasOrders) return _buildLoading();
+    if (state.errorMessage != null && !hasOrders) {
+      return _buildError(state.errorMessage!);
+    }
 
     if (state.orders != null) {
       return state.orders!.when(
