@@ -161,7 +161,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
         height: 46,
         decoration: BoxDecoration(
           color: _kSurface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(17),
           border: Border.all(color: _kDivider),
         ),
         child: TextField(
@@ -201,7 +201,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 8,
-              vertical: 13,
+              vertical: 16,
             ),
             isDense: true,
           ),

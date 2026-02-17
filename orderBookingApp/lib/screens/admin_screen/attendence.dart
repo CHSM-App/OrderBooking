@@ -33,8 +33,11 @@ class _AttendanceCalendarPageState
     if (widget.joiningDate != null) {
       try {
         final parsed = DateTime.parse(widget.joiningDate!);
-        _joiningDateNormalized =
-            DateTime(parsed.year, parsed.month, parsed.day);
+        _joiningDateNormalized = DateTime(
+          parsed.year,
+          parsed.month,
+          parsed.day,
+        );
       } catch (e) {
         print('Error parsing joining date: $e');
       }
@@ -46,8 +49,7 @@ class _AttendanceCalendarPageState
   }
 
   // ---------- Helpers ----------
-  bool _isFutureDate(DateTime date) =>
-      date.isAfter(DateTime.now());
+  bool _isFutureDate(DateTime date) => date.isAfter(DateTime.now());
 
   bool _isBeforeJoining(DateTime date) =>
       _joiningDateNormalized != null && date.isBefore(_joiningDateNormalized!);
@@ -62,7 +64,8 @@ class _AttendanceCalendarPageState
   }
 
   Map<DateTime, AttendanceStatus> _buildAttendanceMap(
-      List<CheckInStatusRequest> list) {
+    List<CheckInStatusRequest> list,
+  ) {
     final map = <DateTime, AttendanceStatus>{};
 
     for (final item in list) {
@@ -72,8 +75,10 @@ class _AttendanceCalendarPageState
       map[dayKey] = _mapToStatus(item);
     }
 
-    final daysInMonth =
-        DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      _focusedMonth.year,
+      _focusedMonth.month,
+    );
     for (int day = 1; day <= daysInMonth; day++) {
       final date = DateTime(_focusedMonth.year, _focusedMonth.month, day);
       if (!_isBlockedDate(date) && !map.containsKey(date)) {
@@ -123,10 +128,7 @@ class _AttendanceCalendarPageState
             const SizedBox(height: 20),
             Text(
               DateFormat('EEEE, dd MMM yyyy').format(date),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (records.isEmpty)
@@ -142,8 +144,10 @@ class _AttendanceCalendarPageState
                 return ListTile(
                   title: Text("Check-in: $inTime, Check-out: $outTime"),
                   leading: Icon(
-                    r.checkinStatus == 1 ? Icons.check_circle : Icons.cancel,
-                    color: r.checkinStatus == 1 ? Colors.green : Colors.red,
+                    r.checkinStatus == 1
+                        ? Icons.check_circle
+                        : Icons.check_circle,
+                    color: r.checkinStatus == 1 ? Colors.green : Colors.green,
                   ),
                 );
               }).toList(),
@@ -161,7 +165,10 @@ class _AttendanceCalendarPageState
 
     void _changeMonth(int offset) {
       setState(() {
-        _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + offset);
+        _focusedMonth = DateTime(
+          _focusedMonth.year,
+          _focusedMonth.month + offset,
+        );
       });
       ref.read(checkInViewModelProvider.notifier).getAttendance(widget.empId);
     }
@@ -179,10 +186,12 @@ class _AttendanceCalendarPageState
         DropdownButton<int>(
           value: _focusedMonth.month,
           items: months
-              .map((m) => DropdownMenuItem(
-                    value: m,
-                    child: Text(DateFormat('MMMM').format(DateTime(0, m))),
-                  ))
+              .map(
+                (m) => DropdownMenuItem(
+                  value: m,
+                  child: Text(DateFormat('MMMM').format(DateTime(0, m))),
+                ),
+              )
               .toList(),
           onChanged: (m) {
             if (m != null) {
@@ -201,10 +210,7 @@ class _AttendanceCalendarPageState
         DropdownButton<int>(
           value: _focusedMonth.year,
           items: years
-              .map((y) => DropdownMenuItem(
-                    value: y,
-                    child: Text('$y'),
-                  ))
+              .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
               .toList(),
           onChanged: (y) {
             if (y != null) {
@@ -233,22 +239,26 @@ class _AttendanceCalendarPageState
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekdays
-          .map((d) => Expanded(
-                  child: Center(
+          .map(
+            (d) => Expanded(
+              child: Center(
                 child: Text(
                   d,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.grey),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
-              )))
+              ),
+            ),
+          )
           .toList(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final attendanceAsync =
-        ref.watch(checkInViewModelProvider).attendanceList;
+    final attendanceAsync = ref.watch(checkInViewModelProvider).attendanceList;
 
     return Scaffold(
       appBar: AppBar(
@@ -260,10 +270,11 @@ class _AttendanceCalendarPageState
           final list = data;
           final attendanceData = _buildAttendanceMap(list);
 
-          final firstDay =
-              DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-          final daysInMonth =
-              DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
+          final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+          final daysInMonth = DateUtils.getDaysInMonth(
+            _focusedMonth.year,
+            _focusedMonth.month,
+          );
           final startWeekday = firstDay.weekday % 7;
 
           return Column(
@@ -285,8 +296,11 @@ class _AttendanceCalendarPageState
                   itemBuilder: (context, index) {
                     if (index < startWeekday) return const SizedBox();
                     final day = index - startWeekday + 1;
-                    final date =
-                        DateTime(_focusedMonth.year, _focusedMonth.month, day);
+                    final date = DateTime(
+                      _focusedMonth.year,
+                      _focusedMonth.month,
+                      day,
+                    );
                     final status = attendanceData[date];
                     final isBlocked = _isBlockedDate(date);
 
@@ -298,12 +312,13 @@ class _AttendanceCalendarPageState
                           color: isBlocked
                               ? Colors.grey[200]
                               : status == AttendanceStatus.present
-                                  ? Colors.green[100]
-                                  : Colors.red[100],
+                              ? Colors.green[100]
+                              : Colors.red[100],
                           border: Border.all(
-                              color: status == AttendanceStatus.present
-                                  ? Colors.green
-                                  : Colors.grey),
+                            color: status == AttendanceStatus.present
+                                ? Colors.green
+                                : Colors.grey,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text('$day'),
