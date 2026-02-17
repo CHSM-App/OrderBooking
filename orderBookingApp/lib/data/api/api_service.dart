@@ -12,6 +12,7 @@ import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 // import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
+import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -56,11 +57,17 @@ abstract class ApiService {
   @POST("insert/addProduct")
   Future<ProductResponse> addOrUpdateProduct(@Body() Product product);
 
-  @POST("users/checkIn/{emp_id}")
-  Future<CheckInStatusRequest> checkIn(@Path("emp_id") int empId);
+  @POST("users/checkIn/{emp_id}/{latitude}/{longitude}")
+  Future<CheckInStatusRequest> checkIn(
+    @Path("emp_id") int empId,
+    @Path("latitude") double latitude,
+    @Path("longitude") double longitude,
+  );
 
-  @POST("users/checkOut/{emp_id}")
-  Future<CheckInStatusRequest> checkOut(@Path("emp_id") int empId);
+  @POST("users/checkOut/{emp_id}/{latitude}/{longitude}")
+  Future<CheckInStatusRequest> checkOut(@Path("emp_id") int empId,
+    @Path("latitude") double latitude,
+    @Path("longitude") double longitude,);
 
   //GET METHODS
   @GET("users/employeeList/{company_id}")
@@ -151,6 +158,11 @@ abstract class ApiService {
 
   @DELETE("index/deleteShop/{shop_id}")
   Future<dynamic> deleteShop(@Path("shop_id") int shopId);
+
+
+  @GET("users/productReport/{company_id}")
+  Future<List<ProductData>> productReport(@Path("company_id") String companyId);
+  
 }
 
 

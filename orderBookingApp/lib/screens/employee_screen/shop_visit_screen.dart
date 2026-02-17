@@ -7,17 +7,19 @@ import 'package:url_launcher/url_launcher.dart';
 import 'order_form_screen.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
-const _kPrimary      = Color(0xFFE8720C);
-const _kPrimaryLight = Color(0xFFFFF3E8);
-const _kGreen        = Color(0xFF22C55E);
-const _kGreenLight   = Color(0xFFDCFCE7);
-const _kAmber        = Color(0xFFF59E0B);
-const _kAmberLight   = Color(0xFFFEF3C7);
-const _kSurface      = Color(0xFFFFFFFF);
-const _kBackground   = Color(0xFFF5F5F5);
-const _kTextPrimary  = Color(0xFF1A1A1A);
+const _kPrimary       = Color(0xFFE8720C);
+const _kPrimaryLight  = Color(0xFFFFF3E8);
+const _kGreen         = Color(0xFF22C55E);
+const _kGreenLight    = Color(0xFFDCFCE7);
+const _kAmber         = Color(0xFFF59E0B);
+const _kAmberLight    = Color(0xFFFEF3C7);
+const _kRed           = Color(0xFFEF4444);
+const _kRedLight      = Color(0xFFFEE2E2);
+const _kSurface       = Color(0xFFFFFFFF);
+const _kBackground    = Color(0xFFF5F5F5);
+const _kTextPrimary   = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF6B6B6B);
-const _kDivider      = Color(0xFFEEEEEE);
+const _kDivider       = Color(0xFFEEEEEE);
 
 class ShopVisitScreen extends ConsumerStatefulWidget {
   final ShopDetails shop;
@@ -31,7 +33,8 @@ class ShopVisitScreen extends ConsumerStatefulWidget {
 }
 
 class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
-  bool _isPunchedIn = false;
+  bool _isPunchedIn  = false;
+  bool _isPunchedOut = false; // true once punch-out is completed
   DateTime? _punchInTime;
   DateTime? _punchOutTime;
 
@@ -40,6 +43,8 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
     super.initState();
     Future.delayed(const Duration(milliseconds: 400), _autoPunchIn);
   }
+
+  // ── Punch helpers ──────────────────────────────────────────────────────────
 
   void _autoPunchIn() {
     if (!mounted) return;
@@ -53,6 +58,131 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       icon: Icons.check_circle_outline_rounded,
     );
   }
+
+  /// Performs the actual punch-out logic and saves the visit.
+  /// Returns true so callers know it completed.
+  Future<bool> _doPunchOut() async {
+    final now = DateTime.now();
+    setState(() {
+      _punchOutTime = now;
+      _isPunchedIn  = false;
+      _isPunchedOut = true;
+    });
+
+    final updatedVisit = VisitPayload(
+      localId:    widget.visit.localId,
+      shopId:     widget.visit.shopId,
+      employeeId: widget.visit.employeeId,
+      lat:        widget.visit.lat,
+      lng:        widget.visit.lng,
+      accuracy:   widget.visit.accuracy,
+      capturedAt: widget.visit.capturedAt ?? now,
+      punchIn:    widget.visit.punchIn,
+      punchOut:   now.toLocal().toIso8601String(),
+    );
+    ref.read(visitViewModelProvider.notifier).addVisit(updatedVisit);
+
+    _showSnack(
+      'Punched out at ${_formatTime(_punchOutTime)}',
+      color: _kAmber,
+      icon: Icons.logout_rounded,
+    );
+    return true;
+  }
+
+  Future<bool> _onWillPop() async {
+    // Already punched out — safe to leave
+    if (_isPunchedOut || !_isPunchedIn) return true;
+
+    // Still active — ask what to do
+    final result = await _showExitDialog();
+    return result ?? false; // null = dialog dismissed without choosing
+  }
+
+  Future<bool?> _showExitDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // force an explicit choice
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        title: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: _kAmberLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded,
+                  color: _kAmber, size: 28),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'You\'re Still Punched In',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        content: Text(
+          'You haven\'t punched out from ${widget.shop.shopName ?? "this shop"} yet.\n\nWould you like to punch out before leaving?',
+          style: const TextStyle(
+              fontSize: 14, color: _kTextSecondary, height: 1.6),
+          textAlign: TextAlign.center,
+        ),
+        actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          // ── Cancel: stay on screen ────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _kTextSecondary,
+                side: const BorderSide(color: _kDivider),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Cancel',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // ── Punch out then leave ──────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(ctx, false); // close dialog first
+                await _doPunchOut();
+                if (mounted) Navigator.pop(context); // then leave screen
+              },
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text('Punch Out & Leave',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAmber,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Manual punch-out from button ───────────────────────────────────────────
 
   void _handlePunchOut() {
     showDialog(
@@ -96,33 +226,9 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                 style: TextStyle(color: _kTextSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
-              final now = DateTime.now();
-              setState(() {
-                _punchOutTime = now;
-                _isPunchedIn = false;
-              });
-
-              final updatedVisit = VisitPayload(
-                localId: widget.visit.localId,
-                shopId: widget.visit.shopId,
-                employeeId: widget.visit.employeeId,
-                lat: widget.visit.lat,
-                lng: widget.visit.lng,
-                accuracy: widget.visit.accuracy,
-                capturedAt: widget.visit.capturedAt ?? now,
-                punchIn: widget.visit.punchIn,
-                // punchOut: VisitPayload.formatForApi(now.toLocal()),
-                punchOut: now.toLocal().toIso8601String(),
-              );
-              ref.read(visitViewModelProvider.notifier).addVisit(updatedVisit);
-
+            onPressed: () async {
               Navigator.pop(ctx);
-              _showSnack(
-                'Punched out at ${_formatTime(_punchOutTime)}',
-                color: _kAmber,
-                icon: Icons.logout_rounded,
-              );
+              await _doPunchOut();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _kAmber,
@@ -140,6 +246,8 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       ),
     );
   }
+
+  // ── Misc helpers ───────────────────────────────────────────────────────────
 
   void _showSnack(String msg,
       {required Color color, required IconData icon}) {
@@ -170,58 +278,59 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
     return '$h:$m';
   }
 
-
   Future<void> _callShop() async {
     final raw = widget.shop.mobileNo?.trim() ?? '';
     if (raw.isEmpty) {
-      _showSnack(
-        'Phone number not available',
-        color: Colors.red,
-        icon: Icons.error_outline_rounded,
-      );
+      _showSnack('Phone number not available',
+          color: Colors.red, icon: Icons.error_outline_rounded);
       return;
     }
-
     final uri = Uri(scheme: 'tel', path: raw);
     if (!await canLaunchUrl(uri)) {
-      _showSnack(
-        'Unable to open dialer',
-        color: Colors.red,
-        icon: Icons.error_outline_rounded,
-      );
+      _showSnack('Unable to open dialer',
+          color: Colors.red, icon: Icons.error_outline_rounded);
       return;
     }
-
     await launchUrl(uri);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _kBackground,
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildStatusCard(),
-                const SizedBox(height: 16),
-                _buildShopDetails(),
-                const SizedBox(height: 16),
-                if (_isPunchedIn) _buildActionButtons(),
-                const SizedBox(height: 32),
-              ]),
+    return PopScope(
+      canPop: false, // block automatic pop — we decide when to allow it
+      onPopInvoked: (didPop) async {
+        if (didPop) return; // already popped (shouldn't happen with canPop:false)
+        final shouldPop = await _onWillPop();
+        if (shouldPop && mounted) Navigator.pop(context);
+      },
+      child: Scaffold(
+        backgroundColor: _kBackground,
+        body: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildStatusCard(),
+                  const SizedBox(height: 16),
+                  _buildShopDetails(),
+                  const SizedBox(height: 16),
+                  if (_isPunchedIn) _buildActionButtons(),
+                  const SizedBox(height: 32),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   // ── App bar ────────────────────────────────────────────────────────────────
+
   SliverAppBar _buildAppBar() {
     return SliverAppBar(
       expandedHeight: 130,
@@ -231,40 +340,17 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 20),
-        onPressed: () => Navigator.pop(context),
+        // ✅ Tap the back arrow → same guard as system back
+        onPressed: () async {
+          final shouldPop = await _onWillPop();
+          if (shouldPop && mounted) Navigator.pop(context);
+        },
       ),
-      // actions: [
-      //   Container(
-      //     margin: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-      //     decoration: BoxDecoration(
-      //       color: Colors.white.withOpacity(0.2),
-      //       borderRadius: BorderRadius.circular(10),
-      //     ),
-      //     child: IconButton(
-      //       icon: const Icon(Icons.call_outlined,
-      //           color: Colors.white, size: 20),
-      //       onPressed: () {},
-      //       padding: const EdgeInsets.all(8),
-      //       constraints: const BoxConstraints(),
-      //     ),
-      //   ),
-      // ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           color: const Color.fromARGB(255, 253, 151, 62),
           child: Stack(
             children: [
-              // // Watermark icon
-              // Positioned(
-              //   right: -16,
-              //   bottom: -12,
-              //   child: Icon(
-              //     Icons.storefront_outlined,
-              //     size: 160,
-              //     color: Colors.white.withOpacity(0.1),
-              //   ),
-              // ),
-              // Shop info
               Positioned(
                 left: 20,
                 right: 20,
@@ -273,29 +359,6 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Badge
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 10, vertical: 4),
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white.withOpacity(0.2),
-                    //     borderRadius: BorderRadius.circular(20),
-                    //   ),
-                    //   child: const Row(
-                    //     mainAxisSize: MainAxisSize.min,
-                    //     children: [
-                    //       Icon(Icons.storefront_outlined,
-                    //           color: Colors.white, size: 12),
-                    //       SizedBox(width: 5),
-                    //       Text('Shop Visit',
-                    //           style: TextStyle(
-                    //               fontSize: 11,
-                    //               color: Colors.white,
-                    //               fontWeight: FontWeight.w600)),
-                    //     ],
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 10),
                     Text(
                       widget.shop.shopName ?? '',
                       style: const TextStyle(
@@ -337,10 +400,11 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
   }
 
   // ── Status card ────────────────────────────────────────────────────────────
+
   Widget _buildStatusCard() {
-    final isIn = _isPunchedIn;
+    final isIn       = _isPunchedIn;
     final accentColor = isIn ? _kGreen : _kAmber;
-    final bgColor = isIn ? _kGreenLight : _kAmberLight;
+    final bgColor     = isIn ? _kGreenLight : _kAmberLight;
 
     return Container(
       decoration: BoxDecoration(
@@ -350,7 +414,6 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       ),
       child: Column(
         children: [
-          // Status row
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -372,27 +435,15 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isIn ? 'Punched In' : 'Not Punched In',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: accentColor,
-                        ),
-                      ),
-                      // if (isIn)
-                      //   Text(
-                      //     'Duration: ${_getDuration()}',
-                      //     style: const TextStyle(
-                      //         fontSize: 12, color: _kTextSecondary),
-                      //   ),
-                    ],
+                  child: Text(
+                    isIn ? 'Punched In' : 'Visit Ended',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
                   ),
                 ),
-                // Status pill
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -401,7 +452,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    isIn ? 'Active' : 'Inactive',
+                    isIn ? 'Active' : 'Done',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -412,8 +463,6 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
               ],
             ),
           ),
-
-          // Time info row (only when punched in)
           if (isIn) ...[
             const Divider(height: 1, color: _kDivider),
             Padding(
@@ -428,8 +477,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
                       color: _kGreen,
                     ),
                   ),
-                  Container(
-                      width: 1, height: 36, color: _kDivider),
+                  Container(width: 1, height: 36, color: _kDivider),
                   Expanded(
                     child: _buildTimeCell(
                       label: 'Location',
@@ -478,6 +526,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
   }
 
   // ── Shop details ───────────────────────────────────────────────────────────
+
   Widget _buildShopDetails() {
     final rows = <Widget>[];
 
@@ -555,10 +604,10 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
   }
 
   // ── Action buttons ─────────────────────────────────────────────────────────
+
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Add Order
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -574,8 +623,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
             ),
             icon: const Icon(Icons.add_shopping_cart_outlined, size: 20),
             label: const Text('Add Order',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 15)),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _kPrimary,
               foregroundColor: Colors.white,
@@ -586,7 +634,6 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        // Punch Out
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -594,8 +641,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
             onPressed: _handlePunchOut,
             icon: const Icon(Icons.logout_rounded, size: 20),
             label: const Text('Punch Out',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 15)),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
             style: OutlinedButton.styleFrom(
               foregroundColor: _kAmber,
               side: const BorderSide(color: _kAmber, width: 1.5),
@@ -610,6 +656,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
 }
 
 // ── Detail Row ─────────────────────────────────────────────────────────────
+
 class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;

@@ -259,7 +259,11 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<CheckInStatusRequest> checkIn(int empId) async {
+  Future<CheckInStatusRequest> checkIn(
+    int empId,
+    double latitude,
+    double longitude,
+  ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -268,7 +272,7 @@ class _ApiService implements ApiService {
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/checkIn/${empId}',
+            'users/checkIn/${empId}/${latitude}/${longitude}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -286,7 +290,11 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<CheckInStatusRequest> checkOut(int empId) async {
+  Future<CheckInStatusRequest> checkOut(
+    int empId,
+    double latitude,
+    double longitude,
+  ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -295,7 +303,7 @@ class _ApiService implements ApiService {
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/checkOut/${empId}',
+            'users/checkOut/${empId}/${latitude}/${longitude}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -967,6 +975,35 @@ class _ApiService implements ApiService {
     );
     final _result = await _dio.fetch(_options);
     final _value = _result.data;
+    return _value;
+  }
+
+  @override
+  Future<List<ProductData>> productReport(String companyId) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<List<ProductData>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'users/productReport/${companyId}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<ProductData> _value;
+    try {
+      _value = _result.data!
+          .map((dynamic i) => ProductData.fromJson(i as Map<String, dynamic>))
+          .toList();
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
     return _value;
   }
 

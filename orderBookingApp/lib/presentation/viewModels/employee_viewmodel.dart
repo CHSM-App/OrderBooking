@@ -41,6 +41,7 @@ class EmployeeloginState {
     bool? isPhoneNoExists,
     bool? mobileNoStatus,
     bool? isLoading,
+    bool clearError = false,
     String? error,
     AsyncValue<List<EmployeeLogin>>? employeeList,
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
@@ -55,7 +56,7 @@ class EmployeeloginState {
       isLoading: isLoading ?? this.isLoading,
       isPhoneNoExists: isPhoneNoExists ?? this.isPhoneNoExists,
       mobileNoStatus: mobileNoStatus ?? this.mobileNoStatus,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
       employeeVisits: employeeVisits ?? this.employeeVisits,
@@ -76,7 +77,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
   EmployeeloginViewModel(this.usecase) : super(const EmployeeloginState());
   
   Future<int> addEmployee(EmployeeLogin employeeLogin) async {
-  state = state.copyWith(isLoading: true, error: null);
+  state = state.copyWith(isLoading: true, clearError: true);
   try {
     final response = await usecase.addEmployee(employeeLogin);
     // Extract empId from response map
@@ -92,7 +93,7 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
 }
 
 Future<void> uploadEmployeeIdProof(File image, int empId) async {
-  state = state.copyWith(isLoading: true, error: null);
+  state = state.copyWith(isLoading: true, clearError: true);
   try {
     await usecase.uploadEmployeeIdProof(image, empId.toString());   
     state = state.copyWith(isLoading: false);
@@ -115,11 +116,11 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
       final cached = state.employeeList.value;
       if (cached != null && cached.isNotEmpty) {
         hasCached = true;
-        state = state.copyWith(isLoading: false, error: null);
+        state = state.copyWith(isLoading: false, clearError: true);
       }
     }
 
-    state = state.copyWith(isLoading: !hasCached, error: null);
+    state = state.copyWith(isLoading: !hasCached, clearError: true);
     try {
       final employees = await usecase.getEmployeeList(companyId);
       state = state.copyWith(
@@ -140,7 +141,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   Future<void> fetchEmployeeDetails(int empId) async {
     state = state.copyWith(
       isLoading: true,
-      error: null,
+      clearError: true,
       employeeDetails: const AsyncValue.loading(),
     );
     try {
@@ -158,7 +159,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
   }
 
   Future<void> fetchEmployeeInfo(String mobile) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await usecase.fetchEmployeeInfo(mobile);
       state = state.copyWith(
@@ -172,7 +173,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 
   /// DELETE EMPLOYEE
   Future<void> deleteEmployee(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       await usecase.deleteEmployee(empId);
 
@@ -192,7 +193,12 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 
   //check weather mobile number already exists in table
   Future<void> checkMobileExists(String mobileNo, String companyId) async {
-    state = state.copyWith(isLoading: true, error: null,isPhoneNoExists: null, mobileNoStatus: null );
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+      isPhoneNoExists: null,
+      mobileNoStatus: null,
+    );
 
     try {
       final exists = await usecase.checkMobileExists(
@@ -213,7 +219,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 }
 
 Future<void> getEmployeeVisit(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final employees = await usecase.getEmployeeVisit(empId);
       for (var employee in employees){
@@ -232,7 +238,7 @@ Future<void> getEmployeeVisit(int empId) async {
     }
   }
 Future<void> getEmployeeVisitLocation(int empId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final employees = await usecase.getEmployeeVisitLocation(empId);
       for (var employee in employees){

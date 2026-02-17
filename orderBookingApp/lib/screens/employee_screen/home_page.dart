@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
+import 'package:order_booking_app/screens/employee_screen/product_report.dart';
 
 
 class HomePage extends ConsumerStatefulWidget {
@@ -303,8 +304,6 @@ Future<void> _onRefresh() async {
   }
 }
 
-
-
 @override
 Widget build(BuildContext context) {
    
@@ -472,29 +471,29 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AddShopScreen(),
+                      builder: (context) => AddShopScreen(),
                     ),
                   );
                 },
               ),
             ),
              const SizedBox(width: 12),
-            // Expanded(
-            //   child: _QuickActionButton(
-            //     icon: Icons.bar_chart_rounded,
-            //     label: 'Reports',
-            //     backgroundColor: const Color(0xFFD4F4E7),
-            //     iconColor: const Color.fromARGB(255, 180, 29, 12),
-            //     onTap: () {
-            //       Navigator.push(
-            //         context,
-            //         MaterialPageRoute(
-            //           builder: (context) => const ReportsPage(),
-            //         ),
-            //       );
-            //     },
-            //   ),
-            // ),
+            Expanded(
+              child: _QuickActionButton(
+                icon: Icons.bar_chart_rounded,
+                label: 'Reports',
+                backgroundColor: const Color(0xFFD4F4E7),
+                iconColor: const Color.fromARGB(255, 180, 29, 12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                     builder: (context) => ProductReportPage(companyId: ref.read(adminloginViewModelProvider).companyId ?? ''),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ],

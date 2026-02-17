@@ -7,12 +7,17 @@ class CheckinUsecase {
 
   CheckinUsecase(this.repository);
 
-  Future<CheckInStatusRequest> checkIn(int empId) {
-    return repository.checkIn(empId);
+  Future<CheckInStatusRequest> checkIn(
+    int empId,
+    double latitude,
+    double longitude,
+  ) {
+    return repository.checkIn(empId, latitude, longitude);
   }
 
-  Future<CheckInStatusRequest> checkOut(int empId) {
-    return repository.checkOut(empId);
+  Future<CheckInStatusRequest> checkOut(int empId,     double latitude,
+    double longitude,) {
+    return repository.checkOut(empId, latitude, longitude);
   }
 
   Future<CheckInStatusRequest?> fetchTodayStatus(int empId) {

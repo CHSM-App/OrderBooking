@@ -9,7 +9,7 @@ part of 'employee.dart';
 EmployeeLogin _$EmployeeLoginFromJson(Map<String, dynamic> json) =>
     EmployeeLogin(
       empName: json['emp_name'] as String?,
-      empMobile: json['emp_mobile'] as String?,
+      empMobile: json['emp_mobile'] as String,
       empAddress: json['emp_address'] as String?,
       empEmail: json['emp_email'] as String?,
       regionId: (json['region_id'] as num?)?.toInt(),

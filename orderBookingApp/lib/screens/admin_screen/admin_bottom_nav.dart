@@ -130,23 +130,23 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              size: 26,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AdminNotificationPage(),
-                ),
-              );
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(
+        //       Icons.notifications_none_rounded,
+        //       size: 26,
+        //       color: Colors.white,
+        //     ),
+        //     onPressed: () {
+        //       Navigator.push(
+        //         context,
+        //         MaterialPageRoute(
+        //           builder: (_) => const AdminNotificationPage(),
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ],
       ),
 
       // ================= BODY =================

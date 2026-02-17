@@ -1,6 +1,7 @@
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/product_dao.dart';
 import 'package:order_booking_app/domain/models/product.dart';
+import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';
 
 class ProductImpl implements ProductRepository {
@@ -69,6 +70,14 @@ Future<void> syncRemoteToLocal(String companyId) async {
   }
 }
 
+  Future<List<ProductData>> productReport(String companyId) async {
+    try {
+      return await api.productReport(companyId);
+    } catch (e) {
+      print('Failed to fetch product report: $e');
+      rethrow;
+    }
+  }
 
 }
 

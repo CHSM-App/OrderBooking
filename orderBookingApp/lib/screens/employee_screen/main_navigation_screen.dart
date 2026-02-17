@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/employee_screen/notification_page.dart';
 import 'package:order_booking_app/screens/theme.dart';
 
 import 'home_page.dart';
@@ -15,10 +15,8 @@ import 'profile_page.dart';
 class MainNavigationScreen extends ConsumerStatefulWidget {
   final int initialIndex;
 
-  const MainNavigationScreen({
-    Key? key,
-    this.initialIndex = 0,
-  }) : super(key: key);
+  const MainNavigationScreen({Key? key, this.initialIndex = 0})
+    : super(key: key);
 
   @override
   ConsumerState<MainNavigationScreen> createState() =>
@@ -27,6 +25,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   late int _currentIndex;
+  bool _isLocating = false;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -36,15 +35,33 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     ProfilePage(),
   ];
 
-  final int _notificationCount = 3;
-
   // Nav items: icon + label
   final List<_NavItem> _navItems = const [
-    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.store_outlined, activeIcon: Icons.store_rounded, label: 'Shops'),
-    _NavItem(icon: Icons.shopping_bag_outlined, activeIcon: Icons.shopping_bag_rounded, label: 'Orders'),
-    _NavItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'Catalog'),
-    _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
+    _NavItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    _NavItem(
+      icon: Icons.store_outlined,
+      activeIcon: Icons.store_rounded,
+      label: 'Shops',
+    ),
+    _NavItem(
+      icon: Icons.shopping_bag_outlined,
+      activeIcon: Icons.shopping_bag_rounded,
+      label: 'Orders',
+    ),
+    _NavItem(
+      icon: Icons.grid_view_outlined,
+      activeIcon: Icons.grid_view_rounded,
+      label: 'Catalog',
+    ),
+    _NavItem(
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'Profile',
+    ),
   ];
 
   @override
@@ -60,9 +77,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             .read(checkInViewModelProvider.notifier)
             .loadTodayStatus(userId);
       }
- 
-     
-    await ref.read(visitViewModelProvider.notifier).fetchEmployeeVisits(userId);
+
+      await ref
+          .read(visitViewModelProvider.notifier)
+          .fetchEmployeeVisits(userId);
     });
   }
 
@@ -72,10 +90,22 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final userId = loginState.userId;
 
     try {
+      if (mounted) {
+        setState(() => _isLocating = true);
+      }
+      final position = await _getCurrentLocation();
+      if (mounted) {
+        setState(() => _isLocating = false);
+      }
+      if (position == null) return;
       if (checkInState.isCheckedIn) {
-        await ref.read(checkInViewModelProvider.notifier).checkOut(userId);
+        await ref
+            .read(checkInViewModelProvider.notifier)
+            .checkOut(userId, position.latitude, position.longitude);
       } else {
-        await ref.read(checkInViewModelProvider.notifier).checkIn(userId);
+        await ref
+            .read(checkInViewModelProvider.notifier)
+            .checkIn(userId, position.latitude, position.longitude);
       }
 
       if (mounted) {
@@ -93,6 +123,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isLocating = false);
+      }
+      if (mounted) {
         final errorState = ref.read(checkInViewModelProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -102,6 +135,65 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enable location services to check in.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        await Geolocator.openLocationSettings();
+        return null;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permission is required to check in.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        if (permission == LocationPermission.deniedForever) {
+          await Geolocator.openAppSettings();
+        }
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not get location: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return null;
     }
   }
 
@@ -186,7 +278,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: InkWell(
-                    onTap: checkInState.isLoading ? null : _toggleCheckIn,
+                    onTap: (checkInState.isLoading || _isLocating)
+                        ? null
+                        : _toggleCheckIn,
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -201,7 +295,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                       ),
                       child: Row(
                         children: [
-                          if (checkInState.isLoading)
+                          if (checkInState.isLoading || _isLocating)
                             SizedBox(
                               width: 14,
                               height: 14,
