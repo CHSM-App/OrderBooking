@@ -33,8 +33,15 @@ class Product {
   @JsonKey(name: 'total_price')
   final double? totalPrice;
 
+
+  @JsonKey(name: 'item_total_price')
+  final double? itemTotalPrice;
+
   final String? productUnit;
   final int? shopId;
+  
+  @JsonKey(name: 'order_date')
+  final DateTime? orderDate;
 
   
   final double totalSales;
@@ -51,6 +58,8 @@ class Product {
   final DateTime? updatedAt;
 
   Product({
+    this.orderDate,
+    this.itemTotalPrice,
     this.productId,
     this.productName,
     this.productType,
@@ -90,8 +99,12 @@ class Product {
     String? localId,
     bool? isSynced,
     DateTime? updatedAt,
+    DateTime? orderDate,
+    double? itemTotalPrice
   }) {
     return Product(
+      itemTotalPrice : itemTotalPrice ?? this.itemTotalPrice,
+      orderDate: orderDate ?? this.orderDate,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       productType: productType ?? this.productType,

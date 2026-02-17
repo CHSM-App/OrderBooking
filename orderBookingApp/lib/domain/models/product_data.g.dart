@@ -8,16 +8,17 @@ part of 'product_data.dart';
 
 ProductData _$ProductDataFromJson(Map<String, dynamic> json) => ProductData(
   productName: json['product_name'] as String,
-  totalSales: (json['total_sales'] as num).toDouble(),
-  orderDates: (json['order_dates'] as List<dynamic>)
-      .map((e) => DateTime.parse(e as String))
-      .toList(),
+  companyId: json['company_id'] as String?,
+  itemTotalPrice: (json['item_total_price'] as num?)?.toDouble(),
+  totalSales: (json['total_sales'] as num?)?.toDouble(),
+  orderDate: DateTime.parse(json['order_date'] as String),
 );
 
-Map<String, dynamic> _$ProductDataToJson(
-  ProductData instance,
-) => <String, dynamic>{
-  'product_name': instance.productName,
-  'total_sales': instance.totalSales,
-  'order_dates': instance.orderDates.map((e) => e.toIso8601String()).toList(),
-};
+Map<String, dynamic> _$ProductDataToJson(ProductData instance) =>
+    <String, dynamic>{
+      'product_name': instance.productName,
+      'total_sales': instance.totalSales,
+      'order_date': instance.orderDate.toIso8601String(),
+      'item_total_price': instance.itemTotalPrice,
+      'company_id': instance.companyId,
+    };

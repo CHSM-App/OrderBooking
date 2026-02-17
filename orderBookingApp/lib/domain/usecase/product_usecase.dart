@@ -1,4 +1,5 @@
 import 'package:order_booking_app/domain/models/product.dart';
+import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';
 
 class ProductUsecase {
@@ -23,8 +24,8 @@ class ProductUsecase {
     await productRepository.deleteSubProduct(subItemId);
   }
   
-  Future<void> getProductReport(String companyId) async {
-    await productRepository.productReport(companyId);
+  Future<List<ProductData>> getProductReport(String companyId) async {
+    return await productRepository.productReport(companyId);
   }
   
 }

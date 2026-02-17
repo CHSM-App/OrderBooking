@@ -7,6 +7,10 @@ part of 'product.dart';
 // **************************************************************************
 
 Product _$ProductFromJson(Map<String, dynamic> json) => Product(
+  orderDate: json['order_date'] == null
+      ? null
+      : DateTime.parse(json['order_date'] as String),
+  itemTotalPrice: (json['item_total_price'] as num?)?.toDouble(),
   productId: (json['product_id'] as num?)?.toInt(),
   productName: json['product_name'] as String?,
   productType: json['product_type'] as String?,
@@ -38,8 +42,10 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'employee_id': instance.employeeId,
   'admin_id': instance.adminId,
   'total_price': instance.totalPrice,
+  'item_total_price': instance.itemTotalPrice,
   'productUnit': instance.productUnit,
   'shopId': instance.shopId,
+  'order_date': instance.orderDate?.toIso8601String(),
   'totalSales': instance.totalSales,
   'orderDates': instance.orderDates.map((e) => e.toIso8601String()).toList(),
 };

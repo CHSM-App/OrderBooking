@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:order_booking_app/domain/models/product.dart';
+import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
 import 'package:order_booking_app/domain/usecase/product_usecase.dart';
 
@@ -8,7 +9,7 @@ class ProductState {
   final bool isLoading;
   final String? error;
   final AsyncValue<List<Product>>? productList;
-  final AsyncValue<List<Product>>?productReport;
+  final AsyncValue<List<ProductData>>? productReport;
 
   const ProductState({
     this.isLoading = false,
@@ -22,7 +23,7 @@ class ProductState {
     String? error,
     AsyncValue<ProductResponse>? addUpdateResponse,
     AsyncValue<List<Product>>? productList,
-    AsyncValue<List<Product>>? productReport,
+    AsyncValue<List<ProductData>>? productReport,
   }) {
     return ProductState(
       isLoading: isLoading ?? this.isLoading,
@@ -90,8 +91,11 @@ class ProductViewModel extends StateNotifier<ProductState> {
   Future<void> getProductReport(String companyId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await usecase.getProductReport(companyId);
-      state = state.copyWith(isLoading: false);
+      final report = await usecase.getProductReport(companyId);
+      state = state.copyWith(
+        isLoading: false,
+        productReport: AsyncValue.data(report),
+      );
     } catch (e, st) {
       state = state.copyWith(
         isLoading: false,
@@ -101,4 +105,8 @@ class ProductViewModel extends StateNotifier<ProductState> {
     }
   }
 
+
+
 }
+
+

@@ -11,6 +11,7 @@ import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 // import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
+import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
@@ -155,8 +156,8 @@ abstract class ApiService {
   Future<dynamic> deleteShop(@Path("shop_id") int shopId);
 
 
-    @GET("users/productReport/{company_id}")
-  Future<List<Product>> productReport(@Path("company_id") String companyId);
+  @GET("users/productReport/{company_id}")
+  Future<List<ProductData>> productReport(@Path("company_id") String companyId);
   
 }
 
