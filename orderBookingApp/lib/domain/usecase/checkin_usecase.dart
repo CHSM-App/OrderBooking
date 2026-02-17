@@ -15,7 +15,7 @@ class CheckinUsecase {
     return repository.checkIn(empId, latitude, longitude);
   }
 
-  Future<CheckInStatusRequest> checkOut(int empId,     double latitude,
+  Future<CheckInStatusRequest> checkOut(int empId,double latitude,
     double longitude,) {
     return repository.checkOut(empId, latitude, longitude);
   }

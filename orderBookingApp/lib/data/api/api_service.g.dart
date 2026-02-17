@@ -272,7 +272,7 @@ class _ApiService implements ApiService {
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/checkIn/${empId}/${latitude}/${longitude}',
+            'insert/checkIn/${empId}/${latitude}/${longitude}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -303,7 +303,7 @@ class _ApiService implements ApiService {
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/checkOut/${empId}/${latitude}/${longitude}',
+            'insert/checkOut/${empId}/${latitude}/${longitude}',
             queryParameters: queryParameters,
             data: _data,
           )

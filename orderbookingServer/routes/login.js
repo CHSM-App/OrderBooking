@@ -2,13 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const auth = require('./middleware/auth');
 const db = require('./db'); // your mssql pool wrapper
 const crypto = require('crypto');
+
 var bodyParser = require('body-parser');
-
-require('dotenv').config();
-
 
 function generateRefreshToken() {
   // opaque random token for DB storage + never reveal secret structure
@@ -26,101 +25,140 @@ function createRefreshTokenPayload(mobile) {
   return token;
 }
 
-
-router.post('/Createlogin', async (req, res) => {
+/*router.post('/Createlogin', async (req, res) => {
   try {
     const { mobile, deviceDetails } = req.body;
-	 
-    //const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress|| null;
 
-    if (!mobile) return res.status(400).json({ error: 'Mobile number required' });
+    if (!mobile)
+      return res.status(400).json({ error: 'Mobile number required' });
 
-    // Create Access Token (short)
     const accessToken = createAccessToken({ mobile });
-
-    // Create opaque refresh token (store in DB)
     const refreshToken = createRefreshTokenPayload(mobile);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
 
-    // Insert into DB (using stored proc or parameterized query)
-    await db.request()
-	   .input('operation', 'insert')
+    const result = await db.request()
+      .input('operation', 'insert')
       .input('user_mobile', mobile)
       .input('refresh_token', refreshToken)
       .input('device_info', deviceDetails)
-     // .input('ip_address', ip)
       .input('expires_at', expiresAt)
-      .execute('ManageRefreshToken'); // or .query(...) if you didn't create proc
+      .execute('ManageRefreshToken');
 
-    // Send tokens to client (client stores refresh token in secure storage)
-    // Optionally set access token in response header
-    return res.json({ accessToken, refreshToken, expiresAt });
+    const userId = result.recordset?.[0]?.id;
+
+    return res.json({
+      accessToken,
+      refreshToken,
+      userId: userId
+    });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
-});
+});/*
+
 
 /**
  * Refresh access token
  * Expect { refresh_token } in req.body
  * Implements rotation: revoke old refresh token, issue new one
  */
+router.post('/Createlogin', async (req, res) => {
+  try {
+    const { mobile, deviceDetails } = req.body;
+
+    if (!mobile)
+      return res.status(400).json({ error: 'Mobile number required' });
+
+    const refreshToken = createRefreshTokenPayload(mobile);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+
+    const result = await db.request()
+      .input('operation', 'insert')
+      .input('user_mobile', mobile)
+      .input('refresh_token', refreshToken)
+      .input('device_info', deviceDetails)
+      .input('expires_at', expiresAt)
+      .execute('ManageRefreshToken');
+
+    const roleId = result.recordset?.[0]?.role_id;
+
+    const accessToken = createAccessToken({
+      mobile,
+      roleId
+    });
+
+    return res.json({
+      accessToken,
+      refreshToken,
+      roleId,
+      mobile
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+});
 router.post('/refreshAccessToken', async (req, res) => {
   try {
     const { refreshToken } = req.body;
-   // const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
-    if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
+    if (!refreshToken)
+      return res.status(400).json({ error: 'Refresh token required' });
 
-    // Validate token exists and not revoked and not expired
     const result = await db.request()
-	.input('operation', 'get')
-      .input('refresh_token', refreshToken)
-      .execute('ManageRefreshToken'); // returns token row if valid
-
-    const rows = result.recordset || [];
-    if (!rows.length) {
-      return res.status(403).json({ error: 'Invalid or revoked refresh token' });
-    }
-
-    const row = rows[0];
-
-    // At this point we have user_mobile
-    const mobile = row.user_mobile;
-
-    // rotate: revoke old token
-    await db.request()
-	  .input('operation', 'get')
+      .input('operation', 'get')
       .input('refresh_token', refreshToken)
       .execute('ManageRefreshToken');
 
-    // create new tokens
-    const newAccessToken = createAccessToken({ mobile });
+    const rows = result.recordset || [];
+
+    if (!rows.length)
+      return res.status(403).json({ error: 'Invalid refresh token' });
+
+    const row = rows[0];
+    const mobile = row.user_mobile;
+    const roleId = row.role_id;
+
+    // revoke old
+    await db.request()
+      .input('operation', 'revoke')
+      .input('refresh_token', refreshToken)
+      .execute('ManageRefreshToken');
+
+    // create new
+    const newAccessToken = createAccessToken({
+      mobile,
+      roleId
+    });
+
     const newRefreshToken = createRefreshTokenPayload(mobile);
+
     const newExpiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
 
-    // Insert new refresh token record with same device info/ip if available
     await db.request()
-	  .input('operation', 'insert')
+      .input('operation', 'insert')
       .input('user_mobile', mobile)
       .input('refresh_token', newRefreshToken)
-      .input('device_info', row.device_info || null)
-     // .input('ip_address', ip || row.ip_address || null)
+      .input('device_info', row.device_info)
       .input('expires_at', newExpiresAt)
       .execute('ManageRefreshToken');
 
     return res.json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      expiresAt: newExpiresAt
+      roleId,
+      mobile
     });
 
   } catch (err) {
-    console.error("Refresh error:", err);
-    return res.status(500).json({ error: 'Could not refresh token' });
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 });
+
 
 
 router.post('/logout', async (req, res) => {
@@ -138,7 +176,6 @@ router.post('/logout', async (req, res) => {
     return res.status(500).json({ error: 'Logout failed' });
   }
 });
-
 router.get('/checkPhone', async (req, res) => {
    try {
     const { mobile_no } = req.query;

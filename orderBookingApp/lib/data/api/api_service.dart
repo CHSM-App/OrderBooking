@@ -56,14 +56,14 @@ abstract class ApiService {
   @POST("insert/addProduct")
   Future<ProductResponse> addOrUpdateProduct(@Body() Product product);
 
-  @POST("users/checkIn/{emp_id}/{latitude}/{longitude}")
+  @POST("insert/checkIn/{emp_id}/{latitude}/{longitude}")
   Future<CheckInStatusRequest> checkIn(
     @Path("emp_id") int empId,
     @Path("latitude") double latitude,
     @Path("longitude") double longitude,
   );
 
-  @POST("users/checkOut/{emp_id}/{latitude}/{longitude}")
+  @POST("insert/checkOut/{emp_id}/{latitude}/{longitude}")
   Future<CheckInStatusRequest> checkOut(@Path("emp_id") int empId,
     @Path("latitude") double latitude,
     @Path("longitude") double longitude,);
