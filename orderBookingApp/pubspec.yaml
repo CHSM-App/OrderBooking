@@ -55,7 +55,13 @@ dependencies:
   flutter_pdfview: ^1.2.7
  
   open_file: ^3.3.2 
+  share_plus: ^12.0.1
   
+ 
+path_provider: ^2.1.2
+open_file: ^3.3.2
+share_plus: ^7.2.2
+
          # For PDF and file selection
   
 

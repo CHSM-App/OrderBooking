@@ -18,6 +18,12 @@ class ProductData {
 
     @JsonKey(name: 'company_id')
   final String? companyId;
+    @JsonKey(name: 'region_name')
+  final String? regionName;
+    @JsonKey(name: 'emp_name')
+  final String? emp_name;
+      @JsonKey(name: 'company_name')
+  final String? companyName;
 
   ProductData({
     required this.productName,
@@ -25,6 +31,9 @@ class ProductData {
      this.itemTotalPrice,
     this.totalSales,
     required this.orderDate,
+    this.regionName,
+    this.emp_name,
+    this.companyName,
   });
  // factory constructor for JSON deserialization
   factory ProductData.fromJson(Map<String, dynamic> json) =>

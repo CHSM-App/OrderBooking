@@ -63,14 +63,12 @@ final shopRepositoryProvider = Provider<ShopRepository>((ref) {
   return ShopImpl(api, local);
 });
 
+
 final checkInRepositoryProvider = Provider<CheckinRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;
   final api = ApiService(dio);
-  return CheckinStatusRequestImpl(api);
+  return CheckinRepositoryImpl(api, ref);
 });
-
-
-
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   final dio = ref.watch(dioProvider).value!;

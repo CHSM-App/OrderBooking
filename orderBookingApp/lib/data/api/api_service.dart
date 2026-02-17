@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:order_booking_app/core/constant.dart';
+import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
@@ -130,6 +131,9 @@ abstract class ApiService {
 
   @GET("users/getAllOrders/{company_id}")
   Future<List<Order>> getOrderList(@Path("company_id") String companyId);
+
+  @GET("users/getAttendanceReport/{company_id}")
+  Future<List<AttendanceReport>> getAttendanceReport(@Path("company_id") String companyId);
 
   @GET("users/getEmployeeLocationOrders/{emp_id}")
   Future<List<EmployeeVisit>> getEmployeeVisitLocation(@Path("emp_id") int empId);

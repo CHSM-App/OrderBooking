@@ -6,13 +6,13 @@ import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart'
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
-const _kPrimary       = Color(0xFFE8720C);
-const _kPrimaryLight  = Color(0xFFFFF3E8);
-const _kSurface       = Color(0xFFFFFFFF);
-const _kBackground    = Color(0xFFF5F5F5);
-const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kPrimary = Color(0xFFE8720C);
+const _kPrimaryLight = Color(0xFFFFF3E8);
+const _kSurface = Color(0xFFFFFFFF);
+const _kBackground = Color(0xFFF5F5F5);
+const _kTextPrimary = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF6B6B6B);
-const _kDivider       = Color(0xFFEEEEEE);
+const _kDivider = Color(0xFFEEEEEE);
 
 // ── Filter model ──────────────────────────────────────────────────────────────
 enum _FilterType { today, yesterday, thisMonth, custom }
@@ -24,9 +24,12 @@ class _ActiveFilter {
 
   String get label {
     switch (type) {
-      case _FilterType.today:     return 'Today';
-      case _FilterType.yesterday: return 'Yesterday';
-      case _FilterType.thisMonth: return 'This Month';
+      case _FilterType.today:
+        return 'Today';
+      case _FilterType.yesterday:
+        return 'Yesterday';
+      case _FilterType.thisMonth:
+        return 'This Month';
       case _FilterType.custom:
         if (customRange != null) {
           return '${_d(customRange!.start)} – ${_d(customRange!.end)}';
@@ -36,8 +39,20 @@ class _ActiveFilter {
   }
 
   static String _d(DateTime d) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${d.day} ${m[d.month - 1]}';
   }
 }
@@ -58,9 +73,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getOrderList(
-            ref.read(adminloginViewModelProvider).companyId ?? '',
-          );
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getOrderList(ref.read(adminloginViewModelProvider).companyId ?? '');
     });
   }
 
@@ -71,7 +86,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   Future<void> _refresh() async {
-    await ref.read(ordersViewModelProvider.notifier).getOrderList(
+    await ref
+        .read(ordersViewModelProvider.notifier)
+        .getOrderList(
           ref.read(adminloginViewModelProvider).companyId ?? '',
           useCacheFirst: false,
         );
@@ -191,18 +208,36 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   bool _isNetworkError(String? msg) {
     if (msg == null) return false;
-    return ['network','internet','connection','socket',
-            'failed host','no address','timeout','unreachable']
-        .any((k) => msg.toLowerCase().contains(k));
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any((k) => msg.toLowerCase().contains(k));
   }
 
   String _fmt(String iso) {
     try {
       final d = DateTime.parse(iso);
-      const months = ['Jan','Feb','Mar','Apr','May','Jun',
-                      'Jul','Aug','Sep','Oct','Nov','Dec'];
-      final h =
-          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
       final min = d.minute.toString().padLeft(2, '0');
       final p = d.hour >= 12 ? 'PM' : 'AM';
       return '${months[d.month - 1]} ${d.day}, ${d.year} • $h:$min $p';
@@ -243,7 +278,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               height: 46,
               decoration: BoxDecoration(
                 color: _kBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: _kDivider),
               ),
               child: TextField(
@@ -251,21 +286,29 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 onChanged: (v) =>
                     setState(() => _searchQuery = v.toLowerCase().trim()),
                 style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: _kTextPrimary),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: _kTextPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search orders, shops, employees…',
                   hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: _kTextSecondary,
-                      fontWeight: FontWeight.w400),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      size: 20, color: _kTextSecondary),
+                    fontSize: 14,
+                    color: _kTextSecondary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: _kTextSecondary,
+                  ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              size: 18, color: _kTextSecondary),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: _kTextSecondary,
+                          ),
                           onPressed: () => setState(() {
                             _searchCtrl.clear();
                             _searchQuery = '';
@@ -275,7 +318,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 13),
+                    horizontal: 8,
+                    vertical: 17,
+                  ),
                   isDense: true,
                 ),
               ),
@@ -301,10 +346,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       width: isFiltered ? 1.5 : 1,
                     ),
                   ),
-                  child: Icon(Icons.filter_list_rounded,
-                      size: 20,
-                      color:
-                          isFiltered ? _kPrimary : _kTextSecondary),
+                  child: Icon(
+                    Icons.filter_list_rounded,
+                    size: 20,
+                    color: isFiltered ? _kPrimary : _kTextSecondary,
+                  ),
                 ),
                 if (isFiltered)
                   Positioned(
@@ -314,7 +360,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       width: 9,
                       height: 9,
                       decoration: const BoxDecoration(
-                          color: _kPrimary, shape: BoxShape.circle),
+                        color: _kPrimary,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
               ],
@@ -333,30 +381,37 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       child: Row(
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _kPrimaryLight,
               borderRadius: BorderRadius.circular(20),
-              border:
-                  Border.all(color: _kPrimary.withOpacity(0.4)),
+              border: Border.all(color: _kPrimary.withOpacity(0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: _kPrimary),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: _kPrimary,
+                ),
                 const SizedBox(width: 6),
-                Text(_filter!.label,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: _kPrimary)),
+                Text(
+                  _filter!.label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kPrimary,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => setState(() => _filter = null),
-                  child: const Icon(Icons.close_rounded,
-                      size: 14, color: _kPrimary),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: _kPrimary,
+                  ),
                 ),
               ],
             ),
@@ -391,10 +446,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           }
 
           final visible = sorted
-              .where((o) =>
-                  _passesFilter(o) &&
-                  _passesSearch(
-                      o, numberMap[_orderKey(o)] ?? 0, _searchQuery))
+              .where(
+                (o) =>
+                    _passesFilter(o) &&
+                    _passesSearch(
+                      o,
+                      numberMap[_orderKey(o)] ?? 0,
+                      _searchQuery,
+                    ),
+              )
               .toList();
 
           if (visible.isEmpty) return _buildEmpty();
@@ -425,7 +485,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       onRefresh: _refresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics()),
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: orders.length,
         itemBuilder: (_, i) => _OrderCard(
@@ -459,13 +520,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          const CircularProgressIndicator(
-              color: _kPrimary, strokeWidth: 2.5),
-          const SizedBox(height: 16),
-          Text('Loading orders…',
+            const CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
+            const SizedBox(height: 16),
+            Text(
+              'Loading orders…',
               style: TextStyle(
-                  fontSize: 14,
-                  color: _kTextSecondary.withOpacity(0.8))),
+                fontSize: 14,
+                color: _kTextSecondary.withOpacity(0.8),
+              ),
+            ),
           ],
         ),
       ),
@@ -474,56 +537,60 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   // ── Empty ──────────────────────────────────────────────────────────────────
   Widget _buildEmpty() {
-    final isFiltered =
-        _filter != null || _searchQuery.isNotEmpty;
+    final isFiltered = _filter != null || _searchQuery.isNotEmpty;
     return _wrapRefresh(
       Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-                color: _kPrimaryLight, shape: BoxShape.circle),
-            child: Icon(
-              isFiltered
-                  ? Icons.search_off_rounded
-                  : Icons.receipt_long_outlined,
-              size: 34,
-              color: _kPrimary,
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: _kPrimaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isFiltered
+                    ? Icons.search_off_rounded
+                    : Icons.receipt_long_outlined,
+                size: 34,
+                color: _kPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isFiltered ? 'No matching orders' : 'No orders yet',
-            style: const TextStyle(
+            const SizedBox(height: 16),
+            Text(
+              isFiltered ? 'No matching orders' : 'No orders yet',
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: _kTextPrimary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isFiltered
-                ? 'Try a different search or filter'
-                : 'Orders will appear here once created.',
-            style: const TextStyle(
-                fontSize: 13, color: _kTextSecondary),
-          ),
-          if (isFiltered) ...[
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () => setState(() {
-                _filter = null;
-                _searchCtrl.clear();
-                _searchQuery = '';
-              }),
-              child: const Text('Clear all',
-                  style: TextStyle(
-                      color: _kPrimary,
-                      fontWeight: FontWeight.w600)),
+                color: _kTextPrimary,
+              ),
             ),
-          ],
+            const SizedBox(height: 6),
+            Text(
+              isFiltered
+                  ? 'Try a different search or filter'
+                  : 'Orders will appear here once created.',
+              style: const TextStyle(fontSize: 13, color: _kTextSecondary),
+            ),
+            if (isFiltered) ...[
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () => setState(() {
+                  _filter = null;
+                  _searchCtrl.clear();
+                  _searchQuery = '';
+                }),
+                child: const Text(
+                  'Clear all',
+                  style: TextStyle(
+                    color: _kPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -539,47 +606,59 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
                   color: Colors.orange.withOpacity(0.1),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.wifi_off_rounded,
-                  size: 34, color: Colors.orange),
-            ),
-            const SizedBox(height: 16),
-            const Text('No Internet Connection',
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.wifi_off_rounded,
+                  size: 34,
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No Internet Connection',
                 style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: _kTextPrimary)),
-            const SizedBox(height: 8),
-            const Text(
-              'Check your WiFi or mobile data\nand try again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: _kTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Check your WiFi or mobile data\nand try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
                   fontSize: 13,
                   color: _kTextSecondary,
-                  height: 1.5),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _refresh,
-              icon:
-                  const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Retry',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  height: 1.5,
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _refresh,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  'Retry',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -596,45 +675,59 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.08),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 32, color: Colors.red),
-            ),
-            const SizedBox(height: 16),
-            const Text('Something went wrong',
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  size: 32,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Something went wrong',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _kTextPrimary)),
-            const SizedBox(height: 8),
-            Text(msg,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _kTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                msg,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontSize: 13,
-                    color: _kTextSecondary,
-                    height: 1.4)),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _refresh,
-              icon:
-                  const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Try Again',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  fontSize: 13,
+                  color: _kTextSecondary,
+                  height: 1.4,
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _refresh,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  'Try Again',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -650,12 +743,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       isScrollControlled: true,
       builder: (_) => StatefulBuilder(
         builder: (sheetCtx, setSheet) => Container(
-          padding: EdgeInsets.fromLTRB(16, 20, 16,
-              MediaQuery.of(sheetCtx).viewInsets.bottom + 32),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            20,
+            16,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 32,
+          ),
           decoration: const BoxDecoration(
             color: _kSurface,
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -666,20 +762,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: _kDivider,
-                      borderRadius: BorderRadius.circular(2)),
+                    color: _kDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Filter by Date',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _kTextPrimary)),
+                  const Text(
+                    'Filter by Date',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _kTextPrimary,
+                    ),
+                  ),
                   if (_filter != null)
                     GestureDetector(
                       onTap: () {
@@ -687,11 +786,14 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                         setSheet(() {});
                         Navigator.pop(sheetCtx);
                       },
-                      child: const Text('Clear',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: _kPrimary,
-                              fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _kPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -702,8 +804,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 sublabel: _todayLabel(),
                 isSelected: _filter?.type == _FilterType.today,
                 onTap: () {
-                  setState(() => _filter =
-                      const _ActiveFilter(_FilterType.today));
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.today),
+                  );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
@@ -713,12 +816,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.history_outlined,
                 label: 'Yesterday',
                 sublabel: _yesterdayLabel(),
-                isSelected:
-                    _filter?.type == _FilterType.yesterday,
+                isSelected: _filter?.type == _FilterType.yesterday,
                 onTap: () {
-                  setState(() => _filter =
-                      const _ActiveFilter(
-                          _FilterType.yesterday));
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.yesterday),
+                  );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
@@ -728,12 +830,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.calendar_month_outlined,
                 label: 'This Month',
                 sublabel: _thisMonthLabel(),
-                isSelected:
-                    _filter?.type == _FilterType.thisMonth,
+                isSelected: _filter?.type == _FilterType.thisMonth,
                 onTap: () {
-                  setState(() => _filter =
-                      const _ActiveFilter(
-                          _FilterType.thisMonth));
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.thisMonth),
+                  );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
@@ -745,12 +846,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 sublabel: _filter?.type == _FilterType.custom
                     ? _filter!.label
                     : 'Pick start & end date',
-                isSelected:
-                    _filter?.type == _FilterType.custom,
+                isSelected: _filter?.type == _FilterType.custom,
                 onTap: () async {
                   Navigator.pop(sheetCtx);
-                  await Future.delayed(
-                      const Duration(milliseconds: 200));
+                  await Future.delayed(const Duration(milliseconds: 200));
                   if (!mounted) return;
 
                   final now = DateTime.now();
@@ -760,11 +859,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     lastDate: now,
                     initialDateRange:
                         _filter?.customRange ??
-                            DateTimeRange(
-                              start: now.subtract(
-                                  const Duration(days: 6)),
-                              end: now,
-                            ),
+                        DateTimeRange(
+                          start: now.subtract(const Duration(days: 6)),
+                          end: now,
+                        ),
                     builder: (ctx, child) => Theme(
                       data: Theme.of(ctx).copyWith(
                         colorScheme: const ColorScheme.light(
@@ -775,7 +873,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                         ),
                         textButtonTheme: TextButtonThemeData(
                           style: TextButton.styleFrom(
-                              foregroundColor: _kPrimary),
+                            foregroundColor: _kPrimary,
+                          ),
                         ),
                       ),
                       child: child!,
@@ -783,10 +882,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   );
 
                   if (picked != null && mounted) {
-                    setState(() => _filter = _ActiveFilter(
-                          _FilterType.custom,
-                          customRange: picked,
-                        ));
+                    setState(
+                      () => _filter = _ActiveFilter(
+                        _FilterType.custom,
+                        customRange: picked,
+                      ),
+                    );
                   }
                 },
               ),
@@ -799,23 +900,58 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   String _todayLabel() {
     final d = DateTime.now();
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${d.day} ${m[d.month - 1]} ${d.year}';
   }
 
   String _yesterdayLabel() {
-    final d =
-        DateTime.now().subtract(const Duration(days: 1));
-    const m = ['Jan','Feb','Mar','Apr','May','Jun',
-                'Jul','Aug','Sep','Oct','Nov','Dec'];
+    final d = DateTime.now().subtract(const Duration(days: 1));
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${d.day} ${m[d.month - 1]} ${d.year}';
   }
 
   String _thisMonthLabel() {
     final d = DateTime.now();
-    const m = ['January','February','March','April','May','June',
-                'July','August','September','October','November','December'];
+    const m = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     return '${m[d.month - 1]} ${d.year}';
   }
 }
@@ -841,15 +977,14 @@ class _FilterSheetRow extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? _kPrimaryLight : _kBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color:
-                  isSelected ? _kPrimary : Colors.transparent,
-              width: 1.5),
+            color: isSelected ? _kPrimary : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
@@ -860,44 +995,45 @@ class _FilterSheetRow extends StatelessWidget {
                 color: isSelected ? _kPrimary : _kSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: isSelected
-                        ? Colors.transparent
-                        : _kDivider),
+                  color: isSelected ? Colors.transparent : _kDivider,
+                ),
               ),
-              child: Icon(icon,
-                  size: 18,
-                  color: isSelected
-                      ? Colors.white
-                      : _kTextSecondary),
+              child: Icon(
+                icon,
+                size: 18,
+                color: isSelected ? Colors.white : _kTextSecondary,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? _kPrimary
-                              : _kTextPrimary)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected ? _kPrimary : _kTextPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 1),
-                  Text(sublabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: isSelected
-                              ? _kPrimary.withOpacity(0.7)
-                              : _kTextSecondary)),
+                  Text(
+                    sublabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected
+                          ? _kPrimary.withOpacity(0.7)
+                          : _kTextSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
             Icon(
-              isSelected
-                  ? Icons.check_rounded
-                  : Icons.chevron_right_rounded,
+              isSelected ? Icons.check_rounded : Icons.chevron_right_rounded,
               size: 18,
               color: isSelected ? _kPrimary : _kTextSecondary,
             ),
@@ -915,16 +1051,26 @@ class _OrderCard extends StatelessWidget {
   final Order order;
   final int orderNumber;
 
-  const _OrderCard(
-      {required this.order, required this.orderNumber});
+  const _OrderCard({required this.order, required this.orderNumber});
 
   String _fmt(String iso) {
     try {
       final d = DateTime.parse(iso);
-      const months = ['Jan','Feb','Mar','Apr','May','Jun',
-                      'Jul','Aug','Sep','Oct','Nov','Dec'];
-      final h =
-          d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
       final min = d.minute.toString().padLeft(2, '0');
       final p = d.hour >= 12 ? 'PM' : 'AM';
       return '${months[d.month - 1]} ${d.day}, ${d.year} • $h:$min $p';
@@ -944,10 +1090,8 @@ class _OrderCard extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => OrderDetailsPage(
-                order: order,
-                orderNumber: orderNumber,
-              ),
+              builder: (_) =>
+                  OrderDetailsPage(order: order, orderNumber: orderNumber),
             ),
           ),
           borderRadius: BorderRadius.circular(16),
@@ -966,40 +1110,46 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Order #$orderNumber',
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: _kTextPrimary,
-                                  letterSpacing: -0.3)),
+                          Text(
+                            'Order #$orderNumber',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: _kTextPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(_fmt(order.orderDate),
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: _kTextSecondary)),
+                          Text(
+                            _fmt(order.orderDate),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: _kTextSecondary,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           '₹${order.totalPrice.toStringAsFixed(2)}',
                           style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: _kTextPrimary,
-                              letterSpacing: -0.5),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _kTextPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: _kTextSecondary),
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: _kTextSecondary,
+                        ),
                       ],
                     ),
                   ],
@@ -1012,55 +1162,67 @@ class _OrderCard extends StatelessWidget {
                 // Row 2: employee | shop | items
                 Row(
                   children: [
-                    const Icon(Icons.person_outline_rounded,
-                        size: 13, color: _kTextSecondary),
+                    const Icon(
+                      Icons.person_outline_rounded,
+                      size: 13,
+                      color: _kTextSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         order.empName ?? 'Unknown',
                         style: const TextStyle(
-                            fontSize: 12,
-                            color: _kTextSecondary,
-                            fontWeight: FontWeight.w500),
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
-                        width: 1,
-                        height: 12,
-                        color: _kDivider,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 8)),
-                    const Icon(Icons.storefront_outlined,
-                        size: 13, color: _kTextSecondary),
+                      width: 1,
+                      height: 12,
+                      color: _kDivider,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    const Icon(
+                      Icons.storefront_outlined,
+                      size: 13,
+                      color: _kTextSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
                         order.shopNamep ?? 'Unknown',
                         style: const TextStyle(
-                            fontSize: 12,
-                            color: _kTextSecondary,
-                            fontWeight: FontWeight.w500),
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
-                        width: 1,
-                        height: 12,
-                        color: _kDivider,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 8)),
-                    const Icon(Icons.shopping_bag_outlined,
-                        size: 13, color: _kTextSecondary),
+                      width: 1,
+                      height: 12,
+                      color: _kDivider,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    const Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 13,
+                      color: _kTextSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
                       style: const TextStyle(
-                          fontSize: 12,
-                          color: _kTextSecondary,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 12,
+                        color: _kTextSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
