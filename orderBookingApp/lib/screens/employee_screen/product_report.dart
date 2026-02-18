@@ -32,7 +32,6 @@ const _textGrey   = Color(0xFF7A7A8A);
 const _divLine    = Color(0xFFEEEEF2);
 const _cardShadow = Color(0x14000000);
 const _blue       = Color(0xFF6C8EFF);
-const _blueLight  = Color(0xFFEEF0FF);
 const _green      = Color(0xFF2ECC71);
 
 // ─────────────────────────────────────────────────────────────
@@ -786,11 +785,6 @@ class _ReportPageState extends ConsumerState<ReportPage>
     final allR = _aggregateRegions(filtered);
     final allE = _aggregateEmployees(filtered);
 
-    // Section-level: which sections to include
-    bool inclP = _tabCtrl.index == 0;
-    bool inclR = _tabCtrl.index == 1 && allR.isNotEmpty;
-    bool inclE = _tabCtrl.index == 2 && allE.isNotEmpty;
-
     // Item-level: which individual items are selected (start all selected)
     Set<String> selP = Set.from(allP.map((x) => x.name));
     Set<String> selR = Set.from(allR.map((x) => x.name));
@@ -810,19 +804,18 @@ class _ReportPageState extends ConsumerState<ReportPage>
         IconData tabIco(int i) { if (i == 0) return Icons.inventory_2_outlined; if (i == 1) return Icons.location_on_outlined; return Icons.person_outline_rounded; }
         String  tabLbl(int i) { if (i == 0) return 'Product'; if (i == 1) return 'Region'; return 'Employee'; }
         bool    tabAvail(int i) { if (i == 1) return allR.isNotEmpty; if (i == 2) return allE.isNotEmpty; return true; }
-        bool    sectOn(int i) { if (i == 0) return inclP; if (i == 1) return inclR; return inclE; }
+        bool    sectOn(int i) { if (i == 0) return selP.isNotEmpty; if (i == 1) return selR.isNotEmpty; return selE.isNotEmpty; }
 
         List<String> curNames() { if (sheetTab == 0) return allP.map((x) => x.name).toList(); if (sheetTab == 1) return allR.map((x) => x.name).toList(); return allE.map((x) => x.name).toList(); }
         Set<String>  curSel()   { if (sheetTab == 0) return selP; if (sheetTab == 1) return selR; return selE; }
 
-        void toggleSect(bool v) => ss(() { if (sheetTab == 0) inclP = v; else if (sheetTab == 1) inclR = v && allR.isNotEmpty; else inclE = v && allE.isNotEmpty; });
         void toggleItem(String n) => ss(() { final s = curSel(); if (s.contains(n)) s.remove(n); else s.add(n); });
         void selAll()  => ss(() => curSel().addAll(curNames()));
         void selNone() => ss(() => curSel().clear());
 
         final names    = curNames();
         final selected = curSel();
-        final anyOn    = inclP || inclR || inclE;
+        final anyOn    = selP.isNotEmpty || selR.isNotEmpty || selE.isNotEmpty;
         final totalSel = selP.length + selR.length + selE.length;
 
         return DraggableScrollableSheet(
@@ -851,7 +844,6 @@ class _ReportPageState extends ConsumerState<ReportPage>
                   // Select All button
                   GestureDetector(
                     onTap: () => ss(() {
-                      inclP = true; inclR = allR.isNotEmpty; inclE = allE.isNotEmpty;
                       selP = Set.from(allP.map((x) => x.name));
                       selR = Set.from(allR.map((x) => x.name));
                       selE = Set.from(allE.map((x) => x.name));
@@ -893,25 +885,8 @@ class _ReportPageState extends ConsumerState<ReportPage>
                 ),
                 const SizedBox(height: 10),
 
-                // Section toggle + All / None
+                // All / None
                 Row(children: [
-                  GestureDetector(
-                    onTap: () => toggleSect(!sectOn(sheetTab)),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: sectOn(sheetTab) ? tabClr(sheetTab).withOpacity(0.10) : _bg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sectOn(sheetTab) ? tabClr(sheetTab).withOpacity(0.4) : _divLine),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(sectOn(sheetTab) ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 15, color: sectOn(sheetTab) ? tabClr(sheetTab) : _textGrey),
-                        const SizedBox(width: 6),
-                        Text(sectOn(sheetTab) ? 'Include in PDF' : 'Excluded', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sectOn(sheetTab) ? tabClr(sheetTab) : _textGrey)),
-                      ]),
-                    ),
-                  ),
                   const Spacer(),
                   GestureDetector(onTap: selAll,  child: Text('All ✓',   style: TextStyle(color: tabClr(sheetTab), fontSize: 12, fontWeight: FontWeight.w700))),
                   const SizedBox(width: 14),
@@ -997,9 +972,9 @@ class _ReportPageState extends ConsumerState<ReportPage>
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12)),
                     child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                      if (inclP) _miniStat('📦 Products',  '${selP.length}/${allP.length}', _red),
-                      if (inclR) _miniStat('📍 Regions',   '${selR.length}/${allR.length}', _red),
-                      if (inclE) _miniStat('👤 Employees', '${selE.length}/${allE.length}', _blue),
+                      if (selP.isNotEmpty) _miniStat('📦 Products',  '${selP.length}/${allP.length}', _red),
+                      if (selR.isNotEmpty) _miniStat('📍 Regions',   '${selR.length}/${allR.length}', _red),
+                      if (selE.isNotEmpty) _miniStat('👤 Employees', '${selE.length}/${allE.length}', _blue),
                     ]),
                   ),
 
@@ -1014,13 +989,16 @@ class _ReportPageState extends ConsumerState<ReportPage>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: !anyOn ? null : () async {
+                      final inclP = selP.isNotEmpty;
+                      final inclR = selR.isNotEmpty;
+                      final inclE = selE.isNotEmpty;
                       Navigator.of(ctx).pop();
                       await _generateAndShow(
                         filtered:  filtered,
                         inclP: inclP, inclR: inclR, inclE: inclE,
-                        selP: selP.length < allP.length ? selP : null,
-                        selR: selR.length < allR.length ? selR : null,
-                        selE: selE.length < allE.length ? selE : null,
+                        selP: inclP && selP.length < allP.length ? selP : null,
+                        selR: inclR && selR.length < allR.length ? selR : null,
+                        selE: inclE && selE.length < allE.length ? selE : null,
                         allP: allP, allR: allR, allE: allE,
                       );
                     },

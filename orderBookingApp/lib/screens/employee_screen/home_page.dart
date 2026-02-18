@@ -502,104 +502,111 @@ Widget build(BuildContext context) {
   
   
 
-  Widget _buildPerformanceSection() {
-    final efficiency = ref.watch(efficiencyProvider);
-    final successRate = ref.watch(successRateProvider);
-    final avgTime = ref.watch(avgOrderTimeProvider);
+Widget _buildPerformanceSection() {
+  final employeeState = ref.watch(employeeloginViewModelProvider);
+final companyName = (employeeState.employeeDetails.value?.isNotEmpty ?? false)
+    ? (employeeState.employeeDetails.value!.first.companyName ?? '')
+    : '';
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color.fromARGB(255, 247, 107, 97), Color.fromARGB(255, 248, 45, 45)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(255, 208, 71, 47).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+  final userName = ref.read(adminloginViewModelProvider).name ?? 'there';
+
+  final hour = DateTime.now().hour;
+  final greeting = hour < 12
+      ? 'Good Morning'
+      : hour < 17
+          ? 'Good Afternoon'
+          : 'Good Evening';
+
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.fromARGB(255, 247, 107, 97),
+          Color.fromARGB(255, 248, 45, 45),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: const Color.fromARGB(255, 208, 71, 47).withOpacity(0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Avatar / Icon
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.waving_hand_rounded,
+            color: Colors.white,
+            size: 32,
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Text content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Text(
+                '$greeting,',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                userName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 6),
+              Row(
                 children: [
-                  Text(
-                    'Today\'s Performance',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  const Icon(
+                    Icons.business_rounded,
+                    color: Colors.white70,
+                    size: 13,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Great work! Keep it up',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      companyName,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.trending_up_rounded, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      '+12%',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
-          const SizedBox(height: 20),
-        Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    _PerformanceMetric(
-      label: 'Efficiency',
-      value: '${efficiency.toStringAsFixed(0)}%',
-      icon: Icons.speed,
+        ),
+      ],
     ),
-    _PerformanceMetric(
-      label: 'Success Rate',
-      value: '${successRate.toStringAsFixed(0)}%',
-      icon: Icons.check_circle,
-    ),
-    _PerformanceMetric(
-      label: 'Avg. Time',
-      value: avgTime,
-      icon: Icons.access_time,
-    ),
-  ],
-)
-
-        ],
-      ),
-    );
-  }
+  );
+}
 
   Widget _buildRecentActivity() {
     return Column(
