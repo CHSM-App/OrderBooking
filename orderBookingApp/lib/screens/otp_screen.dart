@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 import 'package:order_booking_app/presentation/viewModels/auth_model.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottom_nav.dart';
+import 'package:order_booking_app/screens/login_screen.dart';
 import 'employee_screen/main_navigation_screen.dart';
 
 class OTPScreen extends ConsumerStatefulWidget {
@@ -59,15 +61,15 @@ void _verifyOTP() async {
       );
       return;
     }
-
+    final roleId = ref.read(tokenProvider).roleId ?? 0;
     // Redirect based on role
-    if (widget.loginInfo.roleId == 1) {
+    if (roleId == 1) {
       // Admin
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
       );
-    } else if (widget.loginInfo.roleId == 2) {
+    } else if (roleId == 2) {
       // Employee
       //  final allowLocation = await _showPermissionDialog();
       Navigator.pushReplacement(
@@ -78,7 +80,7 @@ void _verifyOTP() async {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unknown role!'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: Color.fromARGB(255, 255, 238, 82),
         ),
       );
     }
@@ -134,14 +136,42 @@ void _verifyOTP() async {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'We sent a code to ${widget.phoneNumber}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    const Text(
+      'We sent a code to ',
+      style: TextStyle(fontSize: 16, color: Colors.grey),
+    ),
+    GestureDetector(
+      onTap: () => Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.phoneNumber,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.orange,        // 👈 highlighted to show it's tappable
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.edit_rounded,           // 👈 pencil icon
+            size: 15,
+            color: Colors.orange,
+          ),
+        ],
+      ),
+    ),
+  ],
+),
                         const SizedBox(height: 32),
                         // OTP Card
                         Container(

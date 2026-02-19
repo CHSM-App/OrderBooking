@@ -192,7 +192,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 
 
   //check weather mobile number already exists in table
-  Future<void> checkMobileExists(String mobileNo, String companyId) async {
+  Future<void> checkMobileExists(String mobileNo, String companyId, int empId) async {
     state = state.copyWith(
       isLoading: true,
       clearError: true,
@@ -204,6 +204,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
       final exists = await usecase.checkMobileExists(
         mobileNo,
         companyId,
+        empId
       );
 
       state = state.copyWith(isLoading: false, isPhoneNoExists: exists['exists'], mobileNoStatus: exists['status']);

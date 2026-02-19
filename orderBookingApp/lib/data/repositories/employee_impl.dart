@@ -63,8 +63,8 @@ Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) async {
   }
 
   @override
-  Future<dynamic> checkMobileExists(String mobileNo, String companyId) {
-    return apiService.checkMobileExists(mobileNo, companyId);
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId, int empId) {
+    return apiService.checkMobileExists(mobileNo, companyId, empId);
   }
 
   @override

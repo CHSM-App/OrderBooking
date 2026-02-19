@@ -25,45 +25,7 @@ function createRefreshTokenPayload(mobile) {
   return token;
 }
 
-/*router.post('/Createlogin', async (req, res) => {
-  try {
-    const { mobile, deviceDetails } = req.body;
 
-    if (!mobile)
-      return res.status(400).json({ error: 'Mobile number required' });
-
-    const accessToken = createAccessToken({ mobile });
-    const refreshToken = createRefreshTokenPayload(mobile);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
-
-    const result = await db.request()
-      .input('operation', 'insert')
-      .input('user_mobile', mobile)
-      .input('refresh_token', refreshToken)
-      .input('device_info', deviceDetails)
-      .input('expires_at', expiresAt)
-      .execute('ManageRefreshToken');
-
-    const userId = result.recordset?.[0]?.id;
-
-    return res.json({
-      accessToken,
-      refreshToken,
-      userId: userId
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  }
-});/*
-
-
-/**
- * Refresh access token
- * Expect { refresh_token } in req.body
- * Implements rotation: revoke old refresh token, issue new one
- */
 router.post('/Createlogin', async (req, res) => {
   try {
     const { mobile, deviceDetails } = req.body;
@@ -102,25 +64,29 @@ router.post('/Createlogin', async (req, res) => {
   }
 });
 router.post('/refreshAccessToken', async (req, res) => {
+  
   try {
     const { refreshToken } = req.body;
-
+    
     if (!refreshToken)
       return res.status(400).json({ error: 'Refresh token required' });
-
+    
     const result = await db.request()
       .input('operation', 'get')
       .input('refresh_token', refreshToken)
       .execute('ManageRefreshToken');
-
-    const rows = result.recordset || [];
-
-    if (!rows.length)
-      return res.status(403).json({ error: 'Invalid refresh token' });
-
+      
+      const rows = result.recordset || [];
+      
+      
+      if (!rows.length)
+        return res.status(403).json({ error: 'Invalid refresh token' });
+      
+      console.log(`inside refresh access token ${refreshToken}`);
     const row = rows[0];
     const mobile = row.user_mobile;
     const roleId = row.role_id;
+    console.log(`row ${row}, mobile ${mobile}, role id ${roleId}`)
 
     // revoke old
     await db.request()
@@ -130,8 +96,7 @@ router.post('/refreshAccessToken', async (req, res) => {
 
     // create new
     const newAccessToken = createAccessToken({
-      mobile,
-      roleId
+      mobile
     });
 
     const newRefreshToken = createRefreshTokenPayload(mobile);
@@ -146,6 +111,8 @@ router.post('/refreshAccessToken', async (req, res) => {
       .input('expires_at', newExpiresAt)
       .execute('ManageRefreshToken');
 
+      console.log(`new ac ${newAccessToken}, new re ${newRefreshToken}`)
+
     return res.json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
@@ -154,7 +121,7 @@ router.post('/refreshAccessToken', async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error(`error is the : ${e}`);
     return res.status(500).json({ error: err.message });
   }
 });

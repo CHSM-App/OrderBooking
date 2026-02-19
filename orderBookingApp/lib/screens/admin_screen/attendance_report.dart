@@ -14,11 +14,8 @@ class _T {
   static const bg      = Color(0xFFF8F9FA);
   static const surface = Color(0xFFFFFFFF);
 
-  // Project accent palette
-  static const orange  = Color(0xFFF57C00);
   static const green   = Color(0xFF00C853);
   static const purple  = Color(0xFF5E35B1);
-  static const blue    = Color(0xFF1976D2);
   static const red     = Color(0xFFFF6B6B);
   static const amber   = Color(0xFFFFA726);
 
@@ -31,7 +28,6 @@ class _T {
   static const textPrimary   = Color(0xFF1A1A1A);
   static const textSecondary = Color(0xFF757575);
   static const textMuted     = Color(0xFF9E9E9E);
-  static const divider       = Color(0xFFEEEEEE);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,14 +189,6 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
                 // ── App-bar ──────────────────────────────────────────
                 _buildAppBar(attendanceState.attendanceReport.value ?? []),
 
-                // ── Header card (gradient) ───────────────────────────
-                // Padding(
-                //   padding:
-                //       const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                //   child: _buildHeaderCard(),
-                // ),
-
-                // ── Month selector ───────────────────────────────────
                 Padding(
                   padding:
                       const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -285,69 +273,6 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
                 size: 18,
                 color: _T.red,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Gradient header card (same pattern as HomePage / AdminHomePage) ──────────
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6C63FF), Color(0xFF5E35B1)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6C63FF).withOpacity(0.30),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Team Attendance',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_monthFull[selectedDate.month - 1]} ${selectedDate.year}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.80),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -830,37 +755,71 @@ class _EmployeeCardState extends State<_EmployeeCard>
                     ),
 
                     // Hours chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _T.amber.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _T.amber.withOpacity(0.25),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            totalHours.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: _T.amber,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Text(
-                            'hrs',
-                            style: TextStyle(
-                              color: _T.amber,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Row(
+  children: [
+    // ── Hours chip ──────────────────────────────────────────
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _T.amber.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _T.amber.withOpacity(0.25)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            totalHours.toStringAsFixed(1),
+            style: const TextStyle(
+              color: _T.amber,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            'hrs',
+            style: TextStyle(
+              color: _T.amber,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+
+    const SizedBox(width: 8), // 👈 gap between chips
+
+    // ── Distance chip ────────────────────────────────────────
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6C63FF).withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.25)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            (widget.item.TotlaDistance ?? 0.0).toStringAsFixed(1),
+            style: const TextStyle(
+              color: Color(0xFF6C63FF),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            'km',
+            style: TextStyle(
+              color: Color(0xFF6C63FF),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+),
                   ],
                 ),
 

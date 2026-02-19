@@ -16,7 +16,7 @@ abstract class EmployeeloginRepository {
 
   Future<EmployeeLogin> deleteEmployee(int empId);
 
-   Future<dynamic> checkMobileExists(String mobileNo, String companyId);
+   Future<dynamic> checkMobileExists(String mobileNo, String companyId, int empId);
 
   Future<List<VisitPayload>> getEmployeeVisit(int empId);
   

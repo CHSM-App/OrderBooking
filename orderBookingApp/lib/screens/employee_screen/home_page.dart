@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
-import 'package:order_booking_app/screens/employee_screen/product_report.dart';
 
 
 class HomePage extends ConsumerStatefulWidget {
@@ -182,7 +180,7 @@ final avgOrderTimeProvider = Provider<String>((ref) {
 final todayVisitsCountProvider = Provider<int>((ref) {
   final visitState = ref.watch(visitViewModelProvider);
 
-  final visits = visitState.visits?.maybeWhen(
+  final visits = visitState.visits.maybeWhen(
     data: (list) => list,
     orElse: () => [],
   ) ?? [];
@@ -734,7 +732,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  final String? trend;
+  // final String? trend;
   final bool isSmall;
 
   const _StatCard({
@@ -742,8 +740,7 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
-     this.trend,
-    this.isSmall = false,
+    this.isSmall = false, 
   });
 
   @override

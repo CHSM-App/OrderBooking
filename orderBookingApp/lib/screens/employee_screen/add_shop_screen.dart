@@ -47,8 +47,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   final _ownerNameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  Region? _selectedRegion;
-  int? _initialRegionId;
+  // ✅ Only store the selected regionId, not the Region object
+  int? _selectedRegionId;
   bool _isSaving = false;
 
   @override
@@ -57,16 +57,21 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
 
     // Load regions when screen opens
     Future.microtask(() {
-      ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(ref.read(adminloginViewModelProvider).companyId?? '');
+      ref.read(regionofflineViewModelProvider.notifier).fetchRegionList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+          );
     });
 
     if (widget.initialShop != null) {
       final shop = widget.initialShop!;
+
+
       _shopNameController.text = shop.shopName ?? '';
       _addressController.text = shop.address ?? '';
       _ownerNameController.text = shop.ownerName ?? '';
       _phoneController.text = shop.mobileNo ?? '';
-      _initialRegionId = shop.regionId;
+      // ✅ Store only the ID, resolve the object from the list later
+      _selectedRegionId = shop.regionId;
     }
   }
 
@@ -75,18 +80,19 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
+    final shopName = _capitalizeFirst(_shopNameController.text);
+    final ownerName = _capitalizeFirst(_ownerNameController.text);
     final shop = ShopDetails(
       localId: const Uuid().v4(),
-      shopName: _shopNameController.text,
+      shopName: shopName,
       address: _addressController.text,
-      regionId: _selectedRegion!.regionId, // ✅ Save region_id
-      ownerName: _ownerNameController.text,
+      regionId: _selectedRegionId!, // ✅ Use the stored regionId
+      ownerName: ownerName,
       mobileNo: _phoneController.text,
       shopId: widget.initialShop?.shopId ?? 0,
       createdBy: ref.read(adminloginViewModelProvider).userId,
       updatedAt: DateTime.now(),
-      companyId:
-          ref.read(adminloginViewModelProvider).companyId ?? "",
+      companyId: ref.read(adminloginViewModelProvider).companyId ?? "",
     );
 
     try {
@@ -137,6 +143,12 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     );
   }
 
+  String _capitalizeFirst(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return '${trimmed[0].toUpperCase()}${trimmed.substring(1)}';
+  }
+
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -148,7 +160,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 color: Colors.white.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              child: const Icon(Icons.error_outline,
+                  color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -165,7 +178,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
         ),
         backgroundColor: AddShopTheme.primaryPink,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
@@ -177,24 +191,6 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     final regionState = ref.watch(regionofflineViewModelProvider).regionList;
     final shopState = ref.watch(shopViewModelProvider);
 
-    regionState.when(
-      data: (regions) {
-        if (_selectedRegion == null &&
-            _initialRegionId != null &&
-            regions.isNotEmpty) {
-          final match = regions.firstWhere(
-            (r) => r.regionId == _initialRegionId,
-            orElse: () => regions.first,
-          );
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _selectedRegion = match);
-          });
-        }
-      },
-      loading: () {},
-      error: (_, __) {},
-    );
-
     return Scaffold(
       backgroundColor: AddShopTheme.backgroundGray,
       appBar: AppBar(
@@ -204,8 +200,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
         title: Text(
           widget.initialShop == null ? "Add New Shop" : "Update Shop",
           style: TextStyle(
-              color: AddShopTheme.textDark,
-              fontWeight: FontWeight.bold),
+              color: AddShopTheme.textDark, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -233,54 +228,68 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                             maxLines: 3),
                         const SizedBox(height: 14),
 
-                        /// ✅ REGION DROPDOWN
-                        DropdownButtonFormField<Region>(
-                          initialValue: _selectedRegion,
-                          decoration: InputDecoration(
-                            labelText: 'Region Name',
-                            prefixIcon:
-                                const Icon(Icons.map_outlined),
-                            filled: true,
-                            fillColor:
-                                AddShopTheme.backgroundGray,
-                            border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AddShopTheme.primaryPink,
-                                width: 1.5,
-                              ),
-                            ),
+                        /// ✅ FIXED REGION DROPDOWN
+                        regionState.when(
+                          loading: () => const Center(
+                            child: CircularProgressIndicator(),
                           ),
-                          // items: regionState.regionList.map((region) => DropdownMenuItem<Region>(value: region, child: Text(region.regionName ?? ''))).toList(),
-                          items: regionState.when(
-                            data: (regions) {
-                              return regions
+                          error: (e, _) => Text(
+                            'Failed to load regions: $e',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          data: (regions) {
+                            // ✅ Resolve the Region object from the SAME list
+                            // that will be used for items — guarantees same instance
+                            Region? selectedRegion;
+                            if (_selectedRegionId != null) {
+                              try {
+                                selectedRegion = regions.firstWhere(
+                                  (r) => r.regionId == _selectedRegionId,
+                                );
+                              } catch (_) {
+                                selectedRegion = null;
+                              }
+                            }
+
+                            return DropdownButtonFormField<Region>(
+                              value: selectedRegion, // ✅ Same instance as item
+                              decoration: InputDecoration(
+                                labelText: 'Region Name',
+                                prefixIcon:
+                                    const Icon(Icons.map_outlined),
+                                filled: true,
+                                fillColor: AddShopTheme.backgroundGray,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AddShopTheme.primaryPink,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              items: regions
                                   .map(
                                     (region) => DropdownMenuItem<Region>(
                                       value: region,
                                       child: Text(region.regionName ?? ''),
                                     ),
                                   )
-                                  .toList();
-                            },
-                            loading: () => [],
-                            error: (e,_) => [],
-                          ),
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  // ✅ Store only the ID, not the object
+                                  _selectedRegionId = value?.regionId;
+                                });
 
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedRegion = value;
-                            });
+                              },
+                              validator: (value) =>
+                                  value == null ? "Region is required" : null,
+                            );
                           },
-                          validator: (value) =>
-                              value == null
-                                  ? "Region is required"
-                                  : null,
                         ),
                       ],
                     ),
@@ -294,13 +303,12 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                             controller: _ownerNameController,
                             label: "Owner Name"),
                         const SizedBox(height: 14),
-                    _buildTextField(
-  controller: _phoneController,
-  label: "Phone Number",
-  keyboardType: TextInputType.number,
-  maxLength: 10,
-),
-
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: "Phone Number",
+                          keyboardType: TextInputType.number,
+                          maxLength: 10,
+                        ),
                       ],
                     ),
 
@@ -310,24 +318,20 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: (_isSaving || shopState.isLoading)
-                            ? null
-                            : _saveShop,
+                        onPressed:
+                            (_isSaving || shopState.isLoading) ? null : _saveShop,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              AddShopTheme.primaryPink,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
+                          backgroundColor: AddShopTheme.primaryPink,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(16)),
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                         child: (_isSaving || shopState.isLoading)
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child:
-                                    CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2,
                                 ),
@@ -336,8 +340,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                                 "Save Shop",
                                 style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight:
-                                        FontWeight.w600),
+                                    fontWeight: FontWeight.w600),
                               ),
                       ),
                     )
@@ -349,8 +352,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   }
 
   Widget _buildCard(
-      {required String title,
-      required List<Widget> children}) {
+      {required String title, required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -363,8 +365,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
         children: [
           Text(title,
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15)),
+                  fontWeight: FontWeight.bold, fontSize: 15)),
           const SizedBox(height: 10),
           ...children
         ],
@@ -372,32 +373,29 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     );
   }
 
-Widget _buildTextField({
-  required TextEditingController controller,
-  required String label,
-  int maxLines = 1,
-  TextInputType keyboardType = TextInputType.text,
-  int? maxLength,
-})
- {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
+  }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-        maxLength: maxLength,
-
-  inputFormatters: label == "Phone Number"
-      ? [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(10),
-        ]
-      : null,
+      maxLength: maxLength,
+      inputFormatters: label == "Phone Number"
+          ? [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ]
+          : null,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return "$label is required";
         }
-        if (label == "Phone Number" &&
-            value.length < 10) {
+        if (label == "Phone Number" && value.length < 10) {
           return "Enter valid phone number";
         }
         return null;
@@ -431,7 +429,6 @@ Widget _buildTextField({
   }
 }
 
-// Minimal Success Dialog (restored)
 class SuccessDialog extends StatelessWidget {
   final String title;
   final String subtitle;

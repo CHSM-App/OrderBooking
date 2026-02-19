@@ -580,6 +580,7 @@ class _DetailRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    // ignore: unused_element_parameter
     this.valueColor,
   });
 

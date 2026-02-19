@@ -46,6 +46,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   // Tracks whether we've already fired the fetch, so we don't repeat it.
   bool _hasFetchedOnce = false;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -643,13 +644,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       ),
     );
   }
+Future<void> _showLogoutDialog(BuildContext context) async {
+  await ref.read(networkStateProvider.notifier).checkConnection();
+  final isConnected = ref.read(networkStateProvider).isConnected;
+  bool isLoggingOut = false; // 👈 local variable, managed by StatefulBuilder
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => StatefulBuilder( // 👈 key fix
+      builder: (context, setDialogState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: ProfileTheme.cardWhite,
         title: const Text(
           'Logout',
@@ -659,40 +664,97 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             color: ProfileTheme.textDark,
           ),
         ),
-        content: const Text(
-          'Are you sure you want to logout?',
-          style: TextStyle(fontSize: 14, color: ProfileTheme.textGray),
+        content: Text(
+          isConnected
+              ? 'Are you sure you want to logout?'
+              : 'No internet. Logging out may cause data loss. Continue?',
+          style: const TextStyle(fontSize: 14, color: ProfileTheme.textGray),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                  color: ProfileTheme.textGray, fontWeight: FontWeight.w600),
+            onPressed: isLoggingOut ? null : () => Navigator.pop(context),
+            child: Text(
+              isConnected ? 'Cancel' : 'No',
+              style: const TextStyle(
+                color: ProfileTheme.textGray,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(tokenProvider.notifier).clearTokens();
-              ref.read(adminloginViewModelProvider.notifier).clearLogin();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            child: const Text(
-              'Logout',
-              style: TextStyle(
-                  color: ProfileTheme.primaryPink,
-                  fontWeight: FontWeight.w600),
+          SizedBox(
+            height: 32,
+            child: ElevatedButton(
+              onPressed: isLoggingOut
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoggingOut = true); // 👈 rebuilds dialog
+                      try {
+                        if (isConnected) {
+                          final companyId =
+                              ref.read(adminloginViewModelProvider).companyId ?? "";
+                          final userId =
+                              ref.read(adminloginViewModelProvider).userId;
+                          final regionId =
+                              ref.read(adminloginViewModelProvider).regionId ?? 0;
+
+                          await ref.read(visitViewModelProvider.notifier).sync();
+                          await ref
+                              .read(shopViewModelProvider.notifier)
+                              .getEmpShopList(companyId, regionId);
+                          await ref
+                              .read(productViewModelProvider.notifier)
+                              .fetchProductList(companyId);
+                          await ref
+                              .read(ordersViewModelProvider.notifier)
+                              .getAllOrders(userId);
+                        }
+                        ref.read(tokenProvider.notifier).clearTokens();
+                        ref.read(adminloginViewModelProvider.notifier).clearLogin();
+                        if (mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() => isLoggingOut = false); // 👈 reset on error
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ProfileTheme.primaryPink,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: isLoggingOut
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.logout_rounded, size: 13),
+                        const SizedBox(width: 6),
+                        Text(isConnected ? 'Logout' : 'Yes'),
+                      ],
+                    ),
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatDate(String dateStr) {
     try {

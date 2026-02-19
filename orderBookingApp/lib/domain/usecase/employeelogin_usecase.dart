@@ -31,8 +31,8 @@ class EmployeeloginUsecase {
     return employeeloginRepository.deleteEmployee(empId);
   }
 
-  Future<dynamic> checkMobileExists(String mobileNo, String companyId) async {
-      return employeeloginRepository.checkMobileExists(mobileNo, companyId);
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId, int empId) async {
+      return employeeloginRepository.checkMobileExists(mobileNo, companyId, empId);
   }
 
   Future<List<VisitPayload>> getEmployeeVisit(int empId) async {

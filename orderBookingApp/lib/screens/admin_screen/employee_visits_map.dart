@@ -68,7 +68,7 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
       return _buildError(state.error!);
     }
 
-    final visits = state.visits?.value ?? <EmployeeVisit>[];
+    final visits = state.visits.value ?? <EmployeeVisit>[];
     if (visits.isEmpty) {
       return _buildEmpty();
     }
@@ -304,7 +304,7 @@ class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
     final isEnd = sequence > 1 && sequence == (ref
             .read(visitViewModelProvider)
             .visits
-            ?.value
+            .value
             ?.length ??
         sequence);
     final color = isStart
