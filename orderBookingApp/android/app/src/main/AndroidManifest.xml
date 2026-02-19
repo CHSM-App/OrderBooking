@@ -5,9 +5,9 @@
 <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="order_booking_app"
+        android:label="Retail Pulse"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/orderbooking">
         <activity
             android:name=".MainActivity"
             android:exported="true"
