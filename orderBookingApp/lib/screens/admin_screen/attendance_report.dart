@@ -158,6 +158,8 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
                       pw.Text(
                           'Working Days: ${emp.totalWorkingDays ?? 0}'),
                       pw.Text(
+                          'Total Distance: ${emp.TotlaDistance ?? 0}'),
+                      pw.Text(
                           'Total Hours: ${(emp.totalHours ?? 0.0).toStringAsFixed(1)}h'),
                     ],
                   ),

@@ -22,10 +22,7 @@ class MinimalTheme {
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;
 
-  const AdminProfilePage({
-    super.key,
-    required this.mobileNo,
-  });
+  const AdminProfilePage({super.key, required this.mobileNo});
 
   @override
   ConsumerState<AdminProfilePage> createState() => _AdminProfilePageState();
@@ -36,8 +33,12 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(
-          ref.read(adminloginViewModelProvider).mobileNo ?? "");
+      final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
+      if (mobileNo != null && mobileNo.isNotEmpty) {
+        ref
+            .read(adminloginViewModelProvider.notifier)
+            .fetchAdminDetails(mobileNo);
+      }
     });
   }
 
@@ -170,35 +171,35 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 ],
               )
             : detailsAsync.hasError
-                ? _isNetworkError(detailsAsync.error.toString())
-                    ? _buildNoInternet()
-                    : _buildError(detailsAsync.error.toString())
-                : detailsAsync.when(
-                    data: (profile) => profile.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 200),
-                              Center(child: Text('No admin details found')),
-                            ],
-                          )
-                        : _buildProfileContent(profile.first),
-                    loading: () => ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 300),
-                        Center(
-                          child: CircularProgressIndicator(
-                            color: MinimalTheme.primaryOrange,
-                            strokeWidth: 2.5,
-                          ),
-                        ),
-                      ],
+            ? _isNetworkError(detailsAsync.error.toString())
+                  ? _buildNoInternet()
+                  : _buildError(detailsAsync.error.toString())
+            : detailsAsync.when(
+                data: (profile) => profile.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 200),
+                          Center(child: Text('No admin details found')),
+                        ],
+                      )
+                    : _buildProfileContent(profile.first),
+                loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 300),
+                    Center(
+                      child: CircularProgressIndicator(
+                        color: MinimalTheme.primaryOrange,
+                        strokeWidth: 2.5,
+                      ),
                     ),
-                    error: (e, _) => _isNetworkError(e.toString())
-                        ? _buildNoInternet()
-                        : _buildError(e.toString()),
-                  ),
+                  ],
+                ),
+                error: (e, _) => _isNetworkError(e.toString())
+                    ? _buildNoInternet()
+                    : _buildError(e.toString()),
+              ),
       ),
     );
   }
@@ -285,7 +286,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                           adminLogin: adminLogin,
                           mobileNo:
                               ref.read(adminloginViewModelProvider).mobileNo ??
-                                  "",
+                              "",
                         ),
                       ),
                     );
@@ -654,18 +655,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    nameController =
-        TextEditingController(text: widget.adminLogin.adminName ?? "");
-    emailController =
-        TextEditingController(text: widget.adminLogin.email ?? "");
-    companyController =
-        TextEditingController(text: widget.adminLogin.companyName ?? "");
-    mobileController =
-        TextEditingController(text: widget.adminLogin.mobileNo ?? "");
-    addressController =
-        TextEditingController(text: widget.adminLogin.address ?? "");
-    gstinController =
-        TextEditingController(text: widget.adminLogin.gstinNo ?? "");
+    nameController = TextEditingController(
+      text: widget.adminLogin.adminName ?? "",
+    );
+    emailController = TextEditingController(
+      text: widget.adminLogin.email ?? "",
+    );
+    companyController = TextEditingController(
+      text: widget.adminLogin.companyName ?? "",
+    );
+    mobileController = TextEditingController(
+      text: widget.adminLogin.mobileNo ?? "",
+    );
+    addressController = TextEditingController(
+      text: widget.adminLogin.address ?? "",
+    );
+    gstinController = TextEditingController(
+      text: widget.adminLogin.gstinNo ?? "",
+    );
   }
 
   @override
@@ -702,7 +709,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       await ref
           .read(adminloginViewModelProvider.notifier)
           .fetchAdminDetails(
-              ref.read(adminloginViewModelProvider).mobileNo ?? "");
+            ref.read(adminloginViewModelProvider).mobileNo ?? "",
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -716,8 +724,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             backgroundColor: MinimalTheme.successGreen,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -736,8 +745,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             backgroundColor: MinimalTheme.errorRed,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -962,21 +972,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       enabled: !isSaving,
-      style: const TextStyle(
-        fontSize: 14,
-        color: MinimalTheme.textDark,
-      ),
+      style: const TextStyle(fontSize: 14, color: MinimalTheme.textDark),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: MinimalTheme.textGray,
-          fontSize: 13,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: MinimalTheme.iconGray,
-          size: 20,
-        ),
+        labelStyle: const TextStyle(color: MinimalTheme.textGray, fontSize: 13),
+        prefixIcon: Icon(icon, color: MinimalTheme.iconGray, size: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[200]!),

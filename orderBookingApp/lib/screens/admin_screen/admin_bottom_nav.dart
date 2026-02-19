@@ -72,12 +72,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loginState = ref.watch(adminloginViewModelProvider);
 
-    final adminName = loginState.adminDetails?.maybeWhen(
-      data: (list) => list.isNotEmpty ? list.first.adminName : '',
-      orElse: () => '',
-    );
+
+    // final adminName = loginState.adminDetails?.maybeWhen(
+    //   data: (list) => list.isNotEmpty ? list.first.adminName : '',
+    //   orElse: () => '',
+    // );
+final adminName = ref.watch(
+  adminloginViewModelProvider.select((s) => s.name),
+);
 
     // Admin brand color
     const Color adminColor = Color(0xFFF57C00);

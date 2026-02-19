@@ -392,10 +392,12 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                             ),
                           ),
                         ),
-
+                   
+                      if(widget.activeStatus == 0)
                         const SizedBox(width: 8),
 
                         // ── Attendance Report Button ─────────
+                          if(widget.activeStatus == 0)
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -434,6 +436,8 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                             ),
                           ),
                         ),
+                      
+                      
                       ],
                     ),
                   ),

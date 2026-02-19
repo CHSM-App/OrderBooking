@@ -106,65 +106,74 @@ class _AttendanceCalendarPageState
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+    isScrollControlled: true, // 👈 allows the sheet to grow beyond half screen
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.4,
+      minChildSize: 0.2,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (_, scrollController) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            DateFormat('EEEE, dd MMM yyyy').format(date),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          if (records.isEmpty)
-            const Text("No attendance records")
-          else
-            ...records.map((r) {
-              final inTime = r.inDate != null
-                  ? DateFormat('hh:mm a').format(DateTime.parse(r.inDate!))
-                  : '--';
-              final outTime = r.outDate != null
-                  ? DateFormat('hh:mm a').format(DateTime.parse(r.outDate!))
-                  : '--';
+            const SizedBox(height: 20),
+            Text(
+              DateFormat('EEEE, dd MMM yyyy').format(date),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            if (records.isEmpty)
+              const Text("No attendance records")
+            else
+              Expanded(  // 👈 takes remaining space and allows scrolling
+                child: ListView.builder(
+                  controller: scrollController, // 👈 connects to DraggableScrollableSheet
+                  itemCount: records.length,
+                  itemBuilder: (_, index) {
+                    final r = records[index];
+                    final inTime = r.inDate != null
+                        ? DateFormat('hh:mm a').format(DateTime.parse(r.inDate!))
+                        : '--';
+                    final outTime = r.outDate != null
+                        ? DateFormat('hh:mm a').format(DateTime.parse(r.outDate!))
+                        : '--';
+                    final distance = r.totalDistance != null
+                        ? "${r.totalDistance!.toStringAsFixed(2)} km"
+                        : '--';
 
-              // Assuming r.totalDistance is in kilometers
-              final distance = r.totalDistance != null
-                  ? "${r.totalDistance!.toStringAsFixed(2)} km"
-                  : '--';
-
-              return ListTile(
-                title: Text("Check-in: $inTime, Check-out: $outTime"),
-                subtitle: Text("Total Distance: $distance"),
-                leading: Icon(
-                  r.checkinStatus == 1
-                      ? Icons.check_circle
-                      : Icons.check_circle,
-                  color: r.checkinStatus == 1 ? Colors.green : Colors.green,
+                    return ListTile(
+                      title: Text("Check-in: $inTime  ·  Check-out: $outTime"),
+                      subtitle: Text("Total Distance: $distance"),
+                      leading: Icon(
+                        Icons.check_circle,
+                        color: r.checkinStatus == 1 ? Colors.green : Colors.orange,
+                      ),
+                    );
+                  },
                 ),
-              );
-            }).toList(),
-        ],
+              ),
+          ],
+        ),
       ),
     ),
   );
 }
-
-
   // ---------- Month/Year Dropdown with Arrows ----------
   Widget _monthYearSelector() {
     final months = List.generate(12, (i) => i + 1);
