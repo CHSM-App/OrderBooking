@@ -256,7 +256,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           children: [
             _buildHeader(),
-            if (_filter != null) _buildFilterChip(),
+            // if (_filter != null) _buildFilterChip(),
             Expanded(child: _buildBody(state)),
           ],
         ),
@@ -374,7 +374,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip() {
+  Widget _buildFilterChip(int count) {
     return Container(
       color: _kSurface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -402,6 +402,25 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: _kPrimary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kPrimary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -457,8 +476,21 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               )
               .toList();
 
-          if (visible.isEmpty) return _buildEmpty();
-          return _buildList(visible, numberMap);
+          if (visible.isEmpty) {
+            return Column(
+              children: [
+                if (_filter != null) _buildFilterChip(0),
+                Expanded(child: _buildEmpty()),
+              ],
+            );
+          }
+
+          return Column(
+            children: [
+              if (_filter != null) _buildFilterChip(visible.length),
+              Expanded(child: _buildList(visible, numberMap)),
+            ],
+          );
         },
         loading: _buildLoading,
         error: (e, _) => _isNetworkError(e.toString())
