@@ -4,6 +4,7 @@ import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/employee_dao.dart';
 import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 
@@ -68,7 +69,7 @@ Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) async {
   }
 
   @override
-  Future<List<VisitPayload>> getEmployeeVisit(int empId) {
+  Future<List<EmployeeMap>> getEmployeeVisit(int empId) {
     return apiService.getEmployeeVisit(empId);
   }
 

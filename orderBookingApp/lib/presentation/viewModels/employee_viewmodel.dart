@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/usecase/employeelogin_usecase.dart';
@@ -14,7 +15,7 @@ class EmployeeloginState {
   final String? error;
   final AsyncValue<List<EmployeeLogin>> employeeList;
   final AsyncValue<List<EmployeeLogin>> employeeDetails;
-  final AsyncValue<List<VisitPayload>> employeeVisits;
+  final AsyncValue<List<EmployeeMap>> employeeMapData;
   final AsyncValue<List<EmployeeVisit>> employeeVisitLocation;
   final AsyncValue<List<AttendanceReport>> attendanceReport;
 
@@ -33,7 +34,7 @@ class EmployeeloginState {
     this.mobileNoStatus,
     this.employeeList = const AsyncValue.loading(),
     this.employeeDetails = const AsyncValue.loading(),
-    this.employeeVisits = const AsyncValue.loading(),
+    this.employeeMapData = const AsyncValue.loading(),
     this.attendanceReport = const AsyncValue.loading(),
   });
 
@@ -45,7 +46,7 @@ class EmployeeloginState {
     String? error,
     AsyncValue<List<EmployeeLogin>>? employeeList,
     AsyncValue<List<EmployeeLogin>>? employeeDetails,
-    AsyncValue<List<VisitPayload>>? employeeVisits,
+    AsyncValue<List<EmployeeMap>>? employeeMapData,
     AsyncValue<List<EmployeeVisit>>? employeeVisitLocation,
     AsyncValue<List<AttendanceReport>>? attendanceReport,
     String? companyId,
@@ -59,7 +60,7 @@ class EmployeeloginState {
       error: clearError ? null : (error ?? this.error),
       employeeList: employeeList ?? this.employeeList,
       employeeDetails: employeeDetails ?? this.employeeDetails,
-      employeeVisits: employeeVisits ?? this.employeeVisits,
+      employeeMapData: employeeMapData ?? this.employeeMapData,
       attendanceReport: attendanceReport ?? this.attendanceReport,
       companyId: companyId ?? this.companyId,
       empId: empId ?? this.empId
@@ -223,6 +224,7 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
 
 }
 
+//will use this for map
 Future<void> getEmployeeVisit(int empId) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -233,12 +235,12 @@ Future<void> getEmployeeVisit(int empId) async {
 
       state = state.copyWith(
         isLoading: false,
-        employeeVisits: AsyncValue.data(employees),
+        employeeMapData: AsyncValue.data(employees),
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-         employeeVisits: AsyncValue.error(e, StackTrace.current),
+         employeeMapData: AsyncValue.error(e, StackTrace.current),
       );
     }
   }

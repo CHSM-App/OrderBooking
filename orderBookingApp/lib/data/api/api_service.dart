@@ -5,6 +5,7 @@ import 'package:order_booking_app/core/constant.dart';
 import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
@@ -147,7 +148,7 @@ abstract class ApiService {
   Future<List<EmployeeVisit>> getEmployeeVisits(@Path("emp_id") int empId);
 
   @GET("users/getEmployeeVisits/{emp_id}")
-  Future<List<VisitPayload>> getEmployeeVisit(@Path("emp_id") int empId);
+  Future<List<EmployeeMap>> getEmployeeVisit(@Path("emp_id") int empId);
 
   @GET("users/productReport/{company_id}")
   Future<List<ProductData>> productReport(@Path("company_id") String companyId);

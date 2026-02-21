@@ -14,11 +14,19 @@ class CheckinStatusRequestImpl implements CheckinRepository {
     int empId,
     double latitude,
     double longitude,
-  ) {
-    return apiService.checkIn(empId, latitude, longitude).then((status) async {
-      await offline.upsertStatus(empId: empId, status: status);
-      return status;
-    });
+  ) async {
+    CheckInStatusRequest? remoteStatus;
+    try {
+      remoteStatus = await apiService.checkIn(empId, latitude, longitude);
+      await offline.upsertStatus(empId: empId, status: remoteStatus);
+    } catch (_) {
+      // Ignore remote errors; we still return the local cache.
+    }
+
+    final cached = await offline.fetchLatest(empId);
+    if (cached != null) return cached;
+    if (remoteStatus != null) return remoteStatus;
+    throw Exception('No local check-in status available.');
   }
 
   @override
@@ -26,11 +34,19 @@ class CheckinStatusRequestImpl implements CheckinRepository {
     int empId,
     double latitude,
     double longitude,
-  ) {
-    return apiService.checkOut(empId, latitude, longitude).then((status) async {
-      await offline.upsertStatus(empId: empId, status: status);
-      return status;
-    });
+  ) async {
+    CheckInStatusRequest? remoteStatus;
+    try {
+      remoteStatus = await apiService.checkOut(empId, latitude, longitude);
+      await offline.upsertStatus(empId: empId, status: remoteStatus);
+    } catch (_) {
+      // Ignore remote errors; we still return the local cache.
+    }
+
+    final cached = await offline.fetchLatest(empId);
+    if (cached != null) return cached;
+    if (remoteStatus != null) return remoteStatus;
+    throw Exception('No local check-out status available.');
   }
 
   @override

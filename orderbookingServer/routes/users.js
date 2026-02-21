@@ -39,20 +39,43 @@ router.get('/employeeList/:company_id',  async (req, res) => {
   }
 });
 
-router.get('/getEmployeeVisits/:emp_id',  async (req, res) => {
-  try {
-	   const { emp_id } = req.params;
+
+
+router.get('/getEmployeeVisits/:emp_id', async (req, res) => {
+
+ try {
+
        const result = await db.request()
-      	  .input("operation", "getEmployeeVisits")
-	   	  .input("emp_id", emp_id)
-     	  .execute("sp_employee_location");
+    .input("operation", "getLocationDetails")
+    .input("emp_id", req.params.emp_id)
+    .execute("sp_employee_location"); 
 
-    res.status(200).json(result.recordset);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (!result.recordset || result.recordset.length === 0) {
+    return res.json([]);
   }
-});
+  const rawJson = Object.values(result.recordset[0])[0];
 
+  if (!rawJson) {
+    return res.json([]);
+  }
+
+  let data = JSON.parse(rawJson);
+
+  // ✅ If shops is string, convert to JSON
+  data.forEach(item => {
+
+    if (typeof item.shops === "string") {
+      item.shops = JSON.parse(item.shops);
+    }
+
+  });
+  res.json(data);
+ }
+ catch (err) {
+  res.status(500).json(err);
+ }
+
+});
 
 router.get('/getEmployeeAttendance/:emp_id',  async (req, res) => {
   try {
