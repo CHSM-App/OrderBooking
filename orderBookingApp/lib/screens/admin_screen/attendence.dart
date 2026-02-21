@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:order_booking_app/domain/models/checkin_status.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 enum AttendanceStatus { present, absent }
 
@@ -87,6 +88,35 @@ class _AttendanceCalendarPageState
     }
 
     return map;
+  }
+
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
+  }
+
+  Widget _buildNoInternet() {
+    return AdminNoInternetRetry(
+      onRetry: () =>
+          ref.read(checkInViewModelProvider.notifier).getAttendance(widget.empId),
+    );
+  }
+
+  Widget _buildError() {
+    return AdminSomethingWentWrongRetry(
+      onRetry: () =>
+          ref.read(checkInViewModelProvider.notifier).getAttendance(widget.empId),
+    );
   }
 
   void _onDateTap(DateTime date, List<CheckInStatusRequest> list) {
@@ -348,7 +378,8 @@ class _AttendanceCalendarPageState
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Error: $e')),
+        error: (e, s) =>
+            _isNetworkError(e.toString()) ? _buildNoInternet() : _buildError(),
       ),
     );
   }

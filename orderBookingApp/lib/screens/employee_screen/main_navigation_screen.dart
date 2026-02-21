@@ -93,7 +93,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
     try {
       final isConnected =
-          await ref.read(networkServiceProvider).checkConnection();
+          await ref.read(networkServiceProvider).checkRealInternet();
       if (!isConnected) {
         if (mounted) {
           final actionText =

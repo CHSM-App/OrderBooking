@@ -4,6 +4,7 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
 import 'package:order_booking_app/screens/admin_screen/attendance_report.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -43,15 +44,17 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   }
 
   void _refreshEmployeeList() {
-    ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+    ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+          useCacheFirst: false,
+        );
   }
 
   Future<void> _onRefresh() async {
-    await ref
-        .read(employeeloginViewModelProvider.notifier)
-        .getEmployeeList(ref.read(adminloginViewModelProvider).companyId ?? '');
+    await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+          useCacheFirst: false,
+        );
   }
 
   bool _isNetworkError(String? message) {
@@ -70,104 +73,11 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   }
 
   Widget _buildNoInternet() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: MinimalTheme.primaryOrange.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.wifi_off_rounded,
-                    size: 34,
-                    color: MinimalTheme.primaryOrange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Internet Connection',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: MinimalTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Check your WiFi or mobile data\nand try again.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: MinimalTheme.textGray,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text(
-                    'Retry',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MinimalTheme.primaryOrange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return AdminNoInternetRetry(onRetry: _onRefresh);
   }
 
-  Widget _buildError(String message) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: MinimalTheme.iconGray.withOpacity(0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                style: const TextStyle(
-                  color: MinimalTheme.textGray,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  Widget _buildError() {
+    return AdminSomethingWentWrongRetry(onRetry: _onRefresh);
   }
 
   @override
@@ -262,7 +172,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
             : listAsync.hasError
             ? _isNetworkError(listAsync.error.toString())
                   ? _buildNoInternet()
-                  : _buildError(listAsync.error.toString())
+                  : _buildError()
             : ListView(
                 children: [
                   // ── Header with Stats ───────────────────

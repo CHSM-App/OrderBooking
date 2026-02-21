@@ -82,11 +82,9 @@ router.post('/refreshAccessToken', async (req, res) => {
       if (!rows.length)
         return res.status(403).json({ error: 'Invalid refresh token' });
       
-      console.log(`inside refresh access token ${refreshToken}`);
     const row = rows[0];
     const mobile = row.user_mobile;
     const roleId = row.role_id;
-    console.log(`row ${row}, mobile ${mobile}, role id ${roleId}`)
 
     // revoke old
     await db.request()
@@ -111,7 +109,6 @@ router.post('/refreshAccessToken', async (req, res) => {
       .input('expires_at', newExpiresAt)
       .execute('ManageRefreshToken');
 
-      console.log(`new ac ${newAccessToken}, new re ${newRefreshToken}`)
 
     return res.json({
       accessToken: newAccessToken,

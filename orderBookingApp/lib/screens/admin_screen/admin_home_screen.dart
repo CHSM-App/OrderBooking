@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/screens/employee_screen/product_report.dart';
+import 'package:order_booking_app/screens/admin_screen/product_report.dart';
 import 'admin_addProduct.dart';
 import 'admin_regionDetails.dart';
 import 'admin_shopDetails.dart';

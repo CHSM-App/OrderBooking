@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:order_booking_app/domain/models/product_data.dart';
 import 'package:order_booking_app/presentation/providers/usecase_provider.dart';
 import 'package:order_booking_app/presentation/viewmodels/product_viewmodel.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 
 // ─────────────────────────────────────────────────────────────
@@ -1057,7 +1058,8 @@ class _ReportPageState extends ConsumerState<ReportPage>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed: $e'), backgroundColor: _red,
+        content: const Text('Please try again.'),
+        backgroundColor: _red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ));
@@ -1094,7 +1096,7 @@ class _ReportPageState extends ConsumerState<ReportPage>
               ? _emptyView()
               : state.productReport!.when(
                   loading: () => _loadingView(),
-                  error:   (e, _) => _errorView(e.toString()),
+                  error:   (e, _) => _errorView(),
                   data: (rawList) {
                     final filtered = _filter(rawList);
                     return TabBarView(controller: _tabCtrl, children: [
@@ -1114,14 +1116,10 @@ class _ReportPageState extends ConsumerState<ReportPage>
     Text('Loading report…', style: TextStyle(color: _textGrey, fontSize: 13)),
   ]));
 
-  Widget _errorView(String msg) => Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-    Container(padding: const EdgeInsets.all(18), decoration: const BoxDecoration(color: _redLight, shape: BoxShape.circle), child: const Icon(Icons.error_outline_rounded, color: _red, size: 34)),
-    const SizedBox(height: 14), const Text('Something went wrong', style: TextStyle(color: _textDark, fontSize: 15, fontWeight: FontWeight.w700)),
-    const SizedBox(height: 6), Text(msg, textAlign: TextAlign.center, style: const TextStyle(color: _textGrey, fontSize: 12)), const SizedBox(height: 20),
-    ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: _red, foregroundColor: _white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-      onPressed: () => ref.read(reportTabProvider.notifier).getProductReport(widget.companyId),
-      icon: const Icon(Icons.refresh_rounded, size: 16), label: const Text('Retry')),
-  ])));
+  Widget _errorView() => AdminSomethingWentWrongRetry(
+    onRetry: () =>
+        ref.read(reportTabProvider.notifier).getProductReport(widget.companyId),
+  );
 
   Widget _emptyView() => const Center(child: Text('No data', style: TextStyle(color: _textGrey, fontSize: 14)));
 }

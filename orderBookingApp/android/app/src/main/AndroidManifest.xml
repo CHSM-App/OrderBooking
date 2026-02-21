@@ -8,6 +8,9 @@
         android:label="Retail Pulse"
         android:name="${applicationName}"
         android:icon="@mipmap/orderbooking">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyB7afZeIZfkBl81xghIHS-hMi_UpFLybYI" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

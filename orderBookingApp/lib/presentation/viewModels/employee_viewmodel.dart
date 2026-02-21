@@ -120,7 +120,11 @@ Future<void> uploadEmployeeIdProof(File image, int empId) async {
       }
     }
 
-    state = state.copyWith(isLoading: !hasCached, clearError: true);
+    state = state.copyWith(
+      isLoading: !hasCached,
+      clearError: true,
+      employeeList: hasCached ? state.employeeList : const AsyncValue.loading(),
+    );
     try {
       final employees = await usecase.getEmployeeList(companyId);
       state = state.copyWith(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 // ── Brand tokens (match your orange/amber theme) ─────────────────────────────
 const _kPrimary = Color(0xFFE8720C); // warm orange
@@ -68,6 +69,21 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           phone.contains(_searchQuery) || 
           regionName.contains(_searchQuery);
     }).toList();
+  }
+
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
   }
 
   // ── Show shop details bottom sheet ────────────────────────────────────────
@@ -210,7 +226,11 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
     // Error
     if (shopState.error != null) {
-      return SliverFillRemaining(child: _buildErrorState(shopState.error!));
+      return SliverFillRemaining(
+        child: _isNetworkError(shopState.error)
+            ? _buildNoInternetState()
+            : _buildErrorState(),
+      );
     }
 
     return shopState.shopList?.when(
@@ -233,8 +253,11 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           loading: () => const SliverFillRemaining(
             child: Center(child: CircularProgressIndicator(color: _kPrimary)),
           ),
-          error: (e, _) =>
-              SliverFillRemaining(child: _buildErrorState(e.toString())),
+          error: (e, _) => SliverFillRemaining(
+            child: _isNetworkError(e.toString())
+                ? _buildNoInternetState()
+                : _buildErrorState(),
+          ),
         ) ??
         const SliverToBoxAdapter(child: SizedBox.shrink());
   }
@@ -288,73 +311,17 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   }
 
   // ── Error ─────────────────────────────────────────────────────────────────
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 32,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: _kTextSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => ref
-                  .read(shopViewModelProvider.notifier)
-                  .getShopList(
-                    ref.read(adminloginViewModelProvider).companyId ?? '',
-                  ),
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text(
-                'Try Again',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildNoInternetState() {
+    return AdminNoInternetRetry(onRetry: _onRefresh);
+  }
+
+  Widget _buildErrorState() {
+    return AdminSomethingWentWrongRetry(
+      onRetry: () => ref
+          .read(shopViewModelProvider.notifier)
+          .getShopList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+          ),
     );
   }
 }

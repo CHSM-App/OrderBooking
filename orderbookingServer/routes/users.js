@@ -303,7 +303,7 @@ router.get('/getAttendanceReport/:company_id',  async (req, res) => {
 
 
 
-router.get('/getEmployeeLocationOrders/:emp_id', async (req, res) => {
+router.get('/ /:emp_id', async (req, res) => {
 
   const { emp_id } = req.params;
 

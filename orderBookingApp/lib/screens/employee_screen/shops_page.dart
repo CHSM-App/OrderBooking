@@ -35,7 +35,10 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(shopViewModelProvider.notifier)
-          .getEmpShopList(ref.read(adminloginViewModelProvider).companyId ?? '', ref.read(adminloginViewModelProvider).regionId ?? 0);
+          .getEmpShopList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+            ref.read(adminloginViewModelProvider).regionId ?? 0,
+          );
     });
 
     _searchController.addListener(() {
@@ -50,7 +53,10 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   Future<void> _onRefresh() async {
     await ref
         .read(shopViewModelProvider.notifier)
-        .getEmpShopList(ref.read(adminloginViewModelProvider).companyId ?? '', ref.read(adminloginViewModelProvider).regionId ?? 0);
+        .getEmpShopList(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+          ref.read(adminloginViewModelProvider).regionId ?? 0,
+        );
   }
 
   @override
@@ -128,23 +134,27 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     }
 
     try {
+      // Step 1: Try cached location first
+      Position? lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null && lastPosition.accuracy <= 100) {
+        return lastPosition;
+      }
+
+      // Step 2: Force fresh GPS location
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
+          accuracy: LocationAccuracy.bestForNavigation,
         ),
       ).timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 90),
         onTimeout: () {
-          throw Exception('Location request timed out. Please try again.');
+          throw Exception('GPS signal weak. Please move to open area.');
         },
       );
     } catch (e) {
       if (mounted) {
         _showSnack(
-          e.toString().contains('timeout')
-              ? 'Location timed out. Please try again.'
-              : 'Could not get location: ${e.toString()}',
+          'Unable to fetch GPS location. Go outside and try again.',
           isError: true,
         );
       }
@@ -362,7 +372,9 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     );
 
     if (result == true && mounted) {
-      ref.read(shopViewModelProvider.notifier).getEmpShopList(
+      ref
+          .read(shopViewModelProvider.notifier)
+          .getEmpShopList(
             ref.read(adminloginViewModelProvider).companyId ?? '',
             ref.read(adminloginViewModelProvider).regionId ?? 0,
           );
@@ -416,7 +428,9 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
     try {
       await ref.read(shopViewModelProvider.notifier).deleteShop(shop);
-      await ref.read(shopViewModelProvider.notifier).getEmpShopList(
+      await ref
+          .read(shopViewModelProvider.notifier)
+          .getEmpShopList(
             ref.read(adminloginViewModelProvider).companyId ?? '',
             ref.read(adminloginViewModelProvider).regionId ?? 0,
           );
@@ -540,7 +554,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           ref
               .read(shopViewModelProvider.notifier)
               .getEmpShopList(
-                ref.read(adminloginViewModelProvider).companyId ?? '',ref.read(adminloginViewModelProvider).regionId ?? 0
+                ref.read(adminloginViewModelProvider).companyId ?? '',
+                ref.read(adminloginViewModelProvider).regionId ?? 0,
               );
         }
       },
@@ -711,7 +726,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
               onPressed: () => ref
                   .read(shopViewModelProvider.notifier)
                   .getEmpShopList(
-                    ref.read(adminloginViewModelProvider).companyId ?? '',ref.read(adminloginViewModelProvider).regionId ?? 0
+                    ref.read(adminloginViewModelProvider).companyId ?? '',
+                    ref.read(adminloginViewModelProvider).regionId ?? 0,
                   ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addProduct.dart';
 import 'package:order_booking_app/domain/models/product.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFE8720C);
@@ -52,6 +53,21 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
         );
   }
 
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
+  }
+
   Future<void> _openAddEdit({Product? initialProduct}) async {
     final userId = ref.read(adminloginViewModelProvider).userId;
     if (userId == 0) return;
@@ -99,8 +115,11 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
                   ),
                 ),
               ),
-              error: (err, _) =>
-                  SliverFillRemaining(child: _buildError(err.toString())),
+              error: (err, _) => SliverFillRemaining(
+                child: _isNetworkError(err.toString())
+                    ? _buildNoInternet()
+                    : _buildError(),
+              ),
               data: (products) {
                 final filtered = products
                     .where(
@@ -251,73 +270,17 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
   }
 
   // ── Error ──────────────────────────────────────────────────────────────────
-  Widget _buildError(String msg) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline_rounded,
-                size: 32,
-                color: Colors.red,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              msg,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: _kTextSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => ref
-                  .read(productViewModelProvider.notifier)
-                  .fetchProductList(
-                    ref.read(adminloginViewModelProvider).companyId ?? '',
-                  ),
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text(
-                'Try Again',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildNoInternet() {
+    return AdminNoInternetRetry(onRetry: _onRefresh);
+  }
+
+  Widget _buildError() {
+    return AdminSomethingWentWrongRetry(
+      onRetry: () => ref
+          .read(productViewModelProvider.notifier)
+          .fetchProductList(
+            ref.read(adminloginViewModelProvider).companyId ?? '',
+          ),
     );
   }
 }

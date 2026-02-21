@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 
 // Theme Colors matching the booking app design with orange tones
 class EditProfileTheme {
   // Primary orange from the design
   static const primaryOrange = Color(0xFFE8720C);
   static const primaryOrangeDark = Color(0xFFD66608);
-  
+
   // Background colors
   static const backgroundGray = Color(0xFFF5F5F5); // Gray100
-  
+
   // Neutral colors
   static const cardWhite = Color(0xFFFFFBFE);
   static const textDark = Color(0xFF1E1E1E);
   static const textGray = Color(0xFF6B7280);
-  
+
   // Soft shadows
   static List<BoxShadow> cardShadow = [
     BoxShadow(
@@ -24,7 +26,7 @@ class EditProfileTheme {
       offset: const Offset(0, 2),
     ),
   ];
-  
+
   static List<BoxShadow> buttonShadow = [
     BoxShadow(
       color: primaryOrange.withOpacity(0.3),
@@ -82,6 +84,33 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    final isConnected = ref.read(networkStateProvider).isConnected;
+    if (!isConnected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  "No internet connection",
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isSaving = true);
@@ -93,6 +122,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       "email": emailController.text.trim(),
       "address": addressController.text.trim(),
     });
+
+    final employeeToSave = EmployeeLogin(
+      empId: ref.read(adminloginViewModelProvider).userId,
+      empName: nameController.text.trim(),
+      empMobile: phoneController.text.trim(),
+      empEmail: emailController.text.trim(),
+      empAddress: addressController.text.trim(),
+      companyId: ref.read(adminloginViewModelProvider).companyId,
+      roleId: 2,
+    );
+
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .addEmployee(employeeToSave);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,10 +152,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               SizedBox(width: 10),
               Text(
                 "Profile updated successfully",
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               ),
             ],
           ),
@@ -130,6 +170,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = ref.watch(networkStateProvider).isConnected;
     return Scaffold(
       backgroundColor: EditProfileTheme.backgroundGray,
 
@@ -168,6 +209,36 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
+            const SizedBox(height: 16),
+            if (!isConnected)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off_rounded, color: Colors.red, size: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "No internet connection. Editing is disabled.",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 24),
 
             // AVATAR - Minimal
@@ -181,8 +252,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               ),
               child: CircleAvatar(
                 radius: 48,
-                backgroundColor:
-                    EditProfileTheme.primaryOrange.withOpacity(0.1),
+                backgroundColor: EditProfileTheme.primaryOrange.withOpacity(
+                  0.1,
+                ),
                 child: Text(
                   _initial(),
                   style: const TextStyle(
@@ -223,6 +295,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       controller: nameController,
                       label: "Full Name",
                       icon: Icons.person_outline_rounded,
+                      enabled: isConnected && !isSaving,
                       validator: (v) =>
                           v == null || v.length < 3 ? "Invalid name" : null,
                     ),
@@ -238,9 +311,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(10),
                       ],
-                      validator: (v) => v == null || v.length != 10
-                          ? "Invalid number"
-                          : null,
+                      enabled: isConnected && !isSaving,
+                      validator: (v) =>
+                          v == null || v.length != 10 ? "Invalid number" : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -249,6 +322,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       label: "Email Address",
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
+                      enabled: isConnected && !isSaving,
                       validator: (v) => v == null || !v.contains("@")
                           ? "Invalid email"
                           : null,
@@ -260,6 +334,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       label: "Address",
                       icon: Icons.location_on_outlined,
                       maxLines: 2,
+                      enabled: isConnected && !isSaving,
                       validator: (v) => v == null || v.length < 10
                           ? "Enter full address"
                           : null,
@@ -276,7 +351,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           boxShadow: EditProfileTheme.buttonShadow,
                         ),
                         child: ElevatedButton(
-                          onPressed: isSaving ? null : _saveProfile,
+                          onPressed:
+                              (isSaving || !isConnected) ? null : _saveProfile,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -325,6 +401,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     int maxLines = 1,
     int? maxLength,
     List<TextInputFormatter>? inputFormatters,
+    bool enabled = true,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
@@ -334,6 +411,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxLines: maxLines,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
+      enabled: enabled,
       style: const TextStyle(
         fontSize: 14,
         color: EditProfileTheme.textDark,
@@ -346,11 +424,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           fontSize: 13,
           fontWeight: FontWeight.w400,
         ),
-        prefixIcon: Icon(
-          icon,
-          color: EditProfileTheme.textGray,
-          size: 18,
-        ),
+        prefixIcon: Icon(icon, color: EditProfileTheme.textGray, size: 18),
         filled: true,
         fillColor: EditProfileTheme.backgroundGray,
         contentPadding: const EdgeInsets.symmetric(
@@ -374,17 +448,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
         counterText: '', // Hide character counter
       ),

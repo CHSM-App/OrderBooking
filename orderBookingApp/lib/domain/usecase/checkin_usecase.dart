@@ -18,3 +18,5 @@ class CheckinUsecase {
   Future<List<CheckInStatusRequest>> getAttendance(int empId) =>
       repository.getAttendance(empId);
 }
+
+

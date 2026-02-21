@@ -5,6 +5,7 @@ import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
 // Minimal Theme Colors
@@ -66,85 +67,11 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
   }
 
   Widget _buildNoInternet() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: MinimalTheme.primaryOrange.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.wifi_off_rounded,
-                    size: 34,
-                    color: MinimalTheme.primaryOrange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Internet Connection',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: MinimalTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Check your WiFi or mobile data\nand try again.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: MinimalTheme.textGray,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text(
-                    'Retry',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MinimalTheme.primaryOrange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return AdminNoInternetRetry(onRetry: _onRefresh);
   }
 
-  Widget _buildError(String message) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(child: Text('Error: $message')),
-      ],
-    );
+  Widget _buildSomethingWentWrong() {
+    return AdminSomethingWentWrongRetry(onRetry: _onRefresh);
   }
 
   @override
@@ -173,7 +100,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
             : detailsAsync.hasError
             ? _isNetworkError(detailsAsync.error.toString())
                   ? _buildNoInternet()
-                  : _buildError(detailsAsync.error.toString())
+                  : _buildSomethingWentWrong()
             : detailsAsync.when(
                 data: (profile) => profile.isEmpty
                     ? ListView(
@@ -198,7 +125,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 ),
                 error: (e, _) => _isNetworkError(e.toString())
                     ? _buildNoInternet()
-                    : _buildError(e.toString()),
+                    : _buildSomethingWentWrong(),
               ),
       ),
     );
@@ -687,6 +614,33 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    final isConnected = ref.read(networkStateProvider).isConnected;
+    if (!isConnected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: MinimalTheme.errorRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'No internet connection',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     if (!_validateFields()) return;
 
     setState(() => isSaving = true);
@@ -805,6 +759,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = ref.watch(networkStateProvider).isConnected;
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
       appBar: AppBar(
@@ -828,6 +783,35 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         child: Column(
           children: [
             const SizedBox(height: 8),
+            if (!isConnected)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off_rounded, color: Colors.red, size: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'No internet connection. Editing is disabled.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!isConnected) const SizedBox(height: 16),
 
             // Profile Avatar
             Container(
@@ -918,7 +902,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isSaving ? null : _saveProfile,
+                      onPressed:
+                          (isSaving || !isConnected) ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MinimalTheme.primaryOrange,
                         foregroundColor: Colors.white,
@@ -971,7 +956,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxLines: maxLines,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
-      enabled: !isSaving,
+      enabled: !isSaving && ref.read(networkStateProvider).isConnected,
       style: const TextStyle(fontSize: 14, color: MinimalTheme.textDark),
       decoration: InputDecoration(
         labelText: label,
