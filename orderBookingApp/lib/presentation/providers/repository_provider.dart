@@ -20,7 +20,7 @@ import 'package:order_booking_app/data/repositories/shop_impl.dart';
 import 'package:order_booking_app/data/repositories/login_impl.dart';
 import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/data/repositories/employee_impl.dart';
-import 'package:order_booking_app/data/repositories/shot_visit.dart';
+import 'package:order_booking_app/data/repositories/shop_visit.dart';
 import 'package:order_booking_app/domain/repository/checkin_repo.dart';
 import 'package:order_booking_app/domain/repository/orders_repo.dart';
 import 'package:order_booking_app/domain/repository/product_repo.dart';

@@ -6,7 +6,6 @@ import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
-import 'package:order_booking_app/domain/models/visite.dart';
 
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 

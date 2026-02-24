@@ -29,7 +29,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
-void _verifyOTP() async {
+  void _verifyOTP() async {
     String otp = _otpControllers.map((c) => c.text).join();
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,6 +85,7 @@ void _verifyOTP() async {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -136,42 +137,48 @@ void _verifyOTP() async {
                           ),
                         ),
                         const SizedBox(height: 8),
-Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const Text(
-      'We sent a code to ',
-      style: TextStyle(fontSize: 16, color: Colors.grey),
-    ),
-    GestureDetector(
-      onTap: () => Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            widget.phoneNumber,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.orange,        // 👈 highlighted to show it's tappable
-              fontWeight: FontWeight.bold,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-          const SizedBox(width: 4),
-          const Icon(
-            Icons.edit_rounded,           // 👈 pencil icon
-            size: 15,
-            color: Colors.orange,
-          ),
-        ],
-      ),
-    ),
-  ],
-),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'We sent a code to ',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(),
+                                ),
+                                (route) => false,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.phoneNumber,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors
+                                          .orange, // 👈 highlighted to show it's tappable
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.edit_rounded, // 👈 pencil icon
+                                    size: 15,
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 32),
                         // OTP Card
                         Container(

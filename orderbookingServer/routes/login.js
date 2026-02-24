@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
@@ -10,7 +9,6 @@ const crypto = require('crypto');
 var bodyParser = require('body-parser');
 
 function generateRefreshToken() {
-  // opaque random token for DB storage + never reveal secret structure
   return crypto.randomBytes(64).toString('hex');
 }
 
@@ -19,9 +17,7 @@ function createAccessToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '15m' }); // production: 15m
 }
 function createRefreshTokenPayload(mobile) {
-  // we don't sign this with jwt secret; we'll store opaque token in db
   const token = generateRefreshToken();
-  // You can optionally also sign metadata as a jwt for additional checks.
   return token;
 }
 
@@ -47,8 +43,7 @@ router.post('/Createlogin', async (req, res) => {
     const roleId = result.recordset?.[0]?.role_id;
 
     const accessToken = createAccessToken({
-      mobile,
-      roleId
+      mobile
     });
 
     return res.json({
@@ -63,28 +58,35 @@ router.post('/Createlogin', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
 router.post('/refreshAccessToken', async (req, res) => {
-  
+  console.log("inside the refreshAccessToken route");
   try {
     const { refreshToken } = req.body;
-    
+
     if (!refreshToken)
       return res.status(400).json({ error: 'Refresh token required' });
-    
+
     const result = await db.request()
       .input('operation', 'get')
       .input('refresh_token', refreshToken)
       .execute('ManageRefreshToken');
-      
-      const rows = result.recordset || [];
-      
-      
-      if (!rows.length)
-        return res.status(403).json({ error: 'Invalid refresh token' });
-      
+
+    const rows = result.recordset || [];
+
+
+    if (!rows.length)
+      return res.status(403).json({ error: 'Invalid refresh token' });
+
     const row = rows[0];
     const mobile = row.user_mobile;
     const roleId = row.role_id;
+
+    jwt.verify(refreshToken, process.env.REFRESH_KEY, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: 'Invalid refresh token' });
+      }
+    });
 
     // revoke old
     await db.request()
@@ -118,34 +120,55 @@ router.post('/refreshAccessToken', async (req, res) => {
     });
 
   } catch (err) {
-    console.error(`error is the : ${e}`);
     return res.status(500).json({ error: err.message });
   }
 });
-
-
-
 router.post('/logout', async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
 
-    await db.request()
-	  .input('operation', 'revoke')
-		.input('refresh_token', refreshToken)
-		.execute('ManageRefreshToken');
-    return res.json({ success: true });
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token required'
+      });
+    }
+
+    const result = await db.request()
+      .input('operation', 'revoke')
+      .input('refresh_token', refreshToken)
+      .execute('ManageRefreshToken');
+
+    const revokedCount = result.recordset[0]?.revoked_count || 0;
+
+    if (revokedCount > 0) {
+      return res.json({
+        success: true,
+        message: 'Logout successful'
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid refresh token or already revoked'
+      });
+    }
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Logout failed' });
+    return res.status(500).json({
+      success: false,
+      message: 'Logout failed'
+    });
   }
 });
+
+
 router.get('/checkPhone', async (req, res) => {
-   try {
+  try {
     const { mobile_no } = req.query;
 
     const result = await db.request()
-	 .input('operation', 'check_phone')
+      .input('operation', 'check_phone')
       .input('mobile_no', mobile_no)
       .execute('sp_admin_login');
 
@@ -154,52 +177,5 @@ router.get('/checkPhone', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-const API_URL = "http://papi.messagebot.in/SendSmsV2";
-const API_TOKEN = "L2Uj2dK9ARQrfUy2";
-const SOURCE_ID = "SMSALA"; // your approved sender ID
-
-router.post("/send-sms", async (req, res) => {
-  const { phone, message, dltEntityId, dltTemplateId } = req.body;
-
-  if (!phone || !message) {
-    return res.status(400).json({ error: "phone and message are required" });
-  }
-
-  const payload = [
-    {
-      apiToken: API_TOKEN,
-      messageType: "3",            // Transactional
-      messageEncoding: "1",        // Text
-      destinationAddress: phone,   // e.g. 91XXXXXXXXXX
-      sourceAddress: SOURCE_ID,
-      messageText: message,
-      dltEntityId,
-      dltEntityTemplateId: dltTemplateId
-    }
-  ];
-
-  try {
-    const response = await axios.post(API_URL, payload, {
-      headers: { "Content-Type": "application/json" }
-    });
-
-    return res.json({
-      success: true,
-      providerResponse: response.data
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-      details: err.response?.data
-    });
-  }
-});
-
-
-
-
-
 
 module.exports = router; 

@@ -89,6 +89,10 @@ abstract class ApiService {
   @POST("insert/employee")
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
 
+    
+  @POST("login/logout")
+  Future<dynamic> logOut(@Body() TokenResponse tokenResponse);
+
   @POST("insert/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
@@ -177,9 +181,8 @@ abstract class ApiService {
   @POST("insert/addOrder")
   Future<dynamic> addOrder(@Body() Order product);
 
+
   // DELETE API
   @DELETE("index/deleteShop/{shop_id}")
   Future<dynamic> deleteShop(@Path("shop_id") int shopId);
 }
-
-

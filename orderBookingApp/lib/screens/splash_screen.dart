@@ -17,6 +17,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    ref.read(tokenProvider.notifier).loadTokens();
     checkLogin();
   }
 

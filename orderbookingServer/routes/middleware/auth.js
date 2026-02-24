@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 module.exports = function (req, res, next) {
+  console.log("auth middleware called");
   const authHeader = req.header('Authorization');
 
   if (!authHeader) {

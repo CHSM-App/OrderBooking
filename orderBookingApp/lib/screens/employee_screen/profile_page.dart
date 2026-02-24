@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/employee_screen/attendence.dart';
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 
@@ -46,7 +47,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   // Tracks whether we've already fired the fetch, so we don't repeat it.
   bool _hasFetchedOnce = false;
-  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -357,6 +357,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                             icon: Icons.notifications_none_rounded,
                             title: 'Notifications',
                             onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _ModernSettingTile(
+                            icon: Icons.calendar_month_rounded,
+                            title: 'View Attendance',
+                            onTap: () {
+                              final userId =
+                                  ref.read(adminloginViewModelProvider).userId;
+                              final joiningDate = ref
+                                  .read(adminloginViewModelProvider)
+                                  .joiningDate;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AttendanceCalendarPage(
+                                    empId: userId,
+                                    joiningDate: joiningDate,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           _buildDivider(),
                           _ModernSettingTile(
@@ -709,7 +730,7 @@ Future<void> _showLogoutDialog(BuildContext context) async {
                               .getAllOrders(userId);
                         }
                         ref.read(tokenProvider.notifier).clearTokens();
-                        ref.read(adminloginViewModelProvider.notifier).clearLogin();
+                        ref.read(adminloginViewModelProvider.notifier).clearLogin(ref.read(tokenProvider).refreshToken ?? "");
                         if (mounted) {
                           Navigator.pushAndRemoveUntil(
                             context,

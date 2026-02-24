@@ -20,7 +20,6 @@ class VisitImpl implements VisitRepository {
   }
 
   Future<void> syncOfflineVisits() async {
-    print("sync offline visits called");
     if (_isSyncing) return;
     _isSyncing = true;
 
@@ -44,7 +43,7 @@ class VisitImpl implements VisitRepository {
             throw Exception('Failed to sync visit with id $id');
           }
 
-          await local.delete(id);
+          await local.markSynced(id);
         } catch (e) {
           print("sync offline visits called but got error: $e");
           await local.incrementRetry(id);
@@ -60,4 +59,20 @@ class VisitImpl implements VisitRepository {
     return apiService.getEmployeeVisits(empId);
   }
 
+  @override
+  Future<void> purgeSyncedBeforeToday() {
+    return local.purgeSyncedBeforeToday();
+  }
+
+  @override
+  Future<int> countTodayVisits() {
+    return local.countTodayVisits();
+  }
 }
+
+
+
+
+
+
+

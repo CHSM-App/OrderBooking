@@ -4,6 +4,7 @@ import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/token_response.dart';
 
 import 'package:order_booking_app/domain/repository/login_repo.dart';
 
@@ -39,12 +40,13 @@ class AdminloginImpl implements AdminloginRepository {
       await TokenStorage.saveValue('isCheckedIn', response[0].isCheckedIn.toString());
       await TokenStorage.saveValue('company_id', response[0].companyId.toString());
       await TokenStorage.saveValue('region_id', response[0].regionId.toString());
+      await TokenStorage.saveValue('joining_date', response[0].joiningDate.toString());
     }
     return response;
   }
 
-
-  Future<void> logoutUser() async {
+  Future<void> logoutUser(String refreshToken) async {
+    await apiService.logOut( TokenResponse(refreshToken: refreshToken),);
     await logout.logout();
   }
 }

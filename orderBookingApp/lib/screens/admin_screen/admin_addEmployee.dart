@@ -806,17 +806,10 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                         .checkMobileExists(value, companyId, widget.employee?.empId ?? 0);
                   } else {
                     ref
-                        .read(employeeloginViewModelProvider.notifier)
-                        // ignore: invalid_use_of_protected_member
-                        .state = employeeState.copyWith(
-                      isPhoneNoExists: null, mobileNoStatus: null
-                    );
+                        .read(employeeloginViewModelProvider.notifier).setNull();
+                       
                   }
                 },
-                // errorText: employeeState.isPhoneNoExists == true
-                //     ? 'Mobile number already exists'
-                //     : null,
-                // onSaved: (v) => mobile = v!,
                 errorText: null,
                 onSaved: (v) => mobile = v?.trim() ?? '',
               ),

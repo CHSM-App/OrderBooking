@@ -530,8 +530,9 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              ref.read(tokenProvider.notifier).clearTokens();
-              ref.read(adminloginViewModelProvider.notifier).clearLogin();
+             
+              ref.read(adminloginViewModelProvider.notifier).clearLogin(ref.read(tokenProvider).refreshToken?? "");
+               ref.read(tokenProvider.notifier).clearTokens();
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),

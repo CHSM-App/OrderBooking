@@ -252,7 +252,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                             }
 
                             return DropdownButtonFormField<Region>(
-                              value: selectedRegion, // ✅ Same instance as item
+                              initialValue: selectedRegion, // ✅ Same instance as item
                               decoration: InputDecoration(
                                 labelText: 'Region Name',
                                 prefixIcon:

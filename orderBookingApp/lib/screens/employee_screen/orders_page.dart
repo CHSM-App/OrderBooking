@@ -18,9 +18,8 @@ enum _FilterType { today, yesterday, thisMonth }
 
 class _ActiveFilter {
   final _FilterType type;
-  final DateTimeRange? customRange;
 
-  const _ActiveFilter(this.type, {this.customRange});
+  const _ActiveFilter(this.type);
   String get label {
     switch (type) {
       case _FilterType.today:
@@ -32,22 +31,7 @@ class _ActiveFilter {
     }
   }
 
-  static String _fmt(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 
-  static const _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
 }
 
 class OrdersListPage extends ConsumerStatefulWidget {

@@ -28,6 +28,7 @@ class TokenState {
 
 class TokenNotifier extends StateNotifier<TokenState> {
   TokenNotifier() : super(const TokenState());
+  
 
   /// Load saved tokens at app start
   Future<void> loadTokens() async {
@@ -42,10 +43,12 @@ class TokenNotifier extends StateNotifier<TokenState> {
     }
   }
 
+
   /// Save new tokens
   Future<void> saveTokens(String accessToken, String refreshToken, int roleId) async {
     state = TokenState(accessToken: accessToken, refreshToken: refreshToken, roleId: roleId);
     await TokenStorage.saveTokens(accessToken, refreshToken, roleId);
+
   }
 
   /// Clear tokens and trigger logout

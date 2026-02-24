@@ -105,7 +105,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
             (e) => {
               "id": e.empId,
               "name": e.empName ?? "",
-              "mobile": e.empMobile ?? "",
+              "mobile": e.empMobile ,
               "email": e.empEmail ?? "",
               "address": e.empAddress ?? "",
               "region": e.regionName ?? "",

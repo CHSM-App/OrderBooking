@@ -3,7 +3,7 @@ import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/usecase/login_usecase.dart';
-
+   
 class AdminloginState {
   final bool isLoading;
   final String? error;
@@ -16,11 +16,13 @@ class AdminloginState {
   final String? isCheckedIn;
   final String? companyId;
   final int? regionId;
+  final String? joiningDate;
 
   final AsyncValue<List<AdminLogin>>? adminDetails;
   final AsyncValue<List<LoginInfo>> phoneCheckResult;
   final int userId;
   const AdminloginState({
+    this.joiningDate,
     this.regionId,
     this.isLoading = false,
     this.error,
@@ -52,6 +54,7 @@ class AdminloginState {
     String? token,
     String? isCheckedIn,
     String? companyId,
+    String? joiningDate
   }) {
     return AdminloginState(
       regionId: regionId ?? this.regionId,
@@ -68,6 +71,7 @@ class AdminloginState {
       token: token ?? this.token,
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       companyId: companyId ?? this.companyId,
+      joiningDate: joiningDate?? this.joiningDate
     );
   }
 }
@@ -93,6 +97,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final companyId = await TokenStorage.getValue('company_id');
     final regionIdStr = await TokenStorage.getValue('region_id');
     final regionId = int.tryParse(regionIdStr ?? '');
+    final joiningDate = await TokenStorage.getValue('joining_date');
     state = state.copyWith(
       userId: userId,
       name: name,
@@ -104,6 +109,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       isCheckedIn: isCheckedIn,
       companyId: companyId,
       regionId: regionId,
+      joiningDate: joiningDate,
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
@@ -172,9 +178,9 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     }
   }
 
-  Future<void> clearLogin() async {
+  Future<void> clearLogin(String refreshToken) async {
 
-    await usecase.logOut();
+    await usecase.logOut(refreshToken);
     state = const AdminloginState(
       isLoading: false,
       error: null,

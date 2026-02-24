@@ -39,6 +39,46 @@ class OfflineVisitDao {
     );
   }
 
+  Future<void> markSynced(int id) async {
+    final db = await AppDatabase.database;
+    await db.update(
+      'offline_visits',
+      {'status': 'synced'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> purgeSyncedBeforeToday() async {
+    final db = await AppDatabase.database;
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+
+    await db.delete(
+      'offline_visits',
+      where: 'status = ? AND captured_at < ?',
+      whereArgs: ['synced', start.toIso8601String()],
+    );
+  }
+
+  Future<int> countTodayVisits() async {
+    final db = await AppDatabase.database;
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+
+    final res = await db.rawQuery(
+      '''
+      SELECT COUNT(*) AS c
+      FROM offline_visits
+      WHERE captured_at >= ? AND captured_at < ?
+      ''',
+      [start.toIso8601String(), end.toIso8601String()],
+    );
+
+    return Sqflite.firstIntValue(res) ?? 0;
+  }
+
   Future<void> incrementRetry(int id) async {
     final db = await AppDatabase.database;
     await db.rawUpdate(
