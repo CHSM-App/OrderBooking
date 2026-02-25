@@ -12,6 +12,7 @@ EmployeeMap _$EmployeeMapFromJson(Map<String, dynamic> json) => EmployeeMap(
   checkIn: json['checkIn'] as String,
   checkout: json['checkout'] as String,
   checkInDate: DateTime.parse(json['checkInDate'] as String),
+  checkOutDate: DateTime.parse(json['checkOutDate'] as String),
   shops: (json['shops'] as List<dynamic>)
       .map((e) => Shop.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -26,5 +27,6 @@ Map<String, dynamic> _$EmployeeMapToJson(EmployeeMap instance) =>
       'checkout': instance.checkout,
       'total_distance_km': instance.total_distance_km,
       'checkInDate': instance.checkInDate.toIso8601String(),
+      'checkOutDate': instance.checkOutDate.toIso8601String(),
       'shops': instance.shops,
     };

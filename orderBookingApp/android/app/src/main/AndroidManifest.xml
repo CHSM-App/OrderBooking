@@ -10,7 +10,7 @@
         android:icon="@mipmap/orderbooking">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyB7afZeIZfkBl81xghIHS-hMi_UpFLybYI" />
+            android:value="AIzaSyD4IFWPJQ3zbs2DSK0Hd3rz0me9SjdBWWU" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,14 +1,12 @@
 const express = require("express");
 const axios = require("axios");
 const polylineUtil = require('@mapbox/polyline');
+require('dotenv').config();
 
 const router = express.Router();
 
-//const GRAPHOPPER_KEY = "c2453a3b-31a1-4c38-b65e-55514d645ce4";
 const MAX_POINTS = 10;
 
-
-const GOOGLE_MAPS_KEY = "AIzaSyB7afZeIZfkBl81xghIHS-hMi_UpFLybYI";
 const MAX_RETRY = 3;
 
 
@@ -62,7 +60,7 @@ async function callGoogleDirections(points, retry = 0) {
             `?origin=${origin}` +
             `&destination=${destination}` +
             `&mode=driving` +
-            `&key=${GOOGLE_MAPS_KEY}`;
+            `&key=${process.env.GOOGLE_MAP_DIRECTIONS_API_KEY}`;
 
             
             if (waypoints.length > 0) {
@@ -74,6 +72,8 @@ async function callGoogleDirections(points, retry = 0) {
         const response = await axios.get(url, {
             timeout: 10000
         });
+
+        console.log("Google Response:", JSON.stringify(response.data, null, 2));
 
         const route = response.data.routes[0];
 

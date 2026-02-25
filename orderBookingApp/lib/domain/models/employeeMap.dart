@@ -10,6 +10,7 @@ class EmployeeMap {
   final String checkout;
   final double total_distance_km;
   final DateTime checkInDate;
+  final DateTime checkOutDate;
   final List<Shop> shops;
 
   EmployeeMap({
@@ -18,6 +19,7 @@ class EmployeeMap {
     required this.checkIn,
     required this.checkout,
     required this.checkInDate,
+    required this.checkOutDate,
     required this.shops,
     required this.total_distance_km,
   });
@@ -30,6 +32,7 @@ class EmployeeMap {
       checkout: json['checkout'] ?? '',
       total_distance_km: (json['total_distance_km']).toDouble(),
       checkInDate: DateTime.parse(json['checkInDate']),
+      checkOutDate: DateTime.parse(json['checkOutDate']),
       shops: (json['shops'] as List<dynamic>? ?? [])
           .map((e) => Shop.fromJson(e))
           .toList(),
@@ -43,6 +46,7 @@ class EmployeeMap {
       'checkIn': checkIn,
       'checkout': checkout,
       'checkInDate': checkInDate.toIso8601String(),
+      'checkOutDate': checkOutDate.toIso8601String(),
       'shops': shops.map((e) => e.toJson()).toList(),
     };
   }
