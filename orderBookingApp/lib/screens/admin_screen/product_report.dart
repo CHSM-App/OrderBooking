@@ -12,9 +12,8 @@ import 'package:order_booking_app/presentation/viewmodels/product_viewmodel.dart
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 
-// ─────────────────────────────────────────────────────────────
+
 //  PROVIDER
-// ─────────────────────────────────────────────────────────────
 final reportTabProvider =
     StateNotifierProvider<ProductViewModel, ProductState>(
   (ref) => ProductViewModel(ref.read(productUsecaseProvider)),
