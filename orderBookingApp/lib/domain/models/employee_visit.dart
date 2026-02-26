@@ -1,5 +1,9 @@
 import 'package:order_booking_app/domain/models/orders.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'employee_visit.g.dart';
+
+@JsonSerializable()
 class EmployeeVisit {
   final int locationId;
   final double latitude;
