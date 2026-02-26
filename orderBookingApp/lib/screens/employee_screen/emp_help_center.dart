@@ -32,7 +32,7 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'How do I check in at the start of my day?',
           answer:
-              'Open Retail Pulse and tap the "Check In" button on your home screen. The app will automatically capture your current GPS location at that moment and record it as your start-of-day location. Make sure your location permission is enabled before checking in.',
+              'Open Retail Pulse and tap the "Check In" button on your home screen. The app will automatically capture your current GPS location at that moment and record it as your start-of-day location. Make sure you have internet connection and your location permission is enabled before checking in.',
         ),
         _Faq(
           question: 'What if my location is not accurate during check-in?',
@@ -60,12 +60,12 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'How do I add a new shop?',
           answer:
-              'From the home screen, tap "Add Shop". Fill in the shop details — shop name, owner name, phone number, and address. Tap Save. Note: Adding a shop does not capture your location. Location is only recorded when you punch into a shop visit.',
+              'From the home screen or Shops tab, tap "Add Shop". Fill in the shop details — shop name, owner name, phone number, and address. Tap Save. Note: Adding a shop does not capture your location. Location is only recorded when you punch into a shop visit.',
         ),
         _Faq(
           question: 'Can I edit a shop after adding it?',
           answer:
-              'Yes. Go to your shop list, find the shop you want to update, tap on it, and select Edit. Make your changes and tap Save.',
+              'Yes. Go to your shops tab. there will be your all shops. Find the shop you want to update, tap on edit icon on it. Make your changes and tap Save.',
         ),
         _Faq(
           question: 'Is my location captured when I add a shop?',
@@ -93,12 +93,12 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'What if I accidentally punch into the wrong shop?',
           answer:
-              'Contact your admin to inform them. They can view and note the discrepancy. Currently, punch-in entries cannot be deleted by the employee — your admin manages corrections.',
+              'Contact your admin to inform about that. They can view and note the discrepancy. Currently, punch-in entries cannot be deleted by the employee.',
         ),
         _Faq(
           question: 'Can I visit multiple shops in a day?',
           answer:
-              'Yes! You can visit as many shops as needed in a single day. Each shop you tap on will record its own punch-in location separately. All visits will appear in your daily route visible to your admin.',
+              'Yes! You can visit as many shops as you can visit in a single day. Each shop you tap on will record its own punch-in location separately. All visits will appear in your daily route visible to your admin.',
         ),
       ],
     ),
@@ -111,17 +111,17 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'How do I take an order from a shop?',
           answer:
-              'After punching into a shop, tap "Take Order". Browse the product list added by your admin, enter the quantity for each product the shop wants to order, and tap Submit Order. The order will be saved and visible to your admin.',
+              'After punching into a shop, tap "Add Order". Browse the product list added by your admin, enter the quantity for each product the shop wants to order, and tap Submit Order. The order will be saved and visible to your admin.',
         ),
         _Faq(
           question: 'Can I take an order without punching into the shop first?',
           answer:
-              'You need to tap on the shop (which records your punch-in location) before placing an order for that shop. This ensures all orders are associated with a verified shop visit.',
+              'No. You need to tap on the shop (which records your punch-in location) before placing an order for that shop. This ensures all orders are associated with a verified shop visit.',
         ),
         _Faq(
           question: 'Can I edit an order after submitting it?',
           answer:
-              'Once an order is submitted, contact your admin if you need to make changes. Admins have the ability to view, edit, and manage all orders.',
+              'No. Once an order is submitted, It can\'t be edited.',
         ),
         _Faq(
           question: 'What products can I order from?',
@@ -139,7 +139,7 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'How do I check out at the end of my day?',
           answer:
-              'From your home screen, tap the "Check Out" button. The app will capture your current GPS location and record it as your end-of-day location. Always check out before closing the app for the day.',
+              'From your home screen, tap the "Check Out" button. The app will capture your current GPS location and record it as your end-of-day location. Always check out before closing the app for the day.  Make sure you have internet connection and your location permission is enabled before checking out.',
         ),
         _Faq(
           question: 'What if I forgot to check out yesterday?',
@@ -167,7 +167,7 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'When exactly is my location captured?',
           answer:
-              'Your location is captured at exactly three points:\n\n1. When you Check In (start of day)\n2. When you tap on a shop to start a visit (punch in)\n3. When you Check Out (end of day)\n\nThe app does NOT track your location continuously or in the background.',
+              'Your location is captured at exactly three points:\n\n1. When you Check In (start of day)\n2. When you tap on a shop to start a visit (punch in)\n3. When you submit the order for the shop(punch out)\n4. When you Check Out (end of day)\n\nThe app does NOT track your location continuously or in the background.',
         ),
         _Faq(
           question: 'Does the app track me in the background?',
@@ -182,7 +182,7 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'Can I request my data to be deleted?',
           answer:
-              'Yes. You have the right to request deletion of your personal data. Contact your admin or reach out to us directly at privacy@vengurlatech.com and we will process your request within 30 days.',
+              'Yes. You have the right to request deletion of your personal data. Contact your admin or reach out to us directly at support@vengurlatech.com and we will process your request within 30 days.',
         ),
       ],
     ),
@@ -205,12 +205,7 @@ class _EmployeeHelpCenterPageState extends State<EmployeeHelpCenterPage> {
         _Faq(
           question: 'I can\'t log in. What should I do?',
           answer:
-              'Make sure you are entering the correct phone number and password. If you have forgotten your password, contact your admin — they can reset your access. Employees cannot reset passwords independently.',
-        ),
-        _Faq(
-          question: 'My check-in / check-out button is greyed out.',
-          answer:
-              'This usually means you have already checked in or checked out for the day, or your location permission is disabled. Check your location settings and try again. If the issue persists, contact your admin.',
+              'Make sure you are entering the correct phone number and received OTP or tap on "Resend OTP" to get another OTP. If still facing issue then reopen the app',
         ),
       ],
     ),
