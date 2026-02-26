@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_help_center.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/screens/employee_screen/emp_help_center.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -30,6 +33,13 @@ class AdminProfilePage extends ConsumerStatefulWidget {
 }
 
 class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(
+      'https://orderbooking.vengurlatech.com/login/privacy',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -240,6 +250,31 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
 
           const SizedBox(height: 16),
 
+          // Help Center
+          _buildSupportCard(
+            icon: Icons.help_outline_rounded,
+            title: 'Help Center',
+            subtitle: 'FAQs and support',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminHelpCenterPage()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Privacy Policy
+          _buildSupportCard(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            subtitle: 'View policy details',
+            onTap: _openPrivacyPolicy,
+          ),
+
+          const SizedBox(height: 16),
+
           // Logout Button
           _buildLogoutButton(),
 
@@ -307,6 +342,77 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                     Text(
                       'View inactive or deleted staff',
                       style: TextStyle(
+                        fontSize: 12,
+                        color: MinimalTheme.textGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: MinimalTheme.iconGray,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MinimalTheme.cardWhite,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: MinimalTheme.primaryOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: MinimalTheme.primaryOrange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: MinimalTheme.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: MinimalTheme.textGray,
                       ),
@@ -530,9 +636,10 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
-             
-              ref.read(adminloginViewModelProvider.notifier).clearLogin(ref.read(tokenProvider).refreshToken?? "");
-               ref.read(tokenProvider.notifier).clearTokens();
+              ref
+                  .read(adminloginViewModelProvider.notifier)
+                  .clearLogin(ref.read(tokenProvider).refreshToken ?? "");
+              ref.read(tokenProvider.notifier).clearTokens();
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -903,8 +1010,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          (isSaving || !isConnected) ? null : _saveProfile,
+                      onPressed: (isSaving || !isConnected)
+                          ? null
+                          : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MinimalTheme.primaryOrange,
                         foregroundColor: Colors.white,

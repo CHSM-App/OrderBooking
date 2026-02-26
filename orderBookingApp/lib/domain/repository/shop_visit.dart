@@ -7,7 +7,7 @@ abstract class VisitRepository {
   Future<void> syncOfflineVisits();
   Future<List<EmployeeVisit>> getEmployeeVisits(int empId);
   Future<void> purgeSyncedBeforeToday();
-  Future<int> countTodayVisits();
+  Future<int> countTodayVisits(int empId);
   // Future<void> syncVisits();
 }
 

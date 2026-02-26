@@ -43,9 +43,13 @@ class VisitImpl implements VisitRepository {
             throw Exception('Failed to sync visit with id $id');
           }
 
-          await local.markSynced(id);
+          final serverLocationId = response['location_id'];
+          if (serverLocationId is int) {
+            await local.markSyncedWithServerId(id, serverLocationId);
+          } else {
+            await local.markSynced(id);
+          }
         } catch (e) {
-          print("sync offline visits called but got error: $e");
           await local.incrementRetry(id);
         }
       }
@@ -65,14 +69,11 @@ class VisitImpl implements VisitRepository {
   }
 
   @override
-  Future<int> countTodayVisits() {
+  Future<int> countTodayVisits(int empId) async {
+    try {
+      final visits = await apiService.getEmployeeVisits(empId);
+      await local.upsertSyncedFromServer(visits);
+    } catch (e) {}
     return local.countTodayVisits();
   }
 }
-
-
-
-
-
-
-

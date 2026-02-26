@@ -5,7 +5,9 @@ import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/attendence.dart';
 import 'package:order_booking_app/screens/employee_screen/edit_profile.dart';
+import 'package:order_booking_app/screens/employee_screen/emp_help_center.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileTheme {
   static const primaryPink = Color(0xFFE8720C);
@@ -57,16 +59,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       duration: const Duration(milliseconds: 800),
     );
 
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-          parent: _animationController, curve: Curves.easeOutCubic),
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
     );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
 
@@ -97,7 +101,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     // build() re-runs and we catch it here.
     final mobileNo = ref.watch(adminloginViewModelProvider).mobileNo;
     final employeeState = ref.watch(employeeloginViewModelProvider);
-    final details = employeeState.employeeDetails.value ?? const <EmployeeLogin>[];
+    final details =
+        employeeState.employeeDetails.value ?? const <EmployeeLogin>[];
     final hasDetails = details.isNotEmpty;
 
     // ✅ Trigger fetch exactly once, as soon as mobileNo is available.
@@ -348,23 +353,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 2),
                     _buildModernSection(
-                      title: 'Settings',
+                      title: '',
                       child: Column(
                         children: [
-                          _ModernSettingTile(
-                            icon: Icons.notifications_none_rounded,
-                            title: 'Notifications',
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
+                          // _ModernSettingTile(
+                          //   icon: Icons.notifications_none_rounded,
+                          //   title: 'Notifications',
+                          //   onTap: () {},
+                          // ),
+                          // _buildDivider(),
                           _ModernSettingTile(
                             icon: Icons.calendar_month_rounded,
                             title: 'View Attendance',
                             onTap: () {
-                              final userId =
-                                  ref.read(adminloginViewModelProvider).userId;
+                              final userId = ref
+                                  .read(adminloginViewModelProvider)
+                                  .userId;
                               final joiningDate = ref
                                   .read(adminloginViewModelProvider)
                                   .joiningDate;
@@ -379,23 +385,37 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                               );
                             },
                           ),
-                          _buildDivider(),
-                          _ModernSettingTile(
-                            icon: Icons.language_rounded,
-                            title: 'Language',
-                            onTap: () {},
-                          ),
-                          _buildDivider(),
-                          _ModernSettingTile(
-                            icon: Icons.lock_outline_rounded,
-                            title: 'Security',
-                            onTap: () {},
-                          ),
+                          // _buildDivider(),
+                          // _ModernSettingTile(
+                          //   icon: Icons.language_rounded,
+                          //   title: 'Language',
+                          //   onTap: () {},
+                          // ),
+                          // _buildDivider(),
+                          // _ModernSettingTile(
+                          //   icon: Icons.lock_outline_rounded,
+                          //   title: 'Security',
+                          //   onTap: () {},
+                          // ),
                           _buildDivider(),
                           _ModernSettingTile(
                             icon: Icons.help_outline_rounded,
                             title: 'Help Center',
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const EmployeeHelpCenterPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(),
+                          _ModernSettingTile(
+                            icon: Icons.privacy_tip_outlined,
+                            title: 'Privacy Policy',
+                            onTap: _openPrivacyPolicy,
                           ),
                         ],
                       ),
@@ -463,8 +483,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       ),
                       child: CircleAvatar(
                         radius: 32,
-                        backgroundColor:
-                            ProfileTheme.primaryPink.withOpacity(0.1),
+                        backgroundColor: ProfileTheme.primaryPink.withOpacity(
+                          0.1,
+                        ),
                         child: imageUrl != null && imageUrl.isNotEmpty
                             ? ClipOval(
                                 child: Image.network(
@@ -598,10 +619,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  Widget _buildModernSection({
-    required String title,
-    required Widget child,
-  }) {
+  Widget _buildModernSection({required String title, required Widget child}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -665,124 +683,158 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       ),
     );
   }
-Future<void> _showLogoutDialog(BuildContext context) async {
-  await ref.read(networkStateProvider.notifier).checkConnection();
-  final isConnected = ref.read(networkStateProvider).isConnected;
-  bool isLoggingOut = false; // 👈 local variable, managed by StatefulBuilder
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => StatefulBuilder( // 👈 key fix
-      builder: (context, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: ProfileTheme.cardWhite,
-        title: const Text(
-          'Logout',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: ProfileTheme.textDark,
+  Future<void> _showLogoutDialog(BuildContext context) async {
+    await ref.read(networkStateProvider.notifier).checkConnection();
+    final isConnected = ref.read(networkStateProvider).isConnected;
+    bool isLoggingOut = false; // 👈 local variable, managed by StatefulBuilder
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        // 👈 key fix
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        content: Text(
-          isConnected
-              ? 'Are you sure you want to logout?'
-              : 'No internet. Logging out may cause data loss. Continue?',
-          style: const TextStyle(fontSize: 14, color: ProfileTheme.textGray),
-        ),
-        actions: [
-          TextButton(
-            onPressed: isLoggingOut ? null : () => Navigator.pop(context),
-            child: Text(
-              isConnected ? 'Cancel' : 'No',
-              style: const TextStyle(
-                color: ProfileTheme.textGray,
-                fontWeight: FontWeight.w600,
-              ),
+          backgroundColor: ProfileTheme.cardWhite,
+          title: const Text(
+            'Logout',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: ProfileTheme.textDark,
             ),
           ),
-          SizedBox(
-            height: 32,
-            child: ElevatedButton(
-              onPressed: isLoggingOut
-                  ? null
-                  : () async {
-                      setDialogState(() => isLoggingOut = true); // 👈 rebuilds dialog
-                      try {
-                        if (isConnected) {
-                          final companyId =
-                              ref.read(adminloginViewModelProvider).companyId ?? "";
-                          final userId =
-                              ref.read(adminloginViewModelProvider).userId;
-                          final regionId =
-                              ref.read(adminloginViewModelProvider).regionId ?? 0;
-
-                          await ref.read(visitViewModelProvider.notifier).sync();
-                          await ref
-                              .read(shopViewModelProvider.notifier)
-                              .getEmpShopList(companyId, regionId);
-                          await ref
-                              .read(productViewModelProvider.notifier)
-                              .fetchProductList(companyId);
-                          await ref
-                              .read(ordersViewModelProvider.notifier)
-                              .getAllOrders(userId);
-                        }
-                        ref.read(tokenProvider.notifier).clearTokens();
-                        ref.read(adminloginViewModelProvider.notifier).clearLogin(ref.read(tokenProvider).refreshToken ?? "");
-                        if (mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const LoginScreen()),
-                            (route) => false,
-                          );
-                        }
-                      } catch (e) {
-                        setDialogState(() => isLoggingOut = false); // 👈 reset on error
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ProfileTheme.primaryPink,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          content: Text(
+            isConnected
+                ? 'Are you sure you want to logout?'
+                : 'No internet. Logging out may cause data loss. Continue?',
+            style: const TextStyle(fontSize: 14, color: ProfileTheme.textGray),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoggingOut ? null : () => Navigator.pop(context),
+              child: Text(
+                isConnected ? 'Cancel' : 'No',
+                style: const TextStyle(
+                  color: ProfileTheme.textGray,
+                  fontWeight: FontWeight.w600,
                 ),
-                elevation: 0,
               ),
-              child: isLoggingOut
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.logout_rounded, size: 13),
-                        const SizedBox(width: 6),
-                        Text(isConnected ? 'Logout' : 'Yes'),
-                      ],
-                    ),
             ),
-          ),
-        ],
+            SizedBox(
+              height: 32,
+              child: ElevatedButton(
+                onPressed: isLoggingOut
+                    ? null
+                    : () async {
+                        setDialogState(
+                          () => isLoggingOut = true,
+                        ); // 👈 rebuilds dialog
+                        try {
+                          if (isConnected) {
+                            final companyId =
+                                ref
+                                    .read(adminloginViewModelProvider)
+                                    .companyId ??
+                                "";
+                            final userId = ref
+                                .read(adminloginViewModelProvider)
+                                .userId;
+                            final regionId =
+                                ref
+                                    .read(adminloginViewModelProvider)
+                                    .regionId ??
+                                0;
+
+                            await ref
+                                .read(visitViewModelProvider.notifier)
+                                .sync();
+                            await ref
+                                .read(shopViewModelProvider.notifier)
+                                .getEmpShopList(companyId, regionId);
+                            await ref
+                                .read(productViewModelProvider.notifier)
+                                .fetchProductList(companyId);
+                            await ref
+                                .read(ordersViewModelProvider.notifier)
+                                .getAllOrders(userId);
+                          }
+                          ref.read(tokenProvider.notifier).clearTokens();
+                          ref
+                              .read(adminloginViewModelProvider.notifier)
+                              .clearLogin(
+                                ref.read(tokenProvider).refreshToken ?? "",
+                              );
+                          if (mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(
+                            () => isLoggingOut = false,
+                          ); // 👈 reset on error
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ProfileTheme.primaryPink,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: isLoggingOut
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.logout_rounded, size: 13),
+                          const SizedBox(width: 6),
+                          Text(isConnected ? 'Logout' : 'Yes'),
+                        ],
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr).toLocal();
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
@@ -795,6 +847,13 @@ Future<void> _showLogoutDialog(BuildContext context) async {
     if (parts.isEmpty) return 'NA';
     if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
     return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(
+      'https://orderbooking.vengurlatech.com/login/privacy',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -932,5 +991,3 @@ class _ModernButton extends StatelessWidget {
     );
   }
 }
-
-

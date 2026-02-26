@@ -16,22 +16,22 @@ const _kTextSecondary = Color(0xFF6B6B6B);
 const _kDivider = Color(0xFFEEEEEE);
 
 // ── Filter model ──────────────────────────────────────────────────────────────
-enum _FilterType { today, yesterday, thisMonth, custom }
+enum OrdersFilterType { today, yesterday, thisMonth, custom }
 
 class _ActiveFilter {
-  final _FilterType type;
+  final OrdersFilterType type;
   final DateTimeRange? customRange;
   const _ActiveFilter(this.type, {this.customRange});
 
   String get label {
     switch (type) {
-      case _FilterType.today:
+      case OrdersFilterType.today:
         return 'Today';
-      case _FilterType.yesterday:
+      case OrdersFilterType.yesterday:
         return 'Yesterday';
-      case _FilterType.thisMonth:
+      case OrdersFilterType.thisMonth:
         return 'This Month';
-      case _FilterType.custom:
+      case OrdersFilterType.custom:
         if (customRange != null) {
           return '${_d(customRange!.start)} – ${_d(customRange!.end)}';
         }
@@ -59,7 +59,14 @@ class _ActiveFilter {
 }
 
 class OrdersListPage extends ConsumerStatefulWidget {
-  const OrdersListPage({Key? key}) : super(key: key);
+  final OrdersFilterType? initialFilter;
+  final int filterRequestId;
+
+  const OrdersListPage({
+    Key? key,
+    this.initialFilter,
+    this.filterRequestId = 0,
+  }) : super(key: key);
 
   @override
   ConsumerState<OrdersListPage> createState() => _OrdersListPageState();
@@ -69,10 +76,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
   _ActiveFilter? _filter;
+  int _lastAppliedRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    _lastAppliedRequestId = widget.filterRequestId;
+    if (widget.initialFilter != null) {
+      _filter = _ActiveFilter(widget.initialFilter!);
+    }
     Future.microtask(() {
       ref
           .read(ordersViewModelProvider.notifier)
@@ -84,6 +96,16 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrdersListPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filterRequestId != _lastAppliedRequestId &&
+        widget.initialFilter != null) {
+      setState(() => _filter = _ActiveFilter(widget.initialFilter!));
+      _lastAppliedRequestId = widget.filterRequestId;
+    }
   }
 
   Future<void> _refresh() async {
@@ -106,13 +128,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
     final today = _day(DateTime.now());
     switch (_filter!.type) {
-      case _FilterType.today:
+      case OrdersFilterType.today:
         return d == today;
-      case _FilterType.yesterday:
+      case OrdersFilterType.yesterday:
         return d == today.subtract(const Duration(days: 1));
-      case _FilterType.thisMonth:
+      case OrdersFilterType.thisMonth:
         return d.year == today.year && d.month == today.month;
-      case _FilterType.custom:
+      case OrdersFilterType.custom:
         if (_filter!.customRange == null) return true;
         final s = _day(_filter!.customRange!.start);
         final e = _day(_filter!.customRange!.end);
@@ -375,7 +397,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip(int count) {
+  Widget _buildFilterChip(int count, double totalAmount) {
     return Container(
       color: _kSurface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -436,6 +458,34 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               ],
             ),
           ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _kDivider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.currency_rupee_rounded,
+                  size: 12,
+                  color: _kTextSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatINR(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -477,10 +527,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               )
               .toList();
 
+          final totalAmount = visible.fold<double>(
+            0.0,
+            (sum, o) => sum + _orderAmount(o),
+          );
+
           if (visible.isEmpty) {
             return Column(
               children: [
-                if (_filter != null) _buildFilterChip(0),
+                if (_filter != null) _buildFilterChip(0, 0.0),
                 Expanded(child: _buildEmpty()),
               ],
             );
@@ -488,7 +543,8 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
           return Column(
             children: [
-              if (_filter != null) _buildFilterChip(visible.length),
+              if (_filter != null)
+                _buildFilterChip(visible.length, totalAmount),
               Expanded(child: _buildList(visible, numberMap)),
             ],
           );
@@ -635,6 +691,29 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     return _wrapRefresh(AdminNoInternetRetry(onRetry: _refresh));
   }
 
+  String _formatINR(num value) {
+    final isNegative = value < 0;
+    value = value.abs();
+    final parts = value.toStringAsFixed(2).split('.');
+    var intPart = parts[0];
+    final decPart = parts.length > 1 ? parts[1] : '00';
+    if (intPart.length <= 3) {
+      return '${isNegative ? '-' : ''}₹$intPart.$decPart';
+    }
+    final lastThree = intPart.substring(intPart.length - 3);
+    var remaining = intPart.substring(0, intPart.length - 3);
+    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
+    remaining = remaining.replaceAll(reg, ',');
+    return '${isNegative ? '-' : ''}₹$remaining,$lastThree.$decPart';
+  }
+
+  double _orderAmount(Order o) {
+    final amount = o.totalPrice;
+    if (amount is String) return double.tryParse(amount as String) ?? 0.0;
+    if (amount is num) return amount.toDouble();
+    return 0.0;
+  }
+
   // ── Error ──────────────────────────────────────────────────────────────────
   Widget _buildError(String msg) {
     return _wrapRefresh(AdminSomethingWentWrongRetry(onRetry: _refresh));
@@ -707,10 +786,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.today_outlined,
                 label: 'Today',
                 sublabel: _todayLabel(),
-                isSelected: _filter?.type == _FilterType.today,
+                isSelected: _filter?.type == OrdersFilterType.today,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.today),
+                    () => _filter = const _ActiveFilter(OrdersFilterType.today),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -721,10 +800,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.history_outlined,
                 label: 'Yesterday',
                 sublabel: _yesterdayLabel(),
-                isSelected: _filter?.type == _FilterType.yesterday,
+                isSelected: _filter?.type == OrdersFilterType.yesterday,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.yesterday),
+                    () =>
+                        _filter = const _ActiveFilter(OrdersFilterType.yesterday),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -735,10 +815,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.calendar_month_outlined,
                 label: 'This Month',
                 sublabel: _thisMonthLabel(),
-                isSelected: _filter?.type == _FilterType.thisMonth,
+                isSelected: _filter?.type == OrdersFilterType.thisMonth,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.thisMonth),
+                    () =>
+                        _filter = const _ActiveFilter(OrdersFilterType.thisMonth),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -748,10 +829,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               _FilterSheetRow(
                 icon: Icons.date_range_outlined,
                 label: 'Custom Range',
-                sublabel: _filter?.type == _FilterType.custom
+                sublabel: _filter?.type == OrdersFilterType.custom
                     ? _filter!.label
                     : 'Pick start & end date',
-                isSelected: _filter?.type == _FilterType.custom,
+                isSelected: _filter?.type == OrdersFilterType.custom,
                 onTap: () async {
                   Navigator.pop(sheetCtx);
                   await Future.delayed(const Duration(milliseconds: 200));
@@ -789,7 +870,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   if (picked != null && mounted) {
                     setState(
                       () => _filter = _ActiveFilter(
-                        _FilterType.custom,
+                        OrdersFilterType.custom,
                         customRange: picked,
                       ),
                     );

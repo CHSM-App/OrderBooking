@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
-import 'package:order_booking_app/presentation/viewModels/auth_model.dart';
+import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottom_nav.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
 import 'employee_screen/main_navigation_screen.dart';

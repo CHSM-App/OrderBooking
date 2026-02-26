@@ -22,8 +22,8 @@ class VisitUseCase {
     return repository.purgeSyncedBeforeToday();
   }
 
-  Future<int> countTodayVisits() {
-    return repository.countTodayVisits();
+  Future<int> countTodayVisits(int empId) {
+    return repository.countTodayVisits(empId);
   }
 }
 

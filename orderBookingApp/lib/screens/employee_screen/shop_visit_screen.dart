@@ -79,7 +79,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       punchOut:   now.toLocal().toIso8601String(),
     );
     ref.read(visitViewModelProvider.notifier).addVisit(updatedVisit);
-       ref.read(visitViewModelProvider.notifier).getTodayVisitCount();
+       ref.read(visitViewModelProvider.notifier).getTodayVisitCount(ref.read(adminloginViewModelProvider).userId);
 
     _showSnack(
       'Punched out at ${_formatTime(_punchOutTime)}',

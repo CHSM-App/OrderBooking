@@ -81,33 +81,47 @@ class _RegionAgg extends _Agg {
   _RegionAgg(super.name, super.total, super.orders, this.employees, this.products);
 }
 
+String _orderKey(ProductData e) =>
+    '${e.orderDate.toIso8601String()}|${e.emp_name ?? ''}|${e.regionName ?? ''}|${e.companyId ?? ''}';
+
+int _uniqueOrderCount(List<ProductData> raw) =>
+    raw.map(_orderKey).toSet().length;
+
 List<_Agg> _aggregateProducts(List<ProductData> raw) {
   final map = <String, double>{};
-  final cnt = <String, int>{};
+  final orderKeys = <String, Set<String>>{};
   for (final e in raw) {
+    final key = _orderKey(e);
     map[e.productName] = (map[e.productName] ?? 0) + (e.itemTotalPrice ?? 0);
-    cnt[e.productName] = (cnt[e.productName] ?? 0) + 1;
+    orderKeys.putIfAbsent(e.productName, () => <String>{}).add(key);
   }
   return map.entries
-      .map((e) => _Agg(e.key, e.value, cnt[e.key] ?? 0))
+      .map((e) => _Agg(e.key, e.value, orderKeys[e.key]?.length ?? 0))
       .toList()
     ..sort((a, b) => b.total.compareTo(a.total));
 }
 
 List<_EmpAgg> _aggregateEmployees(List<ProductData> raw) {
   final totals = <String, Map<String, double>>{};
-  final counts = <String, Map<String, int>>{};
+  final counts = <String, Map<String, Set<String>>>{};
   for (final e in raw) {
     final emp  = e.emp_name ?? 'Unknown';
     final prod = e.productName;
+    final key  = _orderKey(e);
     totals.putIfAbsent(emp, () => {})[prod] =
         (totals[emp]![prod] ?? 0) + (e.itemTotalPrice ?? 0);
-    counts.putIfAbsent(emp, () => {})[prod] =
-        (counts[emp]![prod] ?? 0) + 1;
+    counts
+        .putIfAbsent(emp, () => {})
+        .putIfAbsent(prod, () => <String>{})
+        .add(key);
   }
   return totals.entries.map((emp) {
     final prods = emp.value.entries
-        .map((p) => _Agg(p.key, p.value, counts[emp.key]![p.key] ?? 0))
+        .map((p) => _Agg(
+              p.key,
+              p.value,
+              counts[emp.key]![p.key]?.length ?? 0,
+            ))
         .toList()
       ..sort((a, b) => b.total.compareTo(a.total));
     final t = prods.fold(0.0, (s, p) => s + p.total);
@@ -119,31 +133,41 @@ List<_EmpAgg> _aggregateEmployees(List<ProductData> raw) {
 
 List<_RegionAgg> _aggregateRegions(List<ProductData> raw) {
   final totals     = <String, Map<String, Map<String, double>>>{};
-  final counts     = <String, Map<String, Map<String, int>>>{};
+  final counts     = <String, Map<String, Map<String, Set<String>>>>{};
   final prodTotals = <String, Map<String, double>>{};
-  final prodCounts = <String, Map<String, int>>{};
+  final prodCounts = <String, Map<String, Set<String>>>{};
 
   for (final e in raw) {
     final r   = e.regionName ?? 'Unknown';
     final emp = e.emp_name ?? 'Unknown';
     final prd = e.productName;
     final amt = e.itemTotalPrice ?? 0;
+    final key = _orderKey(e);
 
     totals.putIfAbsent(r, () => {}).putIfAbsent(emp, () => {})[prd] =
         (totals[r]![emp]![prd] ?? 0) + amt;
-    counts.putIfAbsent(r, () => {}).putIfAbsent(emp, () => {})[prd] =
-        (counts[r]![emp]![prd] ?? 0) + 1;
+    counts
+        .putIfAbsent(r, () => {})
+        .putIfAbsent(emp, () => {})
+        .putIfAbsent(prd, () => <String>{})
+        .add(key);
 
     prodTotals.putIfAbsent(r, () => {})[prd] =
         (prodTotals[r]![prd] ?? 0) + amt;
-    prodCounts.putIfAbsent(r, () => {})[prd] =
-        (prodCounts[r]![prd] ?? 0) + 1;
+    prodCounts
+        .putIfAbsent(r, () => {})
+        .putIfAbsent(prd, () => <String>{})
+        .add(key);
   }
 
   return totals.entries.map((r) {
     final emps = r.value.entries.map((emp) {
       final prods = emp.value.entries
-          .map((p) => _Agg(p.key, p.value, counts[r.key]![emp.key]![p.key] ?? 0))
+          .map((p) => _Agg(
+                p.key,
+                p.value,
+                counts[r.key]![emp.key]![p.key]?.length ?? 0,
+              ))
           .toList()
         ..sort((a, b) => b.total.compareTo(a.total));
       final t = prods.fold(0.0, (s, p) => s + p.total);
@@ -153,7 +177,11 @@ List<_RegionAgg> _aggregateRegions(List<ProductData> raw) {
       ..sort((a, b) => b.total.compareTo(a.total));
 
     final regionProds = (prodTotals[r.key] ?? {}).entries
-        .map((p) => _Agg(p.key, p.value, prodCounts[r.key]![p.key] ?? 0))
+        .map((p) => _Agg(
+              p.key,
+              p.value,
+              prodCounts[r.key]![p.key]?.length ?? 0,
+            ))
         .toList()
       ..sort((a, b) => b.total.compareTo(a.total));
 
@@ -269,7 +297,7 @@ class _PdfGenerator {
                 pw.Row(children: [
                   _kpi('Total Revenue', 'Rs. ${_f(grandTotal)}', _gn),
                   pw.SizedBox(width: 14),
-                  _kpi('Total Orders', allData.length.toString(), _ac),
+                  _kpi('Total Orders', _uniqueOrderCount(allData).toString(), _ac),
                   pw.SizedBox(width: 14),
                   _kpi('Products', allProducts.length.toString(), _or),
                   pw.SizedBox(width: 14),
@@ -314,7 +342,7 @@ class _PdfGenerator {
           pw.Row(children: [
             _kpi('Products', products.length.toString(), _ac),
             pw.SizedBox(width: 14),
-            _kpi('Orders', productData.length.toString(), _or),
+            _kpi('Orders', _uniqueOrderCount(productData).toString(), _or),
             pw.SizedBox(width: 14),
             _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
           ]),
@@ -342,7 +370,7 @@ class _PdfGenerator {
           pw.Row(children: [
             _kpi('Regions', regions.length.toString(), _ac),
             pw.SizedBox(width: 14),
-            _kpi('Orders', regionData.length.toString(), _or),
+            _kpi('Orders', _uniqueOrderCount(regionData).toString(), _or),
             pw.SizedBox(width: 14),
             _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
           ]),
@@ -374,7 +402,7 @@ class _PdfGenerator {
           pw.Row(children: [
             _kpi('Employees', employees.length.toString(), _bl),
             pw.SizedBox(width: 14),
-            _kpi('Orders', employeeData.length.toString(), _or),
+            _kpi('Orders', _uniqueOrderCount(employeeData).toString(), _or),
             pw.SizedBox(width: 14),
             _kpi('Revenue', 'Rs. ${_f(sTotal)}', _gn),
           ]),
@@ -786,10 +814,10 @@ class _ReportPageState extends ConsumerState<ReportPage>
     final allR = _aggregateRegions(filtered);
     final allE = _aggregateEmployees(filtered);
 
-    // Item-level: which individual items are selected (start all selected)
-    Set<String> selP = Set.from(allP.map((x) => x.name));
-    Set<String> selR = Set.from(allR.map((x) => x.name));
-    Set<String> selE = Set.from(allE.map((x) => x.name));
+    // Item-level: which individual items are selected (start none selected)
+    Set<String> selP = <String>{};
+    Set<String> selR = <String>{};
+    Set<String> selE = <String>{};
 
     // Which tab is currently visible inside the sheet
     int sheetTab = _tabCtrl.index; // 0 = product, 1 = region, 2 = employee
@@ -1325,7 +1353,7 @@ class _ProductTab extends StatelessWidget {
     final grand = items.fold(0.0, (s, i) => s + i.total);
     if (items.isEmpty) return _noData(filterType);
     return Column(children: [
-      _SummaryRow(items: [_SumItem(Icons.inventory_2_outlined, 'Products', items.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      _SummaryRow(items: [_SumItem(Icons.inventory_2_outlined, 'Products', items.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', _uniqueOrderCount(data).toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
       Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: items.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _ProductCard(item: items[i], index: i, grand: grand))),
     ]);
   }
@@ -1376,7 +1404,7 @@ class _RegionTab extends StatelessWidget {
     final grand   = regions.fold(0.0, (s, r) => s + r.total);
     if (regions.isEmpty) return _noData(filterType);
     return Column(children: [
-      _SummaryRow(items: [_SumItem(Icons.map_outlined, 'Regions', regions.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      _SummaryRow(items: [_SumItem(Icons.map_outlined, 'Regions', regions.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', _uniqueOrderCount(data).toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
       Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: regions.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _RegionProductCard(region: regions[i], grand: grand))),
     ]);
   }
@@ -1430,7 +1458,7 @@ class _EmployeeTab extends StatelessWidget {
     final grand = emps.fold(0.0, (s, e) => s + e.total);
     if (emps.isEmpty) return _noData(filterType);
     return Column(children: [
-      _SummaryRow(items: [_SumItem(Icons.people_outline_rounded, 'Employees', emps.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', data.length.toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
+      _SummaryRow(items: [_SumItem(Icons.people_outline_rounded, 'Employees', emps.length.toString(), _red), _SumItem(Icons.receipt_long_outlined, 'Orders', _uniqueOrderCount(data).toString(), _textGrey), _SumItem(Icons.currency_rupee_rounded, 'Total', '₹${_fmt(grand)}', _green)]),
       Expanded(child: ListView.separated(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), itemCount: emps.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, i) => _EmpProductCard(emp: emps[i], grand: grand))),
     ]);
   }

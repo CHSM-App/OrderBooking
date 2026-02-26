@@ -54,9 +54,8 @@ class VisitViewModel extends StateNotifier<EmployeeVisitState> {
     await repo.purgeSyncedBeforeToday();
   }
 
-  Future<void> getTodayVisitCount() async {
-    final result = await repo.countTodayVisits();
-    print('shops visited count ${result}');
+  Future<void> getTodayVisitCount(int empId) async {
+    final result = await repo.countTodayVisits(empId);
 
     state = state.copyWith(visitedShops: result);
   }

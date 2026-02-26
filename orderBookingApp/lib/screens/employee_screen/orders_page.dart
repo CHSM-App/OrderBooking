@@ -229,7 +229,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip(int count) {
+  Widget _buildFilterChip(int count, double totalAmount) {
     return Container(
       color: _kSurface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -286,6 +286,34 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     Icons.close_rounded,
                     size: 14,
                     color: _kPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _kDivider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.currency_rupee_rounded,
+                  size: 12,
+                  color: _kTextSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatINR(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextPrimary,
                   ),
                 ),
               ],
@@ -353,17 +381,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     )
                     .toList();
 
+          final totalAmount = visible.fold<double>(
+            0.0,
+            (sum, e) => sum + _orderAmount(e.order),
+          );
+
           if (visible.isEmpty)
             return Column(
               children: [
-                if (_filter != null) _buildFilterChip(0),
+                if (_filter != null) _buildFilterChip(0, 0.0),
                 Expanded(child: _buildSearchEmpty()),
               ],
             );
 
           return Column(
             children: [
-              if (_filter != null) _buildFilterChip(visible.length),
+              if (_filter != null)
+                _buildFilterChip(visible.length, totalAmount),
               Expanded(child: _buildOrderList(visible)),
             ],
           );
@@ -432,6 +466,29 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     ];
     return '${months[date.month - 1]} ${date.day} ${date.year} '
         '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatINR(num value) {
+    final isNegative = value < 0;
+    value = value.abs();
+    final parts = value.toStringAsFixed(2).split('.');
+    var intPart = parts[0];
+    final decPart = parts.length > 1 ? parts[1] : '00';
+    if (intPart.length <= 3) {
+      return '${isNegative ? '-' : ''}₹$intPart.$decPart';
+    }
+    final lastThree = intPart.substring(intPart.length - 3);
+    var remaining = intPart.substring(0, intPart.length - 3);
+    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
+    remaining = remaining.replaceAll(reg, ',');
+    return '${isNegative ? '-' : ''}₹$remaining,$lastThree.$decPart';
+  }
+
+  double _orderAmount(Order o) {
+    final amount = o.totalPrice;
+    if (amount is String) return double.tryParse(amount as String) ?? 0.0;
+    if (amount is num) return amount.toDouble();
+    return 0.0;
   }
 
   Widget _buildSearchEmpty() {
@@ -965,13 +1022,15 @@ class _OrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Order #$orderNumber',
+                            order.shopNamep ?? 'Unknown',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: _kTextPrimary,
                               letterSpacing: -0.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -997,11 +1056,11 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: _kTextSecondary,
-                        ),
+                        // const Icon(
+                        //   Icons.chevron_right_rounded,
+                        //   size: 16,
+                        //   color: _kTextSecondary,
+                        // ),
                       ],
                     ),
                   ],
@@ -1019,7 +1078,7 @@ class _OrderCard extends StatelessWidget {
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        order.shopNamep ?? 'Unknown',
+                        '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: _kTextSecondary,
@@ -1030,20 +1089,20 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 13,
-                      color: _kTextSecondary,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: _kTextSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+
+                                  const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: _kTextSecondary,
+              ),
+
+              //       const SizedBox(width: 12),
+
+              //                     const Icon(
+              //   Icons.chevron_right_rounded,
+              //   size: 18,
+              //   color: _kTextSecondary,
+              // ),
                   ],
                 ),
               ],

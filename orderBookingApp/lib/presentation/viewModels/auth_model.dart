@@ -6,12 +6,7 @@ import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 
 /// Provider for AuthViewModel
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AsyncValue<void>>((ref) {
-      final dio = ref.watch(dioProvider).value!;
-      final authRepo = AuthImpl(ApiService(dio));
-      return AuthViewModel(ref, authRepo);
-    });
+
 
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
@@ -34,12 +29,12 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       await ref
           .read(tokenProvider.notifier)
           .saveTokens(
-            result.accessToken ?? "",
+            result.accessToken?? '',
             result.refreshToken ?? "",
             result.roleId ?? 0,
           );
 
-      await ref.read(tokenProvider.notifier).loadTokens();
+      // await ref.read(tokenProvider.notifier).loadTokens();
 
       state = const AsyncValue.data(null);
       return "sucesss"; // Return TokenResponse for UI navigation

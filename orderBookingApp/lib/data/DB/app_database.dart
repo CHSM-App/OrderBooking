@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 4, // incremented version
+      version: 5, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -49,6 +49,16 @@ class AppDatabase {
           await _createOfflineCheckinStatusTable(db);
         }
 
+        // if (oldVersion < 5) {
+        //   await db.execute(
+        //     "ALTER TABLE offline_visits ADD COLUMN server_location_id INTEGER",
+        //   );
+        //   await db.execute(
+        //     'CREATE UNIQUE INDEX IF NOT EXISTS idx_offline_visits_server_location_id '
+        //     'ON offline_visits(server_location_id)',
+        //   );
+        // }
+
       },
     );
   }
@@ -58,12 +68,17 @@ class AppDatabase {
       CREATE TABLE IF NOT EXISTS offline_visits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         local_id TEXT UNIQUE,
+        server_location_id INTEGER,
         payload TEXT NOT NULL,
         status TEXT NOT NULL,
         retry_count INTEGER DEFAULT 0,
         captured_at TEXT NOT NULL
       )
     ''');
+    await db.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_offline_visits_server_location_id '
+      'ON offline_visits(server_location_id)',
+    );
   }
 
 static Future<void> _createShopsTable(Database db) async {

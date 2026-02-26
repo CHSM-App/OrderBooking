@@ -225,9 +225,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final employees = await usecase.getEmployeeVisit(empId);
-      for (var employee in employees) {
-        print(employee);
-      }
 
       state = state.copyWith(
         isLoading: false,
@@ -245,9 +242,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final employees = await usecase.getEmployeeVisitLocation(empId);
-      for (var employee in employees) {
-        print(employee);
-      }
 
       state = state.copyWith(
         isLoading: false,
@@ -265,9 +259,6 @@ class EmployeeloginViewModel extends StateNotifier<EmployeeloginState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final employeesReport = await usecase.getAttendanceReport(companyId);
-      for (var employee in employeesReport) {
-        print(employee);
-      }
 
       state = state.copyWith(
         isLoading: false,

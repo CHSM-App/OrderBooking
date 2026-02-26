@@ -46,7 +46,7 @@ class _HomePageState extends ConsumerState<HomePage>
             ref.read(adminloginViewModelProvider).companyId ?? '',
           );
       ref.read(visitViewModelProvider.notifier).purgeOldSyncedVisits();
-      ref.read(visitViewModelProvider.notifier).getTodayVisitCount();
+      ref.read(visitViewModelProvider.notifier).getTodayVisitCount(ref.read(adminloginViewModelProvider).userId);
     });
   }
 

@@ -62,11 +62,6 @@ Future<Map<String, dynamic>> addRegion(Region region) async {
     // Convert dynamic to Map
     final result = Map<String, dynamic>.from(response);
     // Access values
-    final success = result['success'];
-    final regionId = result['region_id'];
-    final message = result['message'];
-
-    print("Success: $success, Region ID: $regionId, Message: $message");
 
     return result;
   } catch (e) {
@@ -94,7 +89,6 @@ Future<Map<String, dynamic>> addRegion(Region region) async {
     try {
       final response = await repo.deleteRegion(regionId, companyId);
       final result = Map<String, dynamic>.from(response); // ensure Map
-      print("Delete API returned: $result"); // debug log
       return result;
     } catch (e) {
       print("Delete error: $e");

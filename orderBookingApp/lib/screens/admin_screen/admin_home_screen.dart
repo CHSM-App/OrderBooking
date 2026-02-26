@@ -247,7 +247,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
       loading: () => 0,
       error: (_, __) => 0,
       data: (employees) =>
-          employees.where((e) => e.activeStatus == 1).length,
+          employees.where((e) => e.checkinStatus == 1).length,
     );
 
     final totalProductCount = productState.productList?.when(
@@ -301,7 +301,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
                     icon: Icons.pending_actions_rounded,
                     color: const Color(0xFFF57C00),
                     isSmall: isSmallScreen,
-                    onTap: () => widget.onNavigate(2, ordersTab: 0),
+                    onTap: () => widget.onNavigate(2, ordersTab: 1),
                   ),
                 ),
                 const SizedBox(width: 12),

@@ -68,7 +68,6 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         isSuccess: false,
       );
 
-      print("error $e");
     }
   }
 

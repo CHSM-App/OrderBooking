@@ -86,7 +86,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       localId: const Uuid().v4(),
       shopName: shopName,
       address: _addressController.text,
-      regionId: _selectedRegionId!, // ✅ Use the stored regionId
+      regionId: ref.read(adminloginViewModelProvider).regionId!, // ✅ Use the stored regionId
       ownerName: ownerName,
       mobileNo: _phoneController.text,
       shopId: widget.initialShop?.shopId ?? 0,
@@ -229,7 +229,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                         const SizedBox(height: 14),
 
                         /// ✅ FIXED REGION DROPDOWN
-                        regionState.when(
+                        /* regionState.when(
                           loading: () => const Center(
                             child: CircularProgressIndicator(),
                           ),
@@ -290,7 +290,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                                   value == null ? "Region is required" : null,
                             );
                           },
-                        ),
+                        ), */
                       ],
                     ),
 

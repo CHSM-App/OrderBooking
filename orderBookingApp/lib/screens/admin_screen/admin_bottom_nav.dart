@@ -23,11 +23,13 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   int _selectedIndex = 0;
+  int _ordersFilterRequestId = 0;
+  OrdersFilterType? _ordersInitialFilter;
 
   // Nav items with icons + labels
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2_rounded, label: 'Catalog'),
+    _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2_rounded, label: 'Products'),
     _NavItem(icon: Icons.shopping_cart_outlined, activeIcon: Icons.shopping_cart_rounded, label: 'Orders'),
     _NavItem(icon: Icons.people_outline_rounded, activeIcon: Icons.people_rounded, label: 'Employees'),
     _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
@@ -66,6 +68,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   void navigateToTab(int index, {int ordersTab = 0}) {
     HapticFeedback.lightImpact();
     setState(() {
+      if (index == 2 && ordersTab == 1) {
+        _ordersInitialFilter = OrdersFilterType.today;
+        _ordersFilterRequestId++;
+      }
       _selectedIndex = index;
     });
   }
@@ -157,7 +163,10 @@ final adminName = ref.watch(
         children: [
           AdminHomePage(onNavigate: navigateToTab),
           const AdminCatalogPage(),
-          OrdersListPage(),
+          OrdersListPage(
+            initialFilter: _ordersInitialFilter,
+            filterRequestId: _ordersFilterRequestId,
+          ),
           const AdminEmployeesPage(),
           AdminProfilePage(
             mobileNo: ref.read(adminloginViewModelProvider).mobileNo ?? '',

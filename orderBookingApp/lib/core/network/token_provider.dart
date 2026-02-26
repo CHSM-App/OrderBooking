@@ -7,18 +7,24 @@ class TokenState {
   final int? roleId;
   final bool isLoading;
 
-  const TokenState({this.roleId, this.accessToken, this.refreshToken,this.isLoading=true});
+  const TokenState({
+    this.roleId,
+    this.accessToken,
+    this.refreshToken,
+    this.isLoading = true,
+  });
 
-  bool get isLoggedIn => accessToken != null && refreshToken != null && roleId !=0;
+  bool get isLoggedIn =>
+      accessToken != null && refreshToken != null && roleId != 0;
 
   TokenState copyWith({
     String? accessToken,
     String? refreshToken,
     int? roleId,
-    bool?isLoading,
+    bool? isLoading,
   }) {
     return TokenState(
-      roleId: roleId?? this.roleId,
+      roleId: roleId ?? this.roleId,
       accessToken: accessToken ?? this.accessToken,
       refreshToken: refreshToken ?? this.refreshToken,
       isLoading: isLoading ?? this.isLoading,
@@ -28,7 +34,6 @@ class TokenState {
 
 class TokenNotifier extends StateNotifier<TokenState> {
   TokenNotifier() : super(const TokenState());
-  
 
   /// Load saved tokens at app start
   Future<void> loadTokens() async {
@@ -37,19 +42,31 @@ class TokenNotifier extends StateNotifier<TokenState> {
       state = TokenState(
         accessToken: tokens['accessToken'],
         refreshToken: tokens['refreshToken'],
-        roleId:int.parse(tokens['roleId'] ?? '0') ,
+        roleId: int.parse(tokens['roleId'] ?? '0'),
         isLoading: false,
       );
+    } else {
+      state = const TokenState(isLoading: false);
     }
   }
 
-
   /// Save new tokens
-  Future<void> saveTokens(String accessToken, String refreshToken, int roleId) async {
-    state = TokenState(accessToken: accessToken, refreshToken: refreshToken, roleId: roleId);
+  Future<void> saveTokens(
+    String accessToken,
+    String refreshToken,
+    int roleId,
+  ) async {
+    state = state.copyWith(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      roleId: roleId,
+    );
+    // state = TokenState(accessToken: accessToken, refreshToken: refreshToken, roleId: roleId);
     await TokenStorage.saveTokens(accessToken, refreshToken, roleId);
-
+ 
   }
+
+
 
   /// Clear tokens and trigger logout
   Future<void> clearTokens() async {
@@ -58,5 +75,6 @@ class TokenNotifier extends StateNotifier<TokenState> {
   }
 }
 
-final tokenProvider =
-    StateNotifierProvider<TokenNotifier, TokenState>((ref) => TokenNotifier());
+final tokenProvider = StateNotifierProvider<TokenNotifier, TokenState>(
+  (ref) => TokenNotifier(),
+);

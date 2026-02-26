@@ -5,6 +5,7 @@ require('dotenv').config();
 const auth = require('./middleware/auth');
 const db = require('./db'); // your mssql pool wrapper
 const crypto = require('crypto');
+const path = require('path');
 
 var bodyParser = require('body-parser');
 
@@ -14,7 +15,7 @@ function generateRefreshToken() {
 
 // Create tokens helper
 function createAccessToken(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '15m' }); // production: 15m
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1m' }); // production: 15m
 }
 function createRefreshTokenPayload(mobile) {
   const token = generateRefreshToken();
@@ -64,6 +65,8 @@ router.post('/refreshAccessToken', async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
+    console.log("Received refresh token:", refreshToken);
+
     if (!refreshToken)
       return res.status(400).json({ error: 'Refresh token required' });
 
@@ -81,12 +84,6 @@ router.post('/refreshAccessToken', async (req, res) => {
     const row = rows[0];
     const mobile = row.user_mobile;
     const roleId = row.role_id;
-
-    jwt.verify(refreshToken, process.env.REFRESH_KEY, (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ error: 'Invalid refresh token' });
-      }
-    });
 
     // revoke old
     await db.request()
@@ -176,6 +173,10 @@ router.get('/checkPhone', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy.html'));
 });
 
 module.exports = router; 

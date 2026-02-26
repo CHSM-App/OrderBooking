@@ -57,7 +57,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     _NavItem(
       icon: Icons.grid_view_outlined,
       activeIcon: Icons.grid_view_rounded,
-      label: 'Catalog',
+      label: 'Products',
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,

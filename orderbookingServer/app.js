@@ -20,8 +20,8 @@ const uploadRouter = require('./routes/uploadfile');
 var db = require('./routes/db');
 const protect = require('./routes/middleware/protect');
 
-app.use('/users', usersRouter);
-app.use('/insert', insertRouter);
+app.use('/users', protect, usersRouter);
+app.use('/insert',protect, insertRouter);
 app.use('/login', loginRouter);
 app.use('/index', indexRouter);
 app.use('/upload', uploadRouter);
