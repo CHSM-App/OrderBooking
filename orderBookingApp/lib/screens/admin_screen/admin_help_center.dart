@@ -36,7 +36,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'Can I edit my company details after registration?',
           answer:
-              'Yes. Go to Settings → Company Profile to update your company name, address, contact details, or GSTIN at any time.',
+              'Yes. Go to Profile section → Click on edit icon → update your company details → Save changes. You can edit your company details at any time.',
         ),
         _Faq(
           question: 'Can there be more than one admin for a company?',
@@ -59,7 +59,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'How do I add a new employee?',
           answer:
-              'Go to the Employees section and tap the "+" or "Add Employee" button. Fill in the employee\'s details:\n\n• Full Name\n• Phone Number\n• Address\n• Identity Proof (upload document)\n\nTap Save. The employee will receive login access using their phone number.',
+              'Go to the Employees section and tap the "+" button. Fill the employee\'s details:\n\n• Full Name\n• Phone Number\n• Address\n• Identity Proof (upload document)\n\nTap Save. The employee will receive login access using their phone number.',
         ),
         _Faq(
           question: 'What identity proof documents can I upload?',
@@ -69,12 +69,12 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'How do I edit an employee\'s details?',
           answer:
-              'Go to Employees → tap the employee you want to edit → tap the Edit button. Update the required fields and tap Save.',
+              'Go to Employees → tap the employee you want to edit → tap the Edit icon. Update the required fields and tap Save.',
         ),
         _Faq(
           question: 'How do I delete an employee?',
           answer:
-              'Go to Employees → tap the employee → tap Delete. Note: Deleting an employee will remove their access to the app. Their past activity records (orders, attendance, location history) will still be retained for your records.',
+              'Go to Employees → tap the employee → tap Delete icon. Note: Deleting an employee will remove their access to the app. Their past activity records (orders, attendance, location history) will still be retained for your records. It will visible at Profile section → Deleted Employees',
         ),
         _Faq(
           question: 'How many employees can I add?',
@@ -82,7 +82,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
               'There is no fixed limit on the number of employees you can add under your company account. Add as many field sales employees as your team requires.',
         ),
         _Faq(
-          question: 'Can an employee see other employees\' data?',
+          question: 'Can an employee see other employee\'s data?',
           answer:
               'No. Employees can only see their own shops, orders, and activity. Only the admin can view data across all employees.',
         ),
@@ -97,12 +97,12 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'How do I add a product?',
           answer:
-              'Go to Products → tap "Add Product". Enter the product name, unit (e.g. kg, litre, piece), and price. Tap Save. The product will immediately appear in the order list for all your employees.',
+              'Go to Products section → tap "Add Product". Enter the product name, select type, unit (e.g. kg, litre, piece), unit value and its price. Submit Product. The product will immediately appear in your Product section and all employee\'s Product section.',
         ),
         _Faq(
           question: 'How do I edit or delete a product?',
           answer:
-              'Go to Products → tap the product you want to modify → tap Edit to update details, or tap Delete to remove it. Deleting a product will not affect past orders that already included it.',
+              'Go to Products → tap the edit icon next to product you want to modify → tap Edit to update details, and remove all unit values to delete the product. Deleting a product will not affect past orders that already included it.',
         ),
         _Faq(
           question: 'How many products can I add?',
@@ -118,29 +118,29 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
     ),
     _HelpCategory(
       icon: Icons.bar_chart_rounded,
-      title: 'Viewing Orders',
+      title: 'Viewing Orders', 
       color: Color(0xFFE8701A),
       colorLight: Color(0xFFFFF3E8),
       faqs: [
         _Faq(
           question: 'How do I view orders placed by my employees?',
           answer:
-              'Go to the Orders section. You can view all orders placed across all employees, filtered by date or by individual employee. Each order shows the shop name, products ordered, quantities, and the employee who placed it.',
+              'Go to the Orders section. You can view all orders placed across all employees. Each order shows the shop name, products ordered, quantities, and the employee who placed it.',
         ),
         _Faq(
           question: 'Can I filter orders by employee or date?',
           answer:
-              'Yes. Use the filter options in the Orders section to view orders by a specific employee, a specific date, or a date range.',
+              'Yes. If you want view employeewise orders then go to "Employees" section and tap on employee for which you want to see orders. If you want to filter orders bt date then use the provided date filters',
         ),
-        _Faq(
-          question: 'Can I edit or delete an order?',
-          answer:
-              'Yes. As admin you can view, edit, and delete any order. Tap on the order and use the Edit or Delete option. Employees cannot edit their submitted orders.',
-        ),
+        // _Faq(
+        //   question: 'Can I edit or delete an order?',
+        //   answer:
+        //       'Yes. As admin you can view, edit, and delete any order. Tap on the order and use the Edit or Delete option. Employees cannot edit their submitted orders.',
+        // ),
         _Faq(
           question: 'Can I export order data?',
           answer:
-              'Contact our support team at support@vengurlatech.com for information on exporting or downloading order reports.',
+              'If you want to print a order then go to Orders → tap on a order to be print → tap on print icon on top',
         ),
       ],
     ),
@@ -153,7 +153,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'How do I view employee attendance?',
           answer:
-              'Go to the Attendance section. You will see a list of all employees with their check-in and check-out times for each working day. You can filter by employee or by date.',
+              'Go to the Employees section → tap on employee → tap on Attendance button → You will see all attendance record with their check-in and check-out times for each working day. Tap on the date to see checkin/checkout time',
         ),
         _Faq(
           question: 'What counts as attendance?',
@@ -181,7 +181,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'How do I view an employee\'s location for the day?',
           answer:
-              'Go to the Attendance or Employee detail section and select a specific employee and date. Tap "View Route" to open the map. You will see three types of location pins:\n\n• Check-In location (start of day)\n• Shop punch-in locations (each shop visited)\n• Check-Out location (end of day)\n\nThe map will draw a route connecting all these points in order.',
+              'Go to the Employees section → Tap on view map → Select date. You will see the route of employee for selected date. You can able to see:\n\n• Check-In location (start of day)\n• Shop punch-in locations (each shop visited)\n• Check-Out location (end of day)\n\nThe map will draw a route connecting all these points in order.',
         ),
         _Faq(
           question: 'How is the employee route drawn on the map?',
