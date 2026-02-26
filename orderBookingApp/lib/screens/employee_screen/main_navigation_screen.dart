@@ -28,6 +28,7 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   late int _currentIndex;
   bool _isLocating = false;
+  static const int _profileIndex = 4;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -56,7 +57,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     _NavItem(
       icon: Icons.grid_view_outlined,
       activeIcon: Icons.grid_view_rounded,
-      label: 'Catalog',
+      label: 'Products',
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,
@@ -92,7 +93,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
     try {
       final isConnected =
-          await ref.read(networkServiceProvider).checkConnection();
+          await ref.read(networkServiceProvider).checkRealInternet();
       if (!isConnected) {
         if (mounted) {
           final actionText =
@@ -218,7 +219,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   }
 
   void _onTabTapped(int index) {
-    if (!ref.read(checkInViewModelProvider).isCheckedIn) return;
     HapticFeedback.lightImpact();
     setState(() => _currentIndex = index);
   }
@@ -360,11 +360,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         body: Stack(
           children: [
             IgnorePointer(
-              ignoring: !isCheckedIn,
+              ignoring: !isCheckedIn && _currentIndex != _profileIndex,
               child:
                   IndexedStack(index: _currentIndex, children: _pages),
             ),
-            if (!isCheckedIn)
+            if (!isCheckedIn && _currentIndex != _profileIndex)
               Container(
                 color: Colors.black.withValues(alpha: 0.45),
                 child: const Center(
@@ -392,7 +392,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         /// ================= CUSTOM PILL BOTTOM NAV =================
         bottomNavigationBar: _PillBottomNavBar(
           currentIndex: _currentIndex,
-          isEnabled: isCheckedIn,
+          isEnabled: true,
           items: _navItems,
           onTap: _onTabTapped,
           activeColor: AppTheme.primaryColor,

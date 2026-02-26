@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:order_booking_app/domain/models/employee_visit.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:intl/intl.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
-import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 
 class EmployeeVisitsMapPage extends ConsumerStatefulWidget {
   final int empId;
@@ -22,504 +22,506 @@ class EmployeeVisitsMapPage extends ConsumerStatefulWidget {
 }
 
 class _EmployeeVisitsMapPageState extends ConsumerState<EmployeeVisitsMapPage> {
-  static const _filterToday = 'Today';
-  static const _filterMonth = 'This Month';
-  static const _filterYear = 'This Year';
-  static const _filterCustom = 'Custom';
+  GoogleMapController? _mapController;
+  final Set<Polyline> _polylines = {};
+  final Set<Marker> _markers = {};
 
-  String _selectedFilter = _filterToday;
-  DateTimeRange? _customRange;
+  DateTime _selectedDate = DateTime.now().subtract(const Duration(days: 1));
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
-          .read(visitViewModelProvider.notifier)
-          .fetchEmployeeVisits(widget.empId);
+          .read(employeeloginViewModelProvider.notifier)
+          .getEmployeeVisit(widget.empId);
     });
+  }
+
+  /// Filter records matching selected date
+  List<EmployeeMap> _getFilteredRecords(List<EmployeeMap> allData) {
+    return allData.where((e) {
+      final d = e.checkInDate;
+      return d.year == _selectedDate.year &&
+          d.month == _selectedDate.month &&
+          d.day == _selectedDate.day;
+    }).toList();
+  }
+
+  /// Pick the best record for the day:
+  /// Prefer the one with the most shops; fallback to first.
+  EmployeeMap? _getBestRecord(List<EmployeeMap> filtered) {
+    if (filtered.isEmpty) return null;
+    filtered.sort((a, b) => b.shops.length.compareTo(a.shops.length));
+    return filtered.first;
+  }
+
+  void _buildMapOverlays(EmployeeMap record) {
+    _polylines.clear();
+    _markers.clear();
+
+    // --- Decode polyline ---
+    if (record.polyline.isNotEmpty) {
+      final polylinePoints = PolylinePoints();
+      final decoded = polylinePoints.decodePolyline(record.polyline);
+      final routePoints = decoded
+          .map((e) => LatLng(e.latitude, e.longitude))
+          .toList();
+
+      if (routePoints.isNotEmpty) {
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId("route"),
+            points: routePoints,
+            width: 8,
+            color: const Color.fromARGB(255, 255, 123, 0),
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            jointType: JointType.round,
+          ),
+        );
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fitCamera(routePoints);
+        });
+      }
+    }
+
+    // --- checkIn marker (GREEN) ---
+    final checkInCoords = record.checkInLatLng;
+    if (checkInCoords.length == 2) {
+      _markers.add(
+        Marker(
+          markerId: const MarkerId("checkIn"),
+          position: LatLng(checkInCoords[0], checkInCoords[1]),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          infoWindow: InfoWindow(
+            title: "Check In",
+            snippet: DateFormat('hh:mm a').format(record.checkInDate),
+          ),
+        ),
+      );
+    }
+
+    // --- checkOut marker (BLUE) ---
+    final checkOutCoords = record.checkOutLatLng;
+    if (checkOutCoords.length == 2) {
+      _markers.add(
+        Marker(
+          markerId: const MarkerId("checkOut"),
+          position: LatLng(checkOutCoords[0], checkOutCoords[1]),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          infoWindow: const InfoWindow(title: "Check Out"),
+        ),
+      );
+    }
+// --- Shop markers (RED) ---
+// --- Shop markers (RED) ---
+for (int i = 0; i < record.shops.length; i++) {
+  final shop = record.shops[i];
+
+  final punchIn  = _formatPunchTime(shop.punchIn);
+  final punchOut = _formatPunchTime(shop.punchOut);
+
+  _markers.add(
+    Marker(
+      markerId: MarkerId("shop_$i"),
+      position: LatLng(shop.latitude, shop.longitude),
+      icon: BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueRed),
+infoWindow: InfoWindow(
+  title: "${shop.shopName} (${shop.ownerName})",
+  snippet: "${shop.mobileNo}  |  In: $punchIn  •  Out: $punchOut",
+),
+    ),
+  );
+}
+  }
+
+  // Helper function — add this inside _EmployeeVisitsMapPageState
+String _formatPunchTime(String? isoString) {
+  if (isoString == null || isoString.isEmpty) return '--';
+  try {
+    final dt = DateTime.parse(isoString);
+    return DateFormat('hh:mm a').format(dt);
+  } catch (_) {
+    return '--';
+  }
+}
+
+  void _fitCamera(List<LatLng> points) {
+    if (_mapController == null || points.isEmpty) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (var p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        80,
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: const Color(0xFFFF7B00),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _polylines.clear();
+        _markers.clear();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(visitViewModelProvider);
+    final state = ref.watch(employeeloginViewModelProvider);
+    final mapDataAsync = state.employeeMapData;
+
+    // Resolve the best record for the selected date (when data is available)
+    EmployeeMap? activeRecord;
+    List<EmployeeMap> filteredRecords = [];
+
+    mapDataAsync.whenData((allData) {
+      filteredRecords = _getFilteredRecords(allData);
+      activeRecord = _getBestRecord(filteredRecords);
+      if (activeRecord != null) {
+        _buildMapOverlays(activeRecord!);
+      }
+    });
+
+    final initialTarget = activeRecord != null
+        ? LatLng(activeRecord!.checkInLatLng[0], activeRecord!.checkInLatLng[1])
+        : const LatLng(15.9111120, 73.6958640);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.empName} Visits Map'),
-        backgroundColor: const Color(0xFF0A3D62),
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        title: Text("${widget.empName}'s Route"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: Colors.grey.shade200, height: 1),
         ),
       ),
-      body: _buildBody(state),
-    );
-  }
-
-  Widget _buildBody(EmployeeVisitState state) {
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null) {
-      return _buildError(state.error!);
-    }
-
-    final visits = state.visits?.value ?? <EmployeeVisit>[];
-    if (visits.isEmpty) {
-      return _buildEmpty();
-    }
-
-    final sortedVisits = [...visits]..sort(_compareVisitsByDateTime);
-    final filteredVisits = _applyFilter(sortedVisits);
-    if (filteredVisits.isEmpty) {
-      return Column(
+      body: Stack(
         children: [
-          _buildFilterBar(),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'No visits match the selected filter.',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
+          // ── MAP ──────────────────────────────────────────────
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: initialTarget,
+              zoom: 13,
             ),
+            onMapCreated: (controller) {
+              _mapController = controller;
+              if (activeRecord != null) {
+                final decoded = PolylinePoints()
+                    .decodePolyline(activeRecord!.polyline)
+                    .map((e) => LatLng(e.latitude, e.longitude))
+                    .toList();
+                if (decoded.isNotEmpty) _fitCamera(decoded);
+              }
+            },
+            polylines: _polylines,
+            markers: _markers,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+            zoomControlsEnabled: true,
           ),
-        ],
-      );
-    }
 
-    final center =
-        LatLng(filteredVisits.first.latitude, filteredVisits.first.longitude);
-    final markers = <Marker>[];
-    for (var i = 0; i < filteredVisits.length; i++) {
-      markers.add(_buildMarker(filteredVisits[i], i + 1));
-    }
-
-    final routePoints = filteredVisits
-        .map((v) => LatLng(v.latitude, v.longitude))
-        .toList();
-
-    return Column(
-      children: [
-        _buildFilterBar(),
-        Expanded(
-          child: FlutterMap(
-            options: MapOptions(
-              initialCenter: center,
-              initialZoom: 14,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.vengurlatech.orderbooking',
-              ),
-              if (routePoints.length >= 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: routePoints,
-                      strokeWidth: 4,
-                      color: const Color(0xFF1976D2),
+          // ── DATE SELECTOR (TOP) ──────────────────────────────
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: Colors.black.withOpacity(0.12),
                     ),
                   ],
                 ),
-              MarkerLayer(markers: markers),
-            ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: Color(0xFFFF7B00),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('EEE, dd MMM yyyy').format(_selectedDate),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                  ],
+                ),
+              ),
+            ),
           ),
+
+          // ── LOADING OVERLAY ──────────────────────────────────
+          if (state.isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.15),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFFF7B00)),
+              ),
+            ),
+
+          // ── ERROR STATE ──────────────────────────────────────
+          if (mapDataAsync is AsyncError)
+            Positioned(
+              top: 80,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  "Failed to load route data.",
+                  style: TextStyle(color: Colors.red.shade700),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+
+          // ── NO DATA FOR DATE ─────────────────────────────────
+          if (mapDataAsync is AsyncData && activeRecord == null)
+            Positioned(
+              top: 80,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Text(
+                  "No visits recorded for ${DateFormat('dd MMM yyyy').format(_selectedDate)}",
+                  style: TextStyle(
+                    color: Colors.orange.shade800,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+
+          // ── BOTTOM SUMMARY CARD ──────────────────────────────
+          if (activeRecord != null)
+            Positioned(
+              bottom: 20,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 16,
+                      color: Colors.black.withOpacity(0.1),
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header row
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.route,
+                          color: Color(0xFFFF7B00),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Route Summary",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF7B00).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "${activeRecord!.shops.length} Shops",
+                            style: const TextStyle(
+                              color: Color(0xFFFF7B00),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    // Check-in / Check-out row
+                    Row(
+                      children: [
+                        _SummaryTile(
+                          icon: Icons.login,
+                          iconColor: Colors.green,
+                          label: "Check In",
+                          value: DateFormat(
+                            'hh:mm a',
+                          ).format(activeRecord!.checkInDate),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 1,
+                          height: 36,
+                          color: Colors.grey.shade200,
+                        ),
+                        const Spacer(),
+                        _SummaryTile(
+                          icon: Icons.logout,
+                          iconColor: Colors.blue,
+                          label: "Check Out",
+                          value: DateFormat(
+                            'hh:mm a',
+                          ).format(activeRecord!.checkOutDate),
+                        ),
+                      ],
+                    ),
+                    // In the bottom summary card, add a distance row below the check-in/out row:
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.straighten,
+                          size: 16,
+                          color: Color(0xFFFF7B00),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Total Distance: ${activeRecord!.total_distance_km.toStringAsFixed(2)} km",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Helper widget ──────────────────────────────────────────
+class _SummaryTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  const _SummaryTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, color: iconColor, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ],
     );
   }
-
-  Widget _buildFilterBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-      child: Column(
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _filterChip(_filterToday),
-              _filterChip(_filterMonth),
-              _filterChip(_filterYear),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _filterChip(
-                  _filterCustom,
-                  showRange: true,
-                  fullWidth: true,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(
-    String label, {
-    bool showRange = false,
-    bool fullWidth = false,
-  }) {
-    final isSelected = _selectedFilter == label;
-    final subtitle = showRange && _customRange != null
-        ? _formatRange(_customRange!)
-        : null;
-    final subtitleColor =
-        isSelected ? Colors.white : Colors.black54;
-    return ChoiceChip(
-      label: SizedBox(
-        width: fullWidth ? 290 : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, textAlign: TextAlign.center),
-            if (subtitle != null)
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: subtitleColor),
-              ),
-          ],
-        ),
-      ),
-      selected: isSelected,
-      onSelected: (_) => _onFilterSelected(label),
-      selectedColor: const Color(0xFF0A3D62),
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  Future<void> _onFilterSelected(String label) async {
-    if (label == _filterCustom) {
-      final now = DateTime.now();
-      final initialStart =
-          _customRange?.start ?? DateTime(now.year, now.month, now.day);
-      final initialEnd =
-          _customRange?.end ?? DateTime(now.year, now.month, now.day);
-      final range = await showDateRangePicker(
-        context: context,
-        firstDate: DateTime(now.year - 5),
-        lastDate: DateTime(now.year + 1),
-        initialDateRange: DateTimeRange(start: initialStart, end: initialEnd),
-      );
-      if (range == null) return;
-      setState(() {
-        _selectedFilter = label;
-        _customRange = range;
-      });
-      return;
-    }
-
-    setState(() {
-      _selectedFilter = label;
-    });
-  }
-
-  List<EmployeeVisit> _applyFilter(List<EmployeeVisit> visits) {
-    final now = DateTime.now();
-    if (_selectedFilter == _filterToday) {
-      return visits.where((v) => _isSameDay(_visitDate(v), now)).toList();
-    }
-    if (_selectedFilter == _filterMonth) {
-      return visits
-          .where((v) => _isSameMonth(_visitDate(v), now))
-          .toList();
-    }
-    if (_selectedFilter == _filterYear) {
-      return visits
-          .where((v) => _isSameYear(_visitDate(v), now))
-          .toList();
-    }
-    if (_selectedFilter == _filterCustom) {
-      if (_customRange == null) return visits;
-      return visits.where((v) {
-        final d = _visitDate(v);
-        if (d == null) return false;
-        final visitUtc = _toUtcDateOnly(d);
-        final startUtc = _toUtcDateOnly(_customRange!.start);
-        final endUtc = _toUtcDateOnly(_customRange!.end);
-        return !visitUtc.isBefore(startUtc) && !visitUtc.isAfter(endUtc);
-      }).toList();
-    }
-    return visits;
-  }
-
-  DateTime? _visitDate(EmployeeVisit visit) {
-    return visit.punchIn ?? visit.punchOut;
-  }
-
-  bool _isSameDay(DateTime? a, DateTime b) {
-    if (a == null) return false;
-    final aUtc = _toUtcDateOnly(a);
-    final bUtc = _toUtcDateOnly(b);
-    return aUtc.year == bUtc.year &&
-        aUtc.month == bUtc.month &&
-        aUtc.day == bUtc.day;
-  }
-
-  bool _isSameMonth(DateTime? a, DateTime b) {
-    if (a == null) return false;
-    final aUtc = _toUtcDateOnly(a);
-    final bUtc = _toUtcDateOnly(b);
-    return aUtc.year == bUtc.year && aUtc.month == bUtc.month;
-  }
-
-  bool _isSameYear(DateTime? a, DateTime b) {
-    if (a == null) return false;
-    final aUtc = _toUtcDateOnly(a);
-    final bUtc = _toUtcDateOnly(b);
-    return aUtc.year == bUtc.year;
-  }
-
-  String _formatRange(DateTimeRange range) {
-    final start = range.start;
-    final end = range.end;
-    final s =
-        '${start.year}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
-    final e =
-        '${end.year}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
-    return '$s to $e';
-  }
-
-  DateTime _toUtcDateOnly(DateTime dt) {
-    final utc = dt.toUtc();
-    return DateTime.utc(utc.year, utc.month, utc.day);
-  }
-
-  Marker _buildMarker(EmployeeVisit visit, int sequence) {
-    final isStart = sequence == 1;
-    final isEnd = sequence > 1 && sequence == (ref
-            .read(visitViewModelProvider)
-            .visits
-            ?.value
-            ?.length ??
-        sequence);
-    final color = isStart
-        ? Colors.green
-        : isEnd
-            ? Colors.red
-            : Colors.blue;
-
-    return Marker(
-      width: 44,
-      height: 44,
-      point: LatLng(visit.latitude, visit.longitude),
-      child: GestureDetector(
-        onTap: () => _showVisitDetails(visit, sequence),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              sequence.toString(),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  int _compareVisitsByDateTime(EmployeeVisit a, EmployeeVisit b) {
-    final aDate = a.punchIn;
-    final bDate = b.punchIn;
-    if (aDate == null && bDate == null) return 0;
-    if (aDate == null) return 1;
-    if (bDate == null) return -1;
-    return aDate.compareTo(bDate);
-  }
-
-
-
-void _showVisitDetails(EmployeeVisit visit, int sequence) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Visit #$sequence',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              _detailRow(
-                'Punch In at:',
-                _formatDateTime(visit.punchIn),
-              ),
-              _detailRow(
-                'Punch Out at:',
-                _formatDateTime(visit.punchOut),
-              ),
-
-              if (visit.shopName != null && visit.shopName!.isNotEmpty)
-                _detailRow('Shop Name:', visit.shopName!),
-
-              if (visit.address != null && visit.address!.isNotEmpty)
-                _detailRow('Address:', visit.address!),
-
-              if (visit.ownerName != null && visit.ownerName!.isNotEmpty)
-                _detailRow('Owner Name:', visit.ownerName!),
-
-              if (visit.mobileNo != null && visit.mobileNo!.isNotEmpty)
-                _detailRow('Contact No:', visit.mobileNo!),
-
-                //  _detailRow(
-                  //   'Accuracy:',
-                  //   '${visit.accuracy.toStringAsFixed(2)} m',
-                  // ),
-
-                  // _detailRow(
-                  //   'Latitude:',
-                  //   '${visit.latitude.toStringAsFixed(6)}',
-                  // ),
-
-                  //     _detailRow(
-                  //   'Longitude:',
-                  //   '${visit.longitude.toStringAsFixed(6)}',
-                  // ),
-
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }
 
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime? value) {
-    if (value == null) return '--';
-    final local = value.toLocal();
-    final date =
-        '${local.year.toString().padLeft(4, '0')}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
-    final time =
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}:${local.second.toString().padLeft(2, '0')}';
-    return '$date $time';
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.map_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          const Text(
-            'No visits found',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'This employee has no visit records yet.',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildError(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load visits',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref
-                    .read(visitViewModelProvider.notifier)
-                    .fetchEmployeeVisits(widget.empId);
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0A3D62),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

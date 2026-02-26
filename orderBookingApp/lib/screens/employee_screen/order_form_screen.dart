@@ -140,7 +140,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     });
   }
 
-  void _submitOrder() {
+  void _submitOrder() async {
     if (_orderItems.isEmpty) {
       _showError('Add at least one product');
       return;
@@ -170,7 +170,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       items: orderItems,
       companyId: ref.read(adminloginViewModelProvider).companyId,
     );
-    ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
+    await ref.read(ordersViewModelProvider.notifier).addOrderLineItem(order);
 
     setState(() {
       _visit = VisitPayload(
@@ -188,8 +188,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
       );
     });
 
-    ref.read(visitViewModelProvider.notifier).addVisit(_visit);
-
+   await ref.read(visitViewModelProvider.notifier).addVisit(_visit);
+  await ref.read(ordersViewModelProvider.notifier).countTodayOrders();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -329,18 +329,6 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
     );
   }
 
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: MinimalTheme.successGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -8,6 +8,7 @@ part of 'attendance.dart';
 
 AttendanceReport _$AttendanceReportFromJson(Map<String, dynamic> json) =>
     AttendanceReport(
+      TotlaDistance: (json['total_distance_km'] as num?)?.toDouble(),
       empId: (json['emp_id'] as num?)?.toInt(),
       empName: json['emp_name'] as String?,
       totalWorkingDays: (json['total_working_days'] as num?)?.toInt(),
@@ -24,4 +25,5 @@ Map<String, dynamic> _$AttendanceReportToJson(AttendanceReport instance) =>
       'total_hours': instance.totalHours,
       'company_id': instance.companyId,
       'month': instance.month,
+      'total_distance_km': instance.TotlaDistance,
     };

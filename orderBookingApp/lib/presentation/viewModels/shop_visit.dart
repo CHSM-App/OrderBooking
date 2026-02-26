@@ -6,20 +6,24 @@ import '../../domain/models/visite.dart';
 class EmployeeVisitState {
   final bool isLoading;
   final String? error;
+  final int? visitedShops;
   final AsyncValue<List<EmployeeVisit>> visits; // non-null
 
   const EmployeeVisitState({
     this.isLoading = false,
     this.error,
+    this.visitedShops,
     this.visits = const AsyncValue.loading(), // default loading
   });
 
   EmployeeVisitState copyWith({
     bool? isLoading,
     String? error,
+    int? visitedShops,
     AsyncValue<List<EmployeeVisit>>? visits,
   }) {
     return EmployeeVisitState(
+      visitedShops: visitedShops ?? this.visitedShops,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       visits: visits ?? this.visits,
@@ -44,6 +48,16 @@ class VisitViewModel extends StateNotifier<EmployeeVisitState> {
 
   Future<void> sync() async {
     await repo.syncOfflineVisits();
+  }
+
+  Future<void> purgeOldSyncedVisits() async {
+    await repo.purgeSyncedBeforeToday();
+  }
+
+  Future<void> getTodayVisitCount(int empId) async {
+    final result = await repo.countTodayVisits(empId);
+
+    state = state.copyWith(visitedShops: result);
   }
 
   //   Future<void> fetchEmployeeVisits(int empId) async {

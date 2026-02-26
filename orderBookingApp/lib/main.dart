@@ -1,7 +1,7 @@
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/presentation/controllers/sync_controller.dart';
 import 'package:order_booking_app/screens/splash_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
@@ -9,7 +9,11 @@ import 'package:order_booking_app/screens/theme.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();//Global navigator access
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =GlobalKey<ScaffoldMessengerState>();//Global scaffold messenger access
 
-void main() {
+void main() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+  final container = ProviderContainer();
+  await container.read(tokenProvider.notifier).loadTokens();
   runApp(
     ProviderScope(
       child: Consumer(

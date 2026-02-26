@@ -683,6 +683,8 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
 
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+    name = _capitalizeFirst(name);
+    mobile = mobileController.text.trim();
 
     final employeeToSave = widget.isEdit
         ? EmployeeLogin(
@@ -742,6 +744,12 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
     }
   }
 
+  String _capitalizeFirst(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return '${trimmed[0].toUpperCase()}${trimmed.substring(1)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final employeeState = ref.watch(employeeloginViewModelProvider);
@@ -795,22 +803,15 @@ class _AddEmployeeFormState extends ConsumerState<AddEmployeeForm> {
                   if (value.length == 10) {
                     ref
                         .read(employeeloginViewModelProvider.notifier)
-                        .checkMobileExists(value, companyId);
+                        .checkMobileExists(value, companyId, widget.employee?.empId ?? 0);
                   } else {
                     ref
-                        .read(employeeloginViewModelProvider.notifier)
-                        // ignore: invalid_use_of_protected_member
-                        .state = employeeState.copyWith(
-                      isPhoneNoExists: null, mobileNoStatus: null
-                    );
+                        .read(employeeloginViewModelProvider.notifier).setNull();
+                       
                   }
                 },
-                // errorText: employeeState.isPhoneNoExists == true
-                //     ? 'Mobile number already exists'
-                //     : null,
-                // onSaved: (v) => mobile = v!,
                 errorText: null,
-                onSaved: (String? p1) {},
+                onSaved: (v) => mobile = v?.trim() ?? '',
               ),
               if (employeeState.isPhoneNoExists == true &&
                   employeeState.mobileNoStatus == false)

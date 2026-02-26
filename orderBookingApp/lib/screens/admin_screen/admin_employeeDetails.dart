@@ -293,7 +293,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
                     _detailRow(
                       icon: Icons.phone_outlined,
                       label: "Mobile No",
-                      value: employee.empMobile ?? "—",
+                      value: employee.empMobile,
                       color: MinimalTheme.successGreen,
                     ),
                     const Divider(height: 16, thickness: 0.5),
@@ -1315,10 +1315,6 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
 
   int dateKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
-  DateTime _toIstDateOnly(DateTime dt) {
-    final ist = dt.toUtc().add(const Duration(hours: 5, minutes: 30));
-    return DateTime(ist.year, ist.month, ist.day);
-  }
 
   DateTime _toUtcDateOnly(DateTime dt) {
     final utc = dt.toUtc();

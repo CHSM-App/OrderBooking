@@ -17,5 +17,13 @@ class VisitUseCase {
   Future<List<EmployeeVisit>> getEmployeeVisits(int empId) {
     return repository.getEmployeeVisits(empId);
   }
+
+  Future<void> purgeSyncedBeforeToday() {
+    return repository.purgeSyncedBeforeToday();
+  }
+
+  Future<int> countTodayVisits(int empId) {
+    return repository.countTodayVisits(empId);
+  }
 }
 

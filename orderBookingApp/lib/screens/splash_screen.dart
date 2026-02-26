@@ -6,7 +6,6 @@ import 'package:order_booking_app/screens/employee_screen/main_navigation_screen
 
 import 'login_screen.dart';
 
-
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -18,12 +17,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    ref.read(tokenProvider.notifier).loadTokens();
     checkLogin();
   }
 
   Future<void> checkLogin() async {
     await ref.read(tokenProvider.notifier).loadTokens();
     final tokenState = ref.read(tokenProvider);
+
     if (tokenState.isLoggedIn) {
       if (tokenState.roleId == 1) {
         Navigator.pushReplacement(
@@ -35,11 +36,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           context,
           MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
-      } else{
-              Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
       }
     } else {
       Navigator.pushReplacement(
@@ -51,8 +52,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

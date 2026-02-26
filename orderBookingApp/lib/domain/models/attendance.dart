@@ -22,7 +22,11 @@ class AttendanceReport {
   @JsonKey(name: 'month')
   final String? month;
 
+  @JsonKey(name: 'total_distance_km')
+  final double? TotlaDistance;
+
   AttendanceReport({
+    this.TotlaDistance,
      this.empId,
      this.empName,
      this.totalWorkingDays,

@@ -4,6 +4,7 @@ import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFE8720C);
@@ -15,22 +16,22 @@ const _kTextSecondary = Color(0xFF6B6B6B);
 const _kDivider = Color(0xFFEEEEEE);
 
 // ── Filter model ──────────────────────────────────────────────────────────────
-enum _FilterType { today, yesterday, thisMonth, custom }
+enum OrdersFilterType { today, yesterday, thisMonth, custom }
 
 class _ActiveFilter {
-  final _FilterType type;
+  final OrdersFilterType type;
   final DateTimeRange? customRange;
   const _ActiveFilter(this.type, {this.customRange});
 
   String get label {
     switch (type) {
-      case _FilterType.today:
+      case OrdersFilterType.today:
         return 'Today';
-      case _FilterType.yesterday:
+      case OrdersFilterType.yesterday:
         return 'Yesterday';
-      case _FilterType.thisMonth:
+      case OrdersFilterType.thisMonth:
         return 'This Month';
-      case _FilterType.custom:
+      case OrdersFilterType.custom:
         if (customRange != null) {
           return '${_d(customRange!.start)} – ${_d(customRange!.end)}';
         }
@@ -58,7 +59,14 @@ class _ActiveFilter {
 }
 
 class OrdersListPage extends ConsumerStatefulWidget {
-  const OrdersListPage({Key? key}) : super(key: key);
+  final OrdersFilterType? initialFilter;
+  final int filterRequestId;
+
+  const OrdersListPage({
+    Key? key,
+    this.initialFilter,
+    this.filterRequestId = 0,
+  }) : super(key: key);
 
   @override
   ConsumerState<OrdersListPage> createState() => _OrdersListPageState();
@@ -68,10 +76,15 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
   _ActiveFilter? _filter;
+  int _lastAppliedRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    _lastAppliedRequestId = widget.filterRequestId;
+    if (widget.initialFilter != null) {
+      _filter = _ActiveFilter(widget.initialFilter!);
+    }
     Future.microtask(() {
       ref
           .read(ordersViewModelProvider.notifier)
@@ -83,6 +96,16 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrdersListPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filterRequestId != _lastAppliedRequestId &&
+        widget.initialFilter != null) {
+      setState(() => _filter = _ActiveFilter(widget.initialFilter!));
+      _lastAppliedRequestId = widget.filterRequestId;
+    }
   }
 
   Future<void> _refresh() async {
@@ -105,13 +128,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
     final today = _day(DateTime.now());
     switch (_filter!.type) {
-      case _FilterType.today:
+      case OrdersFilterType.today:
         return d == today;
-      case _FilterType.yesterday:
+      case OrdersFilterType.yesterday:
         return d == today.subtract(const Duration(days: 1));
-      case _FilterType.thisMonth:
+      case OrdersFilterType.thisMonth:
         return d.year == today.year && d.month == today.month;
-      case _FilterType.custom:
+      case OrdersFilterType.custom:
         if (_filter!.customRange == null) return true;
         final s = _day(_filter!.customRange!.start);
         final e = _day(_filter!.customRange!.end);
@@ -256,7 +279,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           children: [
             _buildHeader(),
-            if (_filter != null) _buildFilterChip(),
+            // if (_filter != null) _buildFilterChip(),
             Expanded(child: _buildBody(state)),
           ],
         ),
@@ -374,7 +397,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip() {
+  Widget _buildFilterChip(int count, double totalAmount) {
     return Container(
       color: _kSurface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -404,6 +427,25 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     color: _kPrimary,
                   ),
                 ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kPrimary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => setState(() => _filter = null),
@@ -411,6 +453,34 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     Icons.close_rounded,
                     size: 14,
                     color: _kPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _kDivider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.currency_rupee_rounded,
+                  size: 12,
+                  color: _kTextSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatINR(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextPrimary,
                   ),
                 ),
               ],
@@ -457,8 +527,27 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               )
               .toList();
 
-          if (visible.isEmpty) return _buildEmpty();
-          return _buildList(visible, numberMap);
+          final totalAmount = visible.fold<double>(
+            0.0,
+            (sum, o) => sum + _orderAmount(o),
+          );
+
+          if (visible.isEmpty) {
+            return Column(
+              children: [
+                if (_filter != null) _buildFilterChip(0, 0.0),
+                Expanded(child: _buildEmpty()),
+              ],
+            );
+          }
+
+          return Column(
+            children: [
+              if (_filter != null)
+                _buildFilterChip(visible.length, totalAmount),
+              Expanded(child: _buildList(visible, numberMap)),
+            ],
+          );
         },
         loading: _buildLoading,
         error: (e, _) => _isNetworkError(e.toString())
@@ -599,140 +688,35 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   // ── No internet ────────────────────────────────────────────────────────────
   Widget _buildNoInternet() {
-    return _wrapRefresh(
-      Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.wifi_off_rounded,
-                  size: 34,
-                  color: Colors.orange,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No Internet Connection',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: _kTextPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Check your WiFi or mobile data\nand try again.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _kTextSecondary,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _refresh,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text(
-                  'Retry',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kPrimary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return _wrapRefresh(AdminNoInternetRetry(onRetry: _refresh));
+  }
+
+  String _formatINR(num value) {
+    final isNegative = value < 0;
+    value = value.abs();
+    final parts = value.toStringAsFixed(2).split('.');
+    var intPart = parts[0];
+    final decPart = parts.length > 1 ? parts[1] : '00';
+    if (intPart.length <= 3) {
+      return '${isNegative ? '-' : ''}₹$intPart.$decPart';
+    }
+    final lastThree = intPart.substring(intPart.length - 3);
+    var remaining = intPart.substring(0, intPart.length - 3);
+    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
+    remaining = remaining.replaceAll(reg, ',');
+    return '${isNegative ? '-' : ''}₹$remaining,$lastThree.$decPart';
+  }
+
+  double _orderAmount(Order o) {
+    final amount = o.totalPrice;
+    if (amount is String) return double.tryParse(amount as String) ?? 0.0;
+    if (amount is num) return amount.toDouble();
+    return 0.0;
   }
 
   // ── Error ──────────────────────────────────────────────────────────────────
   Widget _buildError(String msg) {
-    return _wrapRefresh(
-      Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.error_outline_rounded,
-                  size: 32,
-                  color: Colors.red,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Something went wrong',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _kTextPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                msg,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: _kTextSecondary,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _refresh,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text(
-                  'Try Again',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kPrimary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return _wrapRefresh(AdminSomethingWentWrongRetry(onRetry: _refresh));
   }
 
   // ── Filter bottom sheet ────────────────────────────────────────────────────
@@ -802,10 +786,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.today_outlined,
                 label: 'Today',
                 sublabel: _todayLabel(),
-                isSelected: _filter?.type == _FilterType.today,
+                isSelected: _filter?.type == OrdersFilterType.today,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.today),
+                    () => _filter = const _ActiveFilter(OrdersFilterType.today),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -816,10 +800,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.history_outlined,
                 label: 'Yesterday',
                 sublabel: _yesterdayLabel(),
-                isSelected: _filter?.type == _FilterType.yesterday,
+                isSelected: _filter?.type == OrdersFilterType.yesterday,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.yesterday),
+                    () =>
+                        _filter = const _ActiveFilter(OrdersFilterType.yesterday),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -830,10 +815,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 icon: Icons.calendar_month_outlined,
                 label: 'This Month',
                 sublabel: _thisMonthLabel(),
-                isSelected: _filter?.type == _FilterType.thisMonth,
+                isSelected: _filter?.type == OrdersFilterType.thisMonth,
                 onTap: () {
                   setState(
-                    () => _filter = const _ActiveFilter(_FilterType.thisMonth),
+                    () =>
+                        _filter = const _ActiveFilter(OrdersFilterType.thisMonth),
                   );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
@@ -843,10 +829,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               _FilterSheetRow(
                 icon: Icons.date_range_outlined,
                 label: 'Custom Range',
-                sublabel: _filter?.type == _FilterType.custom
+                sublabel: _filter?.type == OrdersFilterType.custom
                     ? _filter!.label
                     : 'Pick start & end date',
-                isSelected: _filter?.type == _FilterType.custom,
+                isSelected: _filter?.type == OrdersFilterType.custom,
                 onTap: () async {
                   Navigator.pop(sheetCtx);
                   await Future.delayed(const Duration(milliseconds: 200));
@@ -884,7 +870,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   if (picked != null && mounted) {
                     setState(
                       () => _filter = _ActiveFilter(
-                        _FilterType.custom,
+                        OrdersFilterType.custom,
                         customRange: picked,
                       ),
                     );

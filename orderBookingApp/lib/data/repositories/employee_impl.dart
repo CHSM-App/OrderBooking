@@ -4,8 +4,8 @@ import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/employee_dao.dart';
 import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
-import 'package:order_booking_app/domain/models/visite.dart';
 
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 
@@ -63,12 +63,12 @@ Future<List<EmployeeLogin>> fetchEmployeeInfo(String mobileNo) async {
   }
 
   @override
-  Future<dynamic> checkMobileExists(String mobileNo, String companyId) {
-    return apiService.checkMobileExists(mobileNo, companyId);
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId, int empId) {
+    return apiService.checkMobileExists(mobileNo, companyId, empId);
   }
 
   @override
-  Future<List<VisitPayload>> getEmployeeVisit(int empId) {
+  Future<List<EmployeeMap>> getEmployeeVisit(int empId) {
     return apiService.getEmployeeVisit(empId);
   }
 

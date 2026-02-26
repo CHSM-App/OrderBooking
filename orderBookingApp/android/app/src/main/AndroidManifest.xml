@@ -5,9 +5,12 @@
 <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="order_booking_app"
+        android:label="Retail Pulse"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/orderbooking">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD4IFWPJQ3zbs2DSK0Hd3rz0me9SjdBWWU" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

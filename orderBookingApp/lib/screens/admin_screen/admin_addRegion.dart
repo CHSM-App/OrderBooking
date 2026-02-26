@@ -61,10 +61,10 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
       localId:    widget.region?.localId ?? const Uuid().v4(),
       regionId:   widget.region?.regionId,
       companyId:  companyId,
-      regionName: _regionCtrl.text.trim(),
+      regionName: _capitalizeFirst(_regionCtrl.text),
       pincode:    _pincodeCtrl.text.trim(),
-      district:   _districtCtrl.text.trim(),
-      state:      _stateCtrl.text.trim(),
+      district:   _capitalizeFirst(_districtCtrl.text),
+      state:      _capitalizeFirst(_stateCtrl.text),
       createdBy:  1,
     );
 
@@ -143,6 +143,12 @@ class _AddRegionPageState extends ConsumerState<AddRegionPage> {
             const TextStyle(fontSize: 12, color: _kRed),
         counterText: '',
       );
+
+  String _capitalizeFirst(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return '${trimmed[0].toUpperCase()}${trimmed.substring(1)}';
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override

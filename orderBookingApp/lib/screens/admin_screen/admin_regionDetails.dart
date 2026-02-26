@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/region.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addRegion.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary       = Color(0xFFE8720C);
@@ -42,6 +43,21 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
           .read(regionofflineViewModelProvider.notifier)
           .fetchRegionList(companyId);
     }
+  }
+
+  bool _isNetworkError(String? message) {
+    if (message == null) return false;
+    final msg = message.toLowerCase();
+    return [
+      'network',
+      'internet',
+      'connection',
+      'socket',
+      'failed host',
+      'no address',
+      'timeout',
+      'unreachable',
+    ].any(msg.contains);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -111,7 +127,11 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
       );
     }
 
-    if (state.error != null) return _buildError(state.error!);
+    if (state.error != null) {
+      return _isNetworkError(state.error)
+          ? _buildNoInternet()
+          : _buildError();
+    }
 
     return (state.regionList.when(
           data: (regions) => regions.isEmpty
@@ -120,7 +140,8 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
           loading: () => const Center(
               child: CircularProgressIndicator(
                   color: _kPrimary, strokeWidth: 2.5)),
-          error: (e, _) => _buildError(e.toString()),
+          error: (e, _) =>
+              _isNetworkError(e.toString()) ? _buildNoInternet() : _buildError(),
         )) ??
         _buildEmpty();
   }
@@ -179,55 +200,12 @@ class _RegionDetailsPageState extends ConsumerState<RegionDetailsPage> {
   }
 
   // ── Error ──────────────────────────────────────────────────────────────────
-  Widget _buildError(String msg) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 32, color: Colors.red),
-            ),
-            const SizedBox(height: 16),
-            const Text('Something went wrong',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _kTextPrimary)),
-            const SizedBox(height: 8),
-            Text(msg,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 13,
-                    color: _kTextSecondary,
-                    height: 1.4)),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _refresh,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Retry',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Widget _buildNoInternet() {
+    return AdminNoInternetRetry(onRetry: _refresh);
+  }
+
+  Widget _buildError() {
+    return AdminSomethingWentWrongRetry(onRetry: _refresh);
   }
 
   // ── Delete confirm dialog ──────────────────────────────────────────────────

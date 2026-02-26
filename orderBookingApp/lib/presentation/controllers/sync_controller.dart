@@ -15,7 +15,7 @@ final syncControllerProvider = Provider<void>((ref) {
           final userId = ref.read(adminloginViewModelProvider).userId;
           final regionId = ref.read(adminloginViewModelProvider).regionId?? 0;
       // Trigger sync only when transitioning from offline -> online
-      if (wasOffline && isOnline && companyId.isNotEmpty && userId !=null ) {
+      if (wasOffline && isOnline && companyId.isNotEmpty ) {
         try {
           // Call sync methods for all offline data
           await ref.read(visitViewModelProvider.notifier).sync();

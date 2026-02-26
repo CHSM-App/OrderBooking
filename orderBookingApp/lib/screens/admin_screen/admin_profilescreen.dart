@@ -4,8 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/screens/admin_screen/admin_help_center.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
+import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/screens/employee_screen/emp_help_center.dart';
 import 'package:order_booking_app/screens/login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -22,22 +26,30 @@ class MinimalTheme {
 class AdminProfilePage extends ConsumerStatefulWidget {
   final String mobileNo;
 
-  const AdminProfilePage({
-    super.key,
-    required this.mobileNo,
-  });
+  const AdminProfilePage({super.key, required this.mobileNo});
 
   @override
   ConsumerState<AdminProfilePage> createState() => _AdminProfilePageState();
 }
 
 class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(
+      'https://orderbooking.vengurlatech.com/login/privacy',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(adminloginViewModelProvider.notifier).fetchAdminDetails(
-          ref.read(adminloginViewModelProvider).mobileNo ?? "");
+      final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
+      if (mobileNo != null && mobileNo.isNotEmpty) {
+        ref
+            .read(adminloginViewModelProvider.notifier)
+            .fetchAdminDetails(mobileNo);
+      }
     });
   }
 
@@ -65,85 +77,11 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
   }
 
   Widget _buildNoInternet() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: MinimalTheme.primaryOrange.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.wifi_off_rounded,
-                    size: 34,
-                    color: MinimalTheme.primaryOrange,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Internet Connection',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: MinimalTheme.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Check your WiFi or mobile data\nand try again.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: MinimalTheme.textGray,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text(
-                    'Retry',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MinimalTheme.primaryOrange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return AdminNoInternetRetry(onRetry: _onRefresh);
   }
 
-  Widget _buildError(String message) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 200),
-        Center(child: Text('Error: $message')),
-      ],
-    );
+  Widget _buildSomethingWentWrong() {
+    return AdminSomethingWentWrongRetry(onRetry: _onRefresh);
   }
 
   @override
@@ -170,35 +108,35 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                 ],
               )
             : detailsAsync.hasError
-                ? _isNetworkError(detailsAsync.error.toString())
-                    ? _buildNoInternet()
-                    : _buildError(detailsAsync.error.toString())
-                : detailsAsync.when(
-                    data: (profile) => profile.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 200),
-                              Center(child: Text('No admin details found')),
-                            ],
-                          )
-                        : _buildProfileContent(profile.first),
-                    loading: () => ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 300),
-                        Center(
-                          child: CircularProgressIndicator(
-                            color: MinimalTheme.primaryOrange,
-                            strokeWidth: 2.5,
-                          ),
-                        ),
-                      ],
+            ? _isNetworkError(detailsAsync.error.toString())
+                  ? _buildNoInternet()
+                  : _buildSomethingWentWrong()
+            : detailsAsync.when(
+                data: (profile) => profile.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 200),
+                          Center(child: Text('No admin details found')),
+                        ],
+                      )
+                    : _buildProfileContent(profile.first),
+                loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 300),
+                    Center(
+                      child: CircularProgressIndicator(
+                        color: MinimalTheme.primaryOrange,
+                        strokeWidth: 2.5,
+                      ),
                     ),
-                    error: (e, _) => _isNetworkError(e.toString())
-                        ? _buildNoInternet()
-                        : _buildError(e.toString()),
-                  ),
+                  ],
+                ),
+                error: (e, _) => _isNetworkError(e.toString())
+                    ? _buildNoInternet()
+                    : _buildSomethingWentWrong(),
+              ),
       ),
     );
   }
@@ -285,7 +223,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                           adminLogin: adminLogin,
                           mobileNo:
                               ref.read(adminloginViewModelProvider).mobileNo ??
-                                  "",
+                              "",
                         ),
                       ),
                     );
@@ -309,6 +247,31 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
 
           // Deleted Employees
           _buildDeletedEmployeesCard(),
+
+          const SizedBox(height: 16),
+
+          // Help Center
+          _buildSupportCard(
+            icon: Icons.help_outline_rounded,
+            title: 'Help Center',
+            subtitle: 'FAQs and support',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminHelpCenterPage()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Privacy Policy
+          _buildSupportCard(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            subtitle: 'View policy details',
+            onTap: _openPrivacyPolicy,
+          ),
 
           const SizedBox(height: 16),
 
@@ -379,6 +342,77 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
                     Text(
                       'View inactive or deleted staff',
                       style: TextStyle(
+                        fontSize: 12,
+                        color: MinimalTheme.textGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: MinimalTheme.iconGray,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MinimalTheme.cardWhite,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: MinimalTheme.primaryOrange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: MinimalTheme.primaryOrange, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: MinimalTheme.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: MinimalTheme.textGray,
                       ),
@@ -602,8 +636,10 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
           ),
           ElevatedButton(
             onPressed: () {
+              ref
+                  .read(adminloginViewModelProvider.notifier)
+                  .clearLogin(ref.read(tokenProvider).refreshToken ?? "");
               ref.read(tokenProvider.notifier).clearTokens();
-              ref.read(adminloginViewModelProvider.notifier).clearLogin();
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -654,18 +690,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    nameController =
-        TextEditingController(text: widget.adminLogin.adminName ?? "");
-    emailController =
-        TextEditingController(text: widget.adminLogin.email ?? "");
-    companyController =
-        TextEditingController(text: widget.adminLogin.companyName ?? "");
-    mobileController =
-        TextEditingController(text: widget.adminLogin.mobileNo ?? "");
-    addressController =
-        TextEditingController(text: widget.adminLogin.address ?? "");
-    gstinController =
-        TextEditingController(text: widget.adminLogin.gstinNo ?? "");
+    nameController = TextEditingController(
+      text: widget.adminLogin.adminName ?? "",
+    );
+    emailController = TextEditingController(
+      text: widget.adminLogin.email ?? "",
+    );
+    companyController = TextEditingController(
+      text: widget.adminLogin.companyName ?? "",
+    );
+    mobileController = TextEditingController(
+      text: widget.adminLogin.mobileNo ?? "",
+    );
+    addressController = TextEditingController(
+      text: widget.adminLogin.address ?? "",
+    );
+    gstinController = TextEditingController(
+      text: widget.adminLogin.gstinNo ?? "",
+    );
   }
 
   @override
@@ -680,6 +722,33 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    final isConnected = ref.read(networkStateProvider).isConnected;
+    if (!isConnected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: MinimalTheme.errorRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'No internet connection',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     if (!_validateFields()) return;
 
     setState(() => isSaving = true);
@@ -702,7 +771,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       await ref
           .read(adminloginViewModelProvider.notifier)
           .fetchAdminDetails(
-              ref.read(adminloginViewModelProvider).mobileNo ?? "");
+            ref.read(adminloginViewModelProvider).mobileNo ?? "",
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -716,8 +786,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             backgroundColor: MinimalTheme.successGreen,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -736,8 +807,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             ),
             backgroundColor: MinimalTheme.errorRed,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -795,6 +867,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = ref.watch(networkStateProvider).isConnected;
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
       appBar: AppBar(
@@ -818,6 +891,35 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         child: Column(
           children: [
             const SizedBox(height: 8),
+            if (!isConnected)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off_rounded, color: Colors.red, size: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'No internet connection. Editing is disabled.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!isConnected) const SizedBox(height: 16),
 
             // Profile Avatar
             Container(
@@ -908,7 +1010,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isSaving ? null : _saveProfile,
+                      onPressed: (isSaving || !isConnected)
+                          ? null
+                          : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MinimalTheme.primaryOrange,
                         foregroundColor: Colors.white,
@@ -961,22 +1065,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxLines: maxLines,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
-      enabled: !isSaving,
-      style: const TextStyle(
-        fontSize: 14,
-        color: MinimalTheme.textDark,
-      ),
+      enabled: !isSaving && ref.read(networkStateProvider).isConnected,
+      style: const TextStyle(fontSize: 14, color: MinimalTheme.textDark),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: MinimalTheme.textGray,
-          fontSize: 13,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: MinimalTheme.iconGray,
-          size: 20,
-        ),
+        labelStyle: const TextStyle(color: MinimalTheme.textGray, fontSize: 13),
+        prefixIcon: Icon(icon, color: MinimalTheme.iconGray, size: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[200]!),

@@ -6,45 +6,32 @@ import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart'
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
-const _kPrimary       = Color(0xFFE8720C);
-const _kPrimaryLight  = Color(0xFFFFF3E8);
-const _kSurface       = Color(0xFFFFFFFF);
-const _kBackground    = Color(0xFFF5F5F5);
-const _kTextPrimary   = Color(0xFF1A1A1A);
+const _kPrimary = Color(0xFFE8720C);
+const _kPrimaryLight = Color(0xFFFFF3E8);
+const _kSurface = Color(0xFFFFFFFF);
+const _kBackground = Color(0xFFF5F5F5);
+const _kTextPrimary = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF6B6B6B);
-const _kDivider       = Color(0xFFEEEEEE);
+const _kDivider = Color(0xFFEEEEEE);
 
-// ── Filter model ──────────────────────────────────────────────────────────────
-enum _FilterType { today, thisMonth, custom }
+enum _FilterType { today, yesterday, thisMonth }
 
 class _ActiveFilter {
   final _FilterType type;
-  final DateTimeRange? customRange;
 
-  const _ActiveFilter(this.type, {this.customRange});
-
+  const _ActiveFilter(this.type);
   String get label {
     switch (type) {
       case _FilterType.today:
         return 'Today';
+      case _FilterType.yesterday:
+        return 'Yesterday';
       case _FilterType.thisMonth:
         return 'This Month';
-      case _FilterType.custom:
-        if (customRange != null) {
-          final s = _fmt(customRange!.start);
-          final e = _fmt(customRange!.end);
-          return s == e ? s : '$s – $e';
-        }
-        return 'Custom';
     }
   }
 
-  static String _fmt(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 
-  static const _months = [
-    'Jan','Feb','Mar','Apr','May','Jun',
-    'Jul','Aug','Sep','Oct','Nov','Dec',
-  ];
 }
 
 class OrdersListPage extends ConsumerStatefulWidget {
@@ -63,16 +50,16 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(ordersViewModelProvider.notifier).getAllOrders(
-            ref.read(adminloginViewModelProvider).userId,
-          );
+      ref
+          .read(ordersViewModelProvider.notifier)
+          .getAllOrders(ref.read(adminloginViewModelProvider).userId);
     });
   }
 
   Future<void> _refresh() async {
-    await ref.read(ordersViewModelProvider.notifier).getAllOrders(
-          ref.read(adminloginViewModelProvider).userId,
-        );
+    await ref
+        .read(ordersViewModelProvider.notifier)
+        .getAllOrders(ref.read(adminloginViewModelProvider).userId);
   }
 
   @override
@@ -105,7 +92,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         child: Column(
           children: [
             _buildHeader(state),
-            if (_filter != null) _buildFilterChip(),
+            // if (_filter != null) _buildFilterChip(),
             Expanded(child: _buildBody(state)),
           ],
         ),
@@ -144,8 +131,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                   prefixIcon: Container(
                     padding: const EdgeInsets.all(12),
-                    child: Icon(Icons.search_rounded,
-                        color: Colors.grey[600], size: 22),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Colors.grey[600],
+                      size: 22,
+                    ),
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -155,8 +145,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                               color: Colors.grey[300],
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.close,
-                                color: Colors.white, size: 16),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                           onPressed: () {
                             _searchController.clear();
@@ -166,7 +159,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
             ),
@@ -182,7 +177,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: isFiltered ? _kPrimaryLight : _kSurface,
                     borderRadius: BorderRadius.circular(16),
@@ -201,11 +198,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                           color: isFiltered ? _kPrimary : _kBackground,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.filter_list_rounded,
-                            size: 18,
-                            color: isFiltered
-                                ? Colors.white
-                                : _kTextSecondary),
+                        child: Icon(
+                          Icons.filter_list_rounded,
+                          size: 18,
+                          color: isFiltered ? Colors.white : _kTextSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -218,7 +215,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                       width: 10,
                       height: 10,
                       decoration: const BoxDecoration(
-                          color: _kPrimary, shape: BoxShape.circle),
+                        color: _kPrimary,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
               ],
@@ -230,15 +229,14 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip() {
+  Widget _buildFilterChip(int count, double totalAmount) {
     return Container(
       color: _kSurface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Row(
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: _kPrimaryLight,
               borderRadius: BorderRadius.circular(20),
@@ -247,8 +245,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: _kPrimary),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: _kPrimary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   _filter!.label,
@@ -258,11 +259,62 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                     color: _kPrimary,
                   ),
                 ),
+                const SizedBox(width: 6),
+                // ── Count badge ──
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kPrimary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => setState(() => _filter = null),
-                  child: const Icon(Icons.close_rounded,
-                      size: 14, color: _kPrimary),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: _kPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _kDivider),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.currency_rupee_rounded,
+                  size: 12,
+                  color: _kTextSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatINR(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextPrimary,
+                  ),
                 ),
               ],
             ),
@@ -287,7 +339,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           //    After sorting, index 0 = newest, index (n-1) = oldest.
           //    Order number = position from the bottom: oldest = #1, newest = #n.
           final sorted = _sortByDateDescending(rawOrders);
-          final total  = sorted.length;
+          final total = sorted.length;
 
           // 2. Attach a stable order number to each order based on the full
           //    sorted list (oldest = 1, newest = total). This number never
@@ -311,13 +363,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                           d.day == now.day;
                     case _FilterType.thisMonth:
                       return d.year == now.year && d.month == now.month;
-                    case _FilterType.custom:
-                      if (_filter!.customRange == null) return true;
-                      final start = _filter!.customRange!.start;
-                      final end = _filter!.customRange!.end
-                          .add(const Duration(days: 1))
-                          .subtract(const Duration(seconds: 1));
-                      return !d.isBefore(start) && !d.isAfter(end);
+                    case _FilterType.yesterday:
+                      final yesterday = now.subtract(const Duration(days: 1));
+                      return d.year == yesterday.year &&
+                          d.month == yesterday.month &&
+                          d.day == yesterday.day;
                   }
                 }).toList();
 
@@ -325,13 +375,32 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           final visible = _searchQuery.isEmpty
               ? afterFilter
               : afterFilter
-                  .where((e) => _orderMatchesSearch(
-                      e.order, e.number, _searchQuery))
-                  .toList();
+                    .where(
+                      (e) =>
+                          _orderMatchesSearch(e.order, e.number, _searchQuery),
+                    )
+                    .toList();
 
-          if (visible.isEmpty) return _buildSearchEmpty();
+          final totalAmount = visible.fold<double>(
+            0.0,
+            (sum, e) => sum + _orderAmount(e.order),
+          );
 
-          return _buildOrderList(visible);
+          if (visible.isEmpty)
+            return Column(
+              children: [
+                if (_filter != null) _buildFilterChip(0, 0.0),
+                Expanded(child: _buildSearchEmpty()),
+              ],
+            );
+
+          return Column(
+            children: [
+              if (_filter != null)
+                _buildFilterChip(visible.length, totalAmount),
+              Expanded(child: _buildOrderList(visible)),
+            ],
+          );
         },
         loading: _buildLoading,
         error: (e, _) => _buildError(e.toString()),
@@ -348,13 +417,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       onRefresh: _refresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics()),
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: orders.length,
-        itemBuilder: (_, i) => _OrderCard(
-          order: orders[i].order,
-          orderNumber: orders[i].number,
-        ),
+        itemBuilder: (_, i) =>
+            _OrderCard(order: orders[i].order, orderNumber: orders[i].number),
       ),
     );
   }
@@ -363,7 +431,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     if (query.isEmpty) return true;
     if (orderNumber.toString().contains(query)) return true;
     if ((order.shopNamep ?? '').toLowerCase().contains(query)) return true;
-    if ((order.empName  ?? '').toLowerCase().contains(query)) return true;
+    if ((order.empName ?? '').toLowerCase().contains(query)) return true;
     if (order.totalPrice.toString().contains(query)) return true;
 
     final d = DateTime.tryParse(order.orderDate);
@@ -383,11 +451,44 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
   String _formatDateForSearch(DateTime date) {
     const months = [
-      'jan','feb','mar','apr','may','jun',
-      'jul','aug','sep','oct','nov','dec',
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
     ];
     return '${months[date.month - 1]} ${date.day} ${date.year} '
         '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatINR(num value) {
+    final isNegative = value < 0;
+    value = value.abs();
+    final parts = value.toStringAsFixed(2).split('.');
+    var intPart = parts[0];
+    final decPart = parts.length > 1 ? parts[1] : '00';
+    if (intPart.length <= 3) {
+      return '${isNegative ? '-' : ''}₹$intPart.$decPart';
+    }
+    final lastThree = intPart.substring(intPart.length - 3);
+    var remaining = intPart.substring(0, intPart.length - 3);
+    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
+    remaining = remaining.replaceAll(reg, ',');
+    return '${isNegative ? '-' : ''}₹$remaining,$lastThree.$decPart';
+  }
+
+  double _orderAmount(Order o) {
+    final amount = o.totalPrice;
+    if (amount is String) return double.tryParse(amount as String) ?? 0.0;
+    if (amount is num) return amount.toDouble();
+    return 0.0;
   }
 
   Widget _buildSearchEmpty() {
@@ -400,17 +501,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             width: 72,
             height: 72,
             decoration: const BoxDecoration(
-                color: _kPrimaryLight, shape: BoxShape.circle),
-            child: const Icon(Icons.search_off_rounded,
-                size: 34, color: _kPrimary),
+              color: _kPrimaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 34,
+              color: _kPrimary,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
             'No results found',
             style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: _kTextPrimary,
+            ),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -429,10 +536,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         children: [
           const CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
           const SizedBox(height: 16),
-          Text('Loading orders…',
-              style: TextStyle(
-                  fontSize: 14,
-                  color: _kTextSecondary.withOpacity(0.8))),
+          Text(
+            'Loading orders…',
+            style: TextStyle(
+              fontSize: 14,
+              color: _kTextSecondary.withOpacity(0.8),
+            ),
+          ),
         ],
       ),
     );
@@ -448,17 +558,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
             width: 72,
             height: 72,
             decoration: const BoxDecoration(
-                color: _kPrimaryLight, shape: BoxShape.circle),
-            child: const Icon(Icons.receipt_long_outlined,
-                size: 34, color: _kPrimary),
+              color: _kPrimaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              size: 34,
+              color: _kPrimary,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             isFiltered ? 'No orders for this period' : 'No orders yet',
             style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: _kTextPrimary),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: _kTextPrimary,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -471,24 +587,30 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
           if (isFiltered)
             TextButton(
               onPressed: () => setState(() => _filter = null),
-              child: const Text('Clear filter',
-                  style: TextStyle(
-                      color: _kPrimary, fontWeight: FontWeight.w600)),
+              child: const Text(
+                'Clear filter',
+                style: TextStyle(color: _kPrimary, fontWeight: FontWeight.w600),
+              ),
             )
           else
             ElevatedButton.icon(
               onPressed: _refresh,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Refresh',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              label: const Text(
+                'Refresh',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kPrimary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 12),
+                  horizontal: 28,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
         ],
@@ -507,36 +629,53 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded,
-                  size: 32, color: Colors.red),
+                color: Colors.red.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 32,
+                color: Colors.red,
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('Something went wrong',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _kTextPrimary)),
+            const Text(
+              'Something went wrong',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: _kTextPrimary,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(msg,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 13, color: _kTextSecondary, height: 1.4)),
+            Text(
+              msg,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: _kTextSecondary,
+                height: 1.4,
+              ),
+            ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _refresh,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Try Again',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              label: const Text(
+                'Try Again',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kPrimary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 12),
+                  horizontal: 28,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -554,7 +693,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       builder: (_) => StatefulBuilder(
         builder: (sheetCtx, setSheet) => Container(
           padding: EdgeInsets.fromLTRB(
-              16, 20, 16, MediaQuery.of(sheetCtx).viewInsets.bottom + 32),
+            16,
+            20,
+            16,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 32,
+          ),
           decoration: const BoxDecoration(
             color: _kSurface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -568,19 +711,23 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: _kDivider,
-                      borderRadius: BorderRadius.circular(2)),
+                    color: _kDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Filter by Date',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _kTextPrimary)),
+                  const Text(
+                    'Filter by Date',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _kTextPrimary,
+                    ),
+                  ),
                   if (_filter != null)
                     GestureDetector(
                       onTap: () {
@@ -588,11 +735,14 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                         setSheet(() {});
                         Navigator.pop(sheetCtx);
                       },
-                      child: const Text('Clear',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: _kPrimary,
-                              fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        'Clear',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _kPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -603,8 +753,24 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 sublabel: _todayLabel(),
                 isSelected: _filter?.type == _FilterType.today,
                 onTap: () {
-                  setState(() =>
-                      _filter = const _ActiveFilter(_FilterType.today));
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.today),
+                  );
+                  setSheet(() {});
+                  Navigator.pop(sheetCtx);
+                },
+              ),
+              const SizedBox(height: 8),
+              const SizedBox(height: 8),
+              _FilterRow(
+                icon: Icons.history_outlined,
+                label: 'Yesterday',
+                sublabel: _yesterdayLabel(),
+                isSelected: _filter?.type == _FilterType.yesterday,
+                onTap: () {
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.yesterday),
+                  );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
                 },
@@ -616,58 +782,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
                 sublabel: _thisMonthLabel(),
                 isSelected: _filter?.type == _FilterType.thisMonth,
                 onTap: () {
-                  setState(() =>
-                      _filter = const _ActiveFilter(_FilterType.thisMonth));
+                  setState(
+                    () => _filter = const _ActiveFilter(_FilterType.thisMonth),
+                  );
                   setSheet(() {});
                   Navigator.pop(sheetCtx);
-                },
-              ),
-              const SizedBox(height: 8),
-              _FilterRow(
-                icon: Icons.date_range_outlined,
-                label: 'Custom Range',
-                sublabel: _filter?.type == _FilterType.custom
-                    ? _filter!.label
-                    : 'Pick start & end date',
-                isSelected: _filter?.type == _FilterType.custom,
-                onTap: () async {
-                  Navigator.pop(sheetCtx);
-                  await Future.delayed(const Duration(milliseconds: 200));
-                  if (!mounted) return;
-
-                  final now = DateTime.now();
-                  final picked = await showDateRangePicker(
-                    context: context,
-                    firstDate: DateTime(now.year - 2),
-                    lastDate: now,
-                    initialDateRange: _filter?.customRange ??
-                        DateTimeRange(
-                          start: now.subtract(const Duration(days: 6)),
-                          end: now,
-                        ),
-                    builder: (ctx, child) => Theme(
-                      data: Theme.of(ctx).copyWith(
-                        colorScheme: const ColorScheme.light(
-                          primary: _kPrimary,
-                          onPrimary: Colors.white,
-                          surface: _kSurface,
-                          onSurface: _kTextPrimary,
-                        ),
-                        textButtonTheme: TextButtonThemeData(
-                          style: TextButton.styleFrom(
-                              foregroundColor: _kPrimary),
-                        ),
-                      ),
-                      child: child!,
-                    ),
-                  );
-
-                  if (picked != null && mounted) {
-                    setState(() => _filter = _ActiveFilter(
-                          _FilterType.custom,
-                          customRange: picked,
-                        ));
-                  }
                 },
               ),
             ],
@@ -680,8 +799,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   String _todayLabel() {
     final now = DateTime.now();
     const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${now.day} ${months[now.month - 1]} ${now.year}';
   }
@@ -689,10 +818,39 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   String _thisMonthLabel() {
     final now = DateTime.now();
     const months = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[now.month - 1]} ${now.year}';
+  }
+
+  String _yesterdayLabel() {
+    final y = DateTime.now().subtract(const Duration(days: 1));
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${y.day} ${months[y.month - 1]} ${y.year}';
   }
 }
 
@@ -722,8 +880,9 @@ class _FilterRow extends StatelessWidget {
           color: isSelected ? _kPrimaryLight : _kBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: isSelected ? _kPrimary : Colors.transparent,
-              width: 1.5),
+            color: isSelected ? _kPrimary : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
@@ -734,39 +893,51 @@ class _FilterRow extends StatelessWidget {
                 color: isSelected ? _kPrimary : _kSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: isSelected ? Colors.transparent : _kDivider),
+                  color: isSelected ? Colors.transparent : _kDivider,
+                ),
               ),
-              child: Icon(icon,
-                  size: 18,
-                  color: isSelected ? Colors.white : _kTextSecondary),
+              child: Icon(
+                icon,
+                size: 18,
+                color: isSelected ? Colors.white : _kTextSecondary,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: isSelected ? _kPrimary : _kTextPrimary)),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected ? _kPrimary : _kTextPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 1),
-                  Text(sublabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: isSelected
-                              ? _kPrimary.withOpacity(0.7)
-                              : _kTextSecondary)),
+                  Text(
+                    sublabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected
+                          ? _kPrimary.withOpacity(0.7)
+                          : _kTextSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
             if (isSelected)
               const Icon(Icons.check_rounded, size: 18, color: _kPrimary)
             else
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: _kTextSecondary),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: _kTextSecondary,
+              ),
           ],
         ),
       ),
@@ -787,8 +958,18 @@ class _OrderCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       const months = [
-        'Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
@@ -819,10 +1000,8 @@ class _OrderCard extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => OrderDetailsPage(
-                order: order,
-                orderNumber: orderNumber,
-              ),
+              builder: (_) =>
+                  OrderDetailsPage(order: order, orderNumber: orderNumber),
             ),
           ),
           borderRadius: BorderRadius.circular(16),
@@ -843,19 +1022,23 @@ class _OrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Order #$orderNumber',
+                            order.shopNamep ?? 'Unknown',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: _kTextPrimary,
                               letterSpacing: -0.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${_formatDate(order.orderDate)} • ${_formatTime(order.orderDate)}',
                             style: const TextStyle(
-                                fontSize: 11, color: _kTextSecondary),
+                              fontSize: 11,
+                              color: _kTextSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -873,8 +1056,11 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Icon(Icons.chevron_right_rounded,
-                            size: 16, color: _kTextSecondary),
+                        // const Icon(
+                        //   Icons.chevron_right_rounded,
+                        //   size: 16,
+                        //   color: _kTextSecondary,
+                        // ),
                       ],
                     ),
                   ],
@@ -884,31 +1070,39 @@ class _OrderCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.storefront_outlined,
-                        size: 13, color: _kTextSecondary),
+                    const Icon(
+                      Icons.storefront_outlined,
+                      size: 13,
+                      color: _kTextSecondary,
+                    ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        order.shopNamep ?? 'Unknown',
+                        '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
                         style: const TextStyle(
-                            fontSize: 12,
-                            color: _kTextSecondary,
-                            fontWeight: FontWeight.w500),
+                          fontSize: 12,
+                          color: _kTextSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Icon(Icons.shopping_bag_outlined,
-                        size: 13, color: _kTextSecondary),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: _kTextSecondary,
-                          fontWeight: FontWeight.w500),
-                    ),
+
+                                  const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: _kTextSecondary,
+              ),
+
+              //       const SizedBox(width: 12),
+
+              //                     const Icon(
+              //   Icons.chevron_right_rounded,
+              //   size: 18,
+              //   color: _kTextSecondary,
+              // ),
                   ],
                 ),
               ],

@@ -6,7 +6,7 @@ import 'package:sqflite/sqflite.dart';
 
 class OfflineAttendanceDao {
 
-  
+
   Future<void> upsertStatus({
     required int empId,
     required CheckInStatusRequest status,

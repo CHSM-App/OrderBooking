@@ -6,6 +6,6 @@ abstract class AdminloginRepository {
   Future<dynamic> addAdminDetails(AdminLogin adminLogin);
   Future<List<AdminLogin>>fetchAdminDetails(String mobileNo);
    Future<List<LoginInfo>> checkPhoneNumber(String mobile_no);
-   Future<void> logoutUser();
+   Future<void> logoutUser(String refreshToken);
 
 }

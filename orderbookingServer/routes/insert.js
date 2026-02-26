@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var db = require('./db');
 const sql = require("mssql");
-const { createBatches, callGraphhopper } = require("./distCal");
+const { createBatches, callGoogleDirections,mergePolylines } = require("./distCal");
 
 
 
@@ -454,107 +454,75 @@ router.post('/checkIn/:emp_id/:latitude/:longitude', async (req, res) => {
 
 
 router.post('/checkOut/:emp_id/:latitude/:longitude', async (req, res) => {
-
+  console.log('inside check out API');
   try {
 
     const { emp_id, latitude, longitude } = req.params;
 
-    // 1️⃣ Get locations from DB
     const coordintaesResult = await db.request()
       .input('operation', 'getLocations')
       .input('emp_id', emp_id)
       .execute('sp_employee_checkin');
 
-
     let coordinates = coordintaesResult.recordset.map(row =>
       `${row.latitude},${row.longitude}`
     );
 
-
-    // 2️⃣ Add checkout location
     coordinates.push(`${latitude},${longitude}`);
-      let totalDistance = 0;
-      let totalTime = 0;
-      let totalDistanceKm = 0;
 
-      console.log(coordinates);
+    let totalDistance = 0;
+    let totalTime = 0;
+    let totalDistanceKm = 0;
+
+    let batchPolylines = [];
+
     if (coordinates.length >= 2) {
 
-
-      // 3️⃣ Create batches
       const batches = createBatches(coordinates);
-
-      // 4️⃣ Call Graphhopper for each batch
-
 
       for (const batch of batches) {
 
-        const result = await callGraphhopper(batch);
+        const result = await callGoogleDirections(batch);
 
         totalDistance += result.distance;
+        totalTime += result.duration;
 
-        totalTime += result.time;
-
+        batchPolylines.push(result.polyline);
       }
-
-      console.log(`total distance is ${totalDistance}`);
 
       totalDistanceKm = totalDistance / 1000;
     }
 
-    // 5️⃣ Checkout with distance
+    const finalPolyline = batchPolylines.length > 0
+      ? mergePolylines(batchPolylines)
+      : null;
+
+    // Save in DB
     const checkoutResult = await db.request()
       .input('operation', 'checkOut')
       .input('emp_id', emp_id)
       .input('latitude', latitude)
       .input('longitude', longitude)
       .input('total_distance_km', totalDistanceKm)
+      .input('polyline', finalPolyline)
       .execute('sp_employee_checkin');
-
 
     const response = checkoutResult.recordset[0];
 
+    return res.status(200).json(response);
 
-    // 6️⃣ Final response
-    res.json({
-
-      success: true,
-
-      total_distance_km: totalDistanceKm.toFixed(2),
-
-      total_time_minutes: (totalTime / 60000).toFixed(2),
-
-      checkout_location: {
-
-        latitude,
-
-        longitude
-
-      },
-
-      data: response
-
-    });
-
-
-  }
-
-  catch (error) {
+  } catch (error) {
 
     console.error(error);
 
     res.status(500).json({
-
       success: false,
-
       message: error.message
-
     });
 
   }
 
 });
-
 
 
 

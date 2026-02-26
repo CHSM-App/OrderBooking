@@ -5,24 +5,16 @@ import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 
-
-
 /// Provider for AuthViewModel
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AsyncValue<void>>((ref) {
-  final dio = ref.watch(dioProvider).value!;
-  final authRepo = AuthImpl(ApiService(dio));
-  return AuthViewModel(ref, authRepo);
-});
+
 
 class AuthViewModel extends StateNotifier<AsyncValue<void>> {
   final Ref ref;
 
-  
   final AuthImpl authRepository;
 
   AuthViewModel(this.ref, this.authRepository)
-      : super(const AsyncValue.data(null));
+    : super(const AsyncValue.data(null));
 
   /// Login function
   Future<String?> login(TokenResponse token) async {
@@ -30,13 +22,19 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
 
     try {
       // 🔹 Call API
-      final result = await authRepository.createLogin(token); 
+      final result = await authRepository.createLogin(token);
       // result should be TokenResponse
 
       // ✅ Save tokens to Riverpod + SecureStorage
       await ref
           .read(tokenProvider.notifier)
-          .saveTokens(result.accessToken??"", result.refreshToken??"",result.roleId??0);
+          .saveTokens(
+            result.accessToken?? '',
+            result.refreshToken ?? "",
+            result.roleId ?? 0,
+          );
+
+      // await ref.read(tokenProvider.notifier).loadTokens();
 
       state = const AsyncValue.data(null);
       return "sucesss"; // Return TokenResponse for UI navigation
@@ -45,8 +43,4 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       return null;
     }
   }
-
-  
-
 }
-

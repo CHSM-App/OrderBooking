@@ -13,8 +13,6 @@ const _kGreen         = Color(0xFF22C55E);
 const _kGreenLight    = Color(0xFFDCFCE7);
 const _kAmber         = Color(0xFFF59E0B);
 const _kAmberLight    = Color(0xFFFEF3C7);
-const _kRed           = Color(0xFFEF4444);
-const _kRedLight      = Color(0xFFFEE2E2);
 const _kSurface       = Color(0xFFFFFFFF);
 const _kBackground    = Color(0xFFF5F5F5);
 const _kTextPrimary   = Color(0xFF1A1A1A);
@@ -81,6 +79,7 @@ class _ShopVisitScreenState extends ConsumerState<ShopVisitScreen> {
       punchOut:   now.toLocal().toIso8601String(),
     );
     ref.read(visitViewModelProvider.notifier).addVisit(updatedVisit);
+       ref.read(visitViewModelProvider.notifier).getTodayVisitCount(ref.read(adminloginViewModelProvider).userId);
 
     _showSnack(
       'Punched out at ${_formatTime(_punchOutTime)}',

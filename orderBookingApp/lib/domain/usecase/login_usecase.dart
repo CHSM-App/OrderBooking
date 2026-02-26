@@ -18,8 +18,8 @@ class AdminloginUsecase {
     return adminloginRepository.checkPhoneNumber(mobileNo);
   }
 
-  Future<void> logOut() async {
-    adminloginRepository.logoutUser();
+  Future<void> logOut(String refreshToken) async {
+    adminloginRepository.logoutUser(refreshToken);
   }
 
 }

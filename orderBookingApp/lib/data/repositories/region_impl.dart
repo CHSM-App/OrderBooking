@@ -1,4 +1,3 @@
-
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/offline_region_dao.dart';
 
@@ -38,7 +37,9 @@ class RegionImplOffline implements RegionRepooffline {
 
   @override
   Future<List<Region>> fetchRegionList(String companyId) async {
-    await pullServerToLocal(companyId);
+    try {
+      await pullServerToLocal(companyId);
+    } catch (e) {}
     final rows = await local.fetchAll();
 
     return rows.map((row) {

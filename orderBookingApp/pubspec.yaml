@@ -18,6 +18,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   intl: ^0.20.2
   url_launcher: ^6.3.2
+  webview_flutter: ^4.8.0
+  webview_flutter_android: ^3.16.0
 
   # State & Storage
   flutter_riverpod: ^2.6.1
@@ -56,16 +58,13 @@ dependencies:
  
   open_file: ^3.3.2 
   share_plus: ^12.0.1
+  audioplayers: ^6.1.0
+  path_provider: ^2.1.2
+
+  google_maps_flutter: ^2.6.0
+  flutter_polyline_points: ^2.0.1
   
  
-path_provider: ^2.1.2
-open_file: ^3.3.2
-share_plus: ^7.2.2
-
-         # For PDF and file selection
-  
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -80,3 +79,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - asset/sound/success.mp3

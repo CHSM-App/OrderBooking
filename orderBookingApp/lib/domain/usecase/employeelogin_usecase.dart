@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:order_booking_app/domain/models/attendance.dart';
 import 'package:order_booking_app/domain/models/employee.dart';
+import 'package:order_booking_app/domain/models/employeeMap.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
-import 'package:order_booking_app/domain/models/visite.dart';
 import 'package:order_booking_app/domain/repository/employee_repo.dart';
 
 class EmployeeloginUsecase {
@@ -31,11 +31,11 @@ class EmployeeloginUsecase {
     return employeeloginRepository.deleteEmployee(empId);
   }
 
-  Future<dynamic> checkMobileExists(String mobileNo, String companyId) async {
-      return employeeloginRepository.checkMobileExists(mobileNo, companyId);
+  Future<dynamic> checkMobileExists(String mobileNo, String companyId, int empId) async {
+      return employeeloginRepository.checkMobileExists(mobileNo, companyId, empId);
   }
 
-  Future<List<VisitPayload>> getEmployeeVisit(int empId) async {
+  Future<List<EmployeeMap>> getEmployeeVisit(int empId) async {
       return employeeloginRepository.getEmployeeVisit(empId);
   }
   Future<List<EmployeeVisit>> getEmployeeVisitLocation(int empId) async {

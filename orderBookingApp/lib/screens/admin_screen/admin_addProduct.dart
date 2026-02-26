@@ -221,6 +221,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
       }
     }
     _formKey.currentState!.save();
+    productName = _capitalizeFirst(productName);
 
     final product = Product(
       productId: widget.initialProduct?.productId,
@@ -294,6 +295,12 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kRed, width: 1.5)),
     );
+  }
+
+  String _capitalizeFirst(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return '${trimmed[0].toUpperCase()}${trimmed.substring(1)}';
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
