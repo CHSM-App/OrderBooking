@@ -861,7 +861,7 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
 
             // Visited Shops Section
             _sectionHeader(
-              title: 'Visited Shops',
+              title: 'Visited Shops & Orders',
               icon: Icons.store_outlined,
               filter: visitFilter,
               onFilterChanged: (value) async {
