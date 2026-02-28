@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
 
   # UI
+  safe_device: ^1.1.0
+
   dropdown_button2: 2.3.9
   dropdown_search: ^6.0.2
   cupertino_icons: ^1.0.8
@@ -52,7 +54,7 @@ dependencies:
   printing: ^5.12.0
   pdf: ^3.10.7
   
-  image_picker: ^1.0.7          # For camera and gallery
+  image_picker: ^1.1.2         # For camera and gallery
   file_picker: ^8.1.2
   flutter_pdfview: ^1.2.7
  

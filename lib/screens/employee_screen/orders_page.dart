@@ -487,7 +487,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   double _orderAmount(Order o) {
     final amount = o.totalPrice;
     if (amount is String) return double.tryParse(amount as String) ?? 0.0;
-    if (amount is num) return amount.toDouble();
+    return amount.toDouble();
     return 0.0;
   }
 

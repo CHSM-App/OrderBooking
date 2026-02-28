@@ -21,6 +21,7 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
   createdBy: (json['created_by'] as num?)?.toInt(),
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
+  shopSelfie: json['shop_selfie'] as String?,
   isSynced: json['isSynced'] as bool? ?? false,
   updatedAt: json['updatedAt'] == null
       ? null
@@ -41,6 +42,7 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'created_by': instance.createdBy,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
+      'shop_selfie': instance.shopSelfie,
       'isSynced': instance.isSynced,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'company_id': instance.companyId,

@@ -5,6 +5,8 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
 import 'package:order_booking_app/screens/employee_screen/shop_visit_screen.dart';
+import 'package:safe_device/safe_device.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/domain/models/visite.dart';
@@ -80,19 +82,22 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   }
 
   // ── Location helpers (unchanged logic, removed heavy UI) ─────────────────
-  Future<Position?> _getCurrentLocation() async {
+Future<Position?> _getCurrentLocation() async {
+  try {
+    // 1️⃣ Check if location service is enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       final open = await _simpleDialog(
         icon: Icons.location_off_outlined,
         iconColor: _kPrimary,
         title: 'Location Disabled',
-        body: 'Please enable location services to mark a shop visit.',
+        body: 'Please enable location services to continue.',
         confirmLabel: 'Enable',
       );
+
       if (open) {
         await Geolocator.openLocationSettings();
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(seconds: 2));
         serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) return null;
       } else {
@@ -100,67 +105,108 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
       }
     }
 
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied) {
-        if (mounted) {
-          await _simpleDialog(
-            icon: Icons.location_disabled_outlined,
-            iconColor: Colors.red,
-            title: 'Permission Denied',
-            body: 'Location permission is required to mark shop visits.',
-            confirmLabel: 'OK',
-            cancelLabel: null,
-          );
-        }
+    // 2️⃣ Check permission
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        await _simpleDialog(
+          icon: Icons.location_disabled_outlined,
+          iconColor: Colors.red,
+          title: 'Permission Denied',
+          body: 'Location permission is required.',
+          confirmLabel: 'OK',
+          cancelLabel: null,
+        );
         return null;
       }
     }
 
-    if (perm == LocationPermission.deniedForever) {
-      if (mounted) {
-        final open = await _simpleDialog(
-          icon: Icons.block_outlined,
-          iconColor: Colors.red,
-          title: 'Permission Required',
-          body:
-              'Location permission was permanently denied. Enable it in app settings.',
-          confirmLabel: 'Settings',
-        );
-        if (open) await Geolocator.openAppSettings();
-      }
-      return null;
-    }
-
-    try {
-      // Step 1: Try cached location first
-      Position? lastPosition = await Geolocator.getLastKnownPosition();
-      if (lastPosition != null && lastPosition.accuracy <= 100) {
-        return lastPosition;
-      }
-
-      // Step 2: Force fresh GPS location
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.bestForNavigation,
-        ),
-      ).timeout(
-        const Duration(seconds: 90),
-        onTimeout: () {
-          throw Exception('GPS signal weak. Please move to open area.');
-        },
+    if (permission == LocationPermission.deniedForever) {
+      final open = await _simpleDialog(
+        icon: Icons.block_outlined,
+        iconColor: Colors.red,
+        title: 'Permission Required',
+        body:
+            'Location permission permanently denied. Please enable it from app settings.',
+        confirmLabel: 'Settings',
       );
-    } catch (e) {
-      if (mounted) {
-        _showSnack(
-          'Unable to fetch GPS location. Go outside and try again.',
-          isError: true,
-        );
+
+      if (open) {
+        await Geolocator.openAppSettings();
       }
       return null;
     }
+
+    // 3️⃣ Detect rooted / developer mode
+    // bool jailbroken = await FlutterJailbreakDetection.jailbroken;
+    // bool developerMode = await FlutterJailbreakDetection.developerMode;
+      bool isSecure = await _validateDeviceSecurity();
+      if (!isSecure){
+          throw Exception(
+          'Security policy violation. Disable developer mode or root access.');
+      }
+    // if (jailbroken || developerMode) {
+    //   throw Exception(
+    //       'Security policy violation. Disable developer mode or root access.');
+    // }
+
+    // 4️⃣ Force fresh GPS location (NO lastKnownPosition)
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
+    ).timeout(
+      const Duration(seconds: 60),
+      onTimeout: () {
+        throw Exception(
+            'GPS timeout. Move to open area and try again.');
+      },
+    );
+
+    // 5️⃣ Detect mock location
+    if (position.isMocked) {
+      throw Exception('Fake GPS detected. Disable mock location apps.');
+    }
+
+    // 6️⃣ Validate accuracy
+    if (position.accuracy <= 0 || position.accuracy > 150) {
+      throw Exception(
+          'Low GPS accuracy. Move to open area and try again.');
+    }
+
+    return position;
+  } catch (e) {
+    if (mounted) {
+      _showSnack(e.toString(), isError: true);
+    }
+    return null;
   }
+}
+
+Future<bool> _validateDeviceSecurity() async {
+  bool isJailBroken = await SafeDevice.isJailBroken;
+  bool isRealDevice = await SafeDevice.isRealDevice;
+  bool isMockLocation = await SafeDevice.isMockLocation;
+
+  if (isJailBroken) {
+    _showSnack("Rooted device detected. Punch in blocked.", isError: true);
+    return false;
+  }
+
+  if (!isRealDevice) {
+    _showSnack("Emulator detected. Punch in blocked.", isError: true);
+    return false;
+  }
+
+  if (isMockLocation) {
+    _showSnack("Mock location detected. Disable fake GPS.", isError: true);
+    return false;
+  }
+
+  return true;
+}
 
   Future<bool> _simpleDialog({
     required IconData icon,
@@ -320,6 +366,23 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
       if (mounted) Navigator.pop(context);
       if (position == null) return;
 
+      final shopLat = shop.latitude;
+      final shopLng = shop.longitude;
+      if (shopLat == null || shopLng == null) {
+        _showSnack(
+          'Shop location not available. Please update shop location.',
+          isError: true,
+        );
+        return;
+      }
+
+      final isNear = await _isWithinShopRange(
+        userPosition: position,
+        shopLat: shopLat,
+        shopLng: shopLng,
+      );
+      if (!isNear) return;
+
       final visit = VisitPayload(
         localId: const Uuid().v4(),
         shopId: shop.shopId ?? 0,
@@ -355,31 +418,56 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     }
   }
 
-  Future<void> _onEditShop(ShopDetails shop) async {
-    final result = await Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => AddShopScreen(initialShop: shop),
-        transitionsBuilder: (_, anim, __, child) => SlideTransition(
-          position: Tween(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeInOutCubic)).animate(anim),
-          child: child,
-        ),
-        transitionDuration: const Duration(milliseconds: 350),
-      ),
+  Future<bool> _isWithinShopRange({
+    required Position userPosition,
+    required double shopLat,
+    required double shopLng,
+  }) async {
+    final distanceInMeters = Geolocator.distanceBetween(
+      userPosition.latitude,
+      userPosition.longitude,
+      shopLat,
+      shopLng,
     );
 
-    if (result == true && mounted) {
-      ref
-          .read(shopViewModelProvider.notifier)
-          .getEmpShopList(
-            ref.read(adminloginViewModelProvider).companyId ?? '',
-            ref.read(adminloginViewModelProvider).regionId ?? 0,
-          );
+    const allowedRadius = 100; // meters
+
+    if (distanceInMeters > allowedRadius) {
+      _showSnack(
+        "You are not at the shop (${distanceInMeters.toStringAsFixed(0)}m away).",
+        isError: true,
+      );
+      return false;
     }
+
+    return true;
   }
+
+  // Future<void> _onEditShop(ShopDetails shop) async {
+  //   final result = await Navigator.push(
+  //     context,
+  //     PageRouteBuilder(
+  //       pageBuilder: (_, __, ___) => AddShopScreen(initialShop: shop),
+  //       transitionsBuilder: (_, anim, __, child) => SlideTransition(
+  //         position: Tween(
+  //           begin: const Offset(0, 1),
+  //           end: Offset.zero,
+  //         ).chain(CurveTween(curve: Curves.easeInOutCubic)).animate(anim),
+  //         child: child,
+  //       ),
+  //       transitionDuration: const Duration(milliseconds: 350),
+  //     ),
+  //   );
+  //
+  //   if (result == true && mounted) {
+  //     ref
+  //         .read(shopViewModelProvider.notifier)
+  //         .getEmpShopList(
+  //           ref.read(adminloginViewModelProvider).companyId ?? '',
+  //           ref.read(adminloginViewModelProvider).regionId ?? 0,
+  //         );
+  //   }
+  // }
 
   Future<void> _onDeleteShop(ShopDetails shop) async {
     final confirm = await _simpleDialog(
@@ -439,6 +527,134 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) _showSnack('Failed to delete: $e', isError: true);
+    }
+  }
+
+  void _showShopDetails(ShopDetails shop) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: _kSurface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _kDivider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                shop.shopName ?? 'Shop Details',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: _kTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _detailRow('Owner', shop.ownerName ?? '-'),
+              _detailRow('Mobile', shop.mobileNo ?? '-'),
+              _detailRow('Address', shop.address ?? '-'),
+              _detailRow(
+                'Location',
+                (shop.latitude != null && shop.longitude != null)
+                    ? '${shop.latitude}, ${shop.longitude}'
+                    : 'Not available',
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openInMaps(shop),
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('Open in Google Maps'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 70,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: _kTextSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: _kTextPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openInMaps(ShopDetails shop) async {
+    final lat = shop.latitude;
+    final lng = shop.longitude;
+    if (lat == null || lng == null) {
+      _showSnack('Shop location not available.', isError: true);
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
+
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened) {
+      _showSnack('Unable to open Google Maps.', isError: true);
     }
   }
 
@@ -614,7 +830,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                 (_, i) => _MinimalShopCard(
                   shop: filtered[i],
                   onTap: () => _onShopTap(filtered[i]),
-                  onEdit: () => _onEditShop(filtered[i]),
+                  // onEdit: () => _onEditShop(filtered[i]),
+                  onDetails: () => _showShopDetails(filtered[i]),
                   onDelete: () => _onDeleteShop(filtered[i]),
                   index: i,
                 ),
@@ -760,14 +977,14 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 class _MinimalShopCard extends StatefulWidget {
   final ShopDetails shop;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
+  final VoidCallback onDetails;
   final VoidCallback onDelete;
   final int index;
 
   const _MinimalShopCard({
     required this.shop,
     required this.onTap,
-    required this.onEdit,
+    required this.onDetails,
     required this.onDelete,
     required this.index,
   });
@@ -837,53 +1054,65 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
 
-                        if (widget.shop.ownerName != null) ...[
+                        if (widget.shop.ownerName != null ||
+                            widget.shop.mobileNo != null) ...[
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.person_outline_rounded,
-                                size: 12,
-                                color: _kTextSecondary,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  widget.shop.ownerName!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: _kTextSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              if (widget.shop.ownerName != null) ...[
+                                const Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 12,
+                                  color: _kTextSecondary,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                        if (widget.shop.mobileNo != null ||
-                            widget.shop.address != null) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    widget.shop.ownerName!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: _kTextSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                              if (widget.shop.ownerName != null &&
+                                  widget.shop.mobileNo != null)
+                                const SizedBox(width: 12),
                               if (widget.shop.mobileNo != null)
                                 _Chip(
                                   icon: Icons.phone_outlined,
                                   label: widget.shop.mobileNo!,
                                 ),
-                              if (widget.shop.mobileNo != null &&
-                                  widget.shop.address != null)
-                                const SizedBox(width: 8),
-                              if (widget.shop.address != null)
-                                Expanded(
-                                  child: _Chip(
-                                    icon: Icons.location_on_outlined,
-                                    label: widget.shop.address!,
-                                    shrink: true,
+                            ],
+                          ),
+                        ],
+
+                        if (widget.shop.address != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 12,
+                                color: _kTextSecondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  widget.shop.address!,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: _kTextSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
                             ],
                           ),
                         ],
@@ -896,7 +1125,7 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
                   Column(
                     children: [
                       InkWell(
-                        onTap: widget.onEdit,
+                        onTap: widget.onDetails,
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           width: 30,
@@ -906,7 +1135,7 @@ class _MinimalShopCardState extends State<_MinimalShopCard> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
-                            Icons.edit_outlined,
+                            Icons.info_outline_rounded,
                             size: 16,
                             color: _kPrimary,
                           ),

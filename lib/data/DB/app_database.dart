@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 5, // incremented version
+      version: 7, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -48,6 +48,7 @@ class AppDatabase {
         if (oldVersion < 4) {
           await _createOfflineCheckinStatusTable(db);
         }
+
 
         // if (oldVersion < 5) {
         //   await db.execute(
@@ -96,6 +97,7 @@ static Future<void> _createShopsTable(Database db) async {
       created_by INTEGER,
       latitude REAL,
       longitude REAL,
+      shop_selfie TEXT,
       company_id TEXT,
       is_synced INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,

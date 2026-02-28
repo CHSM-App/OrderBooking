@@ -36,6 +36,9 @@ class ShopDetails {
   @JsonKey(name: 'longitude')
   final double? longitude;
 
+  @JsonKey(name: 'shop_selfie')
+  final String? shopSelfie;
+
   @JsonKey(name: 'isSynced')
   final bool isSynced;
 
@@ -70,6 +73,7 @@ class ShopDetails {
     this.createdBy,
     this.latitude,
     this.longitude,
+    this.shopSelfie,
     this.isSynced = false,
     this.updatedAt,
     required this.companyId,
@@ -96,6 +100,7 @@ class ShopDetails {
     int? createdBy,
     double? latitude,
     double? longitude,
+    String? shopSelfie,
     bool? isSynced,
     DateTime? updatedAt,
     String? syncAction,
@@ -116,6 +121,7 @@ class ShopDetails {
       createdBy: createdBy ?? this.createdBy,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      shopSelfie: shopSelfie ?? this.shopSelfie,
       isSynced: isSynced ?? this.isSynced,
       updatedAt: updatedAt ?? this.updatedAt,
       companyId: companyId,

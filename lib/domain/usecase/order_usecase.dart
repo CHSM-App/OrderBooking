@@ -1,9 +1,7 @@
-
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/domain/repository/orders_repo.dart';
 
 class OrderUsecase {
-
   final OrdersRepository ordersRepository;
 
   OrderUsecase(this.ordersRepository);
@@ -11,23 +9,22 @@ class OrderUsecase {
     return ordersRepository.addProduct(order);
   }
 
- 
   Future<void> syncOfflineOrders() {
     return ordersRepository.syncOfflineOrders();
   }
 
-  Future<List<Order>> getAllOrders(int empId){
+  Future<List<Order>> getAllOrders(int empId) {
     return ordersRepository.getAllOrders(empId);
   }
 
-  Future<void> syncServerOrdersToLocal(int empId){
+  Future<void> syncServerOrdersToLocal(int empId) {
     return ordersRepository.syncServerOrdersToLocal(empId);
   }
 
   Future<List<Order>> getOrderList(String companyId) {
-     return ordersRepository.getOrderList(companyId);
-   }
- 
+    return ordersRepository.getOrderList(companyId);
+  }
+
   Future<List<Order>> getCachedOrderList(String companyId) {
     return ordersRepository.getCachedOrderList(companyId);
   }
@@ -39,5 +36,4 @@ class OrderUsecase {
   Future<List<Order>> getEmployeeOrders(int empId) async {
     return ordersRepository.getEmployeeOrders(empId);
   }
-
 }

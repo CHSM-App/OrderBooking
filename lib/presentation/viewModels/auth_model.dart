@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:order_booking_app/core/network/dio_provider.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
-import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/repositories/auth_impl.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 

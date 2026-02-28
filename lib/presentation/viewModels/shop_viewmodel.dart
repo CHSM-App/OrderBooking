@@ -68,16 +68,16 @@ class ShopViewModel extends StateNotifier<ShopState> {
     }
   }
 
-  Future<void> updateShop(ShopDetails shop) async {
-    state = state.copyWith(isLoading: true, error: null);
+  // Future<void> updateShop(ShopDetails shop) async {
+  //   state = state.copyWith(isLoading: true, error: null);
 
-    try {
-      await usecase.updateShop(shop);
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
+  //   try {
+  //     await usecase.updateShop(shop);
+  //     state = state.copyWith(isLoading: false);
+  //   } catch (e) {
+  //     state = state.copyWith(isLoading: false, error: e.toString());
+  //   }
+  // }
 
   Future<void> deleteShop(ShopDetails shop) async {
     state = state.copyWith(isLoading: true, error: null);

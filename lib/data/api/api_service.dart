@@ -115,6 +115,13 @@ abstract class ApiService {
     @Part(name: "emp_id") String empId,
   );
 
+  @MultiPart()
+  @POST("upload/shopImage")
+  Future<dynamic> uploadShopImage(
+    @Part(name: "image") File image,
+    @Part(name: "shop_id") String shopId,
+  );
+
   // DELETE API
   @DELETE("index/deleteRegion/{region_id}/{company_id}")
   Future<dynamic> deleteRegion(
@@ -158,8 +165,22 @@ abstract class ApiService {
   Future<List<ProductData>> productReport(@Path("company_id") String companyId);
 
   //POST API
+  @MultiPart()
   @POST("insert/addShopDetails")
-  Future<dynamic> addShopDetails(@Body() ShopDetails shopDetails);
+  Future<dynamic> addShopDetails(
+    @Part(name: "shop_id") int? shopId,
+    @Part(name: "shop_name") String? shopName,
+    @Part(name: "owner_name") String? ownerName,
+    @Part(name: "address") String? address,
+    @Part(name: "mobile_no") String? mobileNo,
+    @Part(name: "email") String? email,
+    @Part(name: "region_id") int? regionId,
+    @Part(name: "created_by") int? createdBy,
+    @Part(name: "company_id") String? companyId,
+    @Part(name: "latitude") double? latitude,
+    @Part(name: "longitude") double? longitude,
+    @Part(name: "image") File? image,
+  );
 
   @POST("insert/addLocation")
   Future<dynamic> addLocation(@Body() VisitPayload shopDetails);

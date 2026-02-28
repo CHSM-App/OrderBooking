@@ -710,7 +710,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   double _orderAmount(Order o) {
     final amount = o.totalPrice;
     if (amount is String) return double.tryParse(amount as String) ?? 0.0;
-    if (amount is num) return amount.toDouble();
+    return amount.toDouble();
     return 0.0;
   }
 
@@ -1039,9 +1039,9 @@ class _OrderCard extends StatelessWidget {
 
   const _OrderCard({required this.order, required this.orderNumber});
 
-  String _fmt(String iso) {
+  String _formatDate(String raw) {
     try {
-      final d = DateTime.parse(iso);
+      final d = DateTime.parse(raw);
       const months = [
         'Jan',
         'Feb',
@@ -1056,12 +1056,21 @@ class _OrderCard extends StatelessWidget {
         'Nov',
         'Dec',
       ];
-      final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
-      final min = d.minute.toString().padLeft(2, '0');
-      final p = d.hour >= 12 ? 'PM' : 'AM';
-      return '${months[d.month - 1]} ${d.day}, ${d.year} • $h:$min $p';
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
-      return iso;
+      return raw;
+    }
+  }
+
+  String _formatTime(String raw) {
+    try {
+      final d = DateTime.parse(raw);
+      final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+      final m = d.minute.toString().padLeft(2, '0');
+      final p = d.hour >= 12 ? 'PM' : 'AM';
+      return '$h:$m $p';
+    } catch (_) {
+      return '';
     }
   }
 
@@ -1090,7 +1099,6 @@ class _OrderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row 1: order number + price + chevron
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1099,17 +1107,19 @@ class _OrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Order #$orderNumber',
+                            order.shopNamep ?? 'Unknown',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: _kTextPrimary,
                               letterSpacing: -0.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _fmt(order.orderDate),
+                            '${_formatDate(order.orderDate)} • ${_formatTime(order.orderDate)}',
                             style: const TextStyle(
                               fontSize: 11,
                               color: _kTextSecondary,
@@ -1131,56 +1141,29 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: _kTextSecondary,
-                        ),
+                        // const Icon(
+                        //   Icons.chevron_right_rounded,
+                        //   size: 16,
+                        //   color: _kTextSecondary,
+                        // ),
                       ],
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
                 const Divider(height: 1, color: _kDivider),
                 const SizedBox(height: 10),
-
-                // Row 2: employee | shop | items
                 Row(
                   children: [
-                    const Icon(
-                      Icons.person_outline_rounded,
-                      size: 13,
-                      color: _kTextSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        order.empName ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: _kTextSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: _kDivider,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
                     const Icon(
                       Icons.storefront_outlined,
                       size: 13,
                       color: _kTextSecondary,
                     ),
-                    const SizedBox(width: 4),
-                    Flexible(
+                    const SizedBox(width: 5),
+                    Expanded(
                       child: Text(
-                        order.shopNamep ?? 'Unknown',
+                        '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: _kTextSecondary,
@@ -1190,26 +1173,21 @@ class _OrderCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      width: 1,
-                      height: 12,
-                      color: _kDivider,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 13,
-                      color: _kTextSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: _kTextSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    const SizedBox(width: 12),
+
+                                  const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: _kTextSecondary,
+              ),
+
+              //       const SizedBox(width: 12),
+
+              //                     const Icon(
+              //   Icons.chevron_right_rounded,
+              //   size: 18,
+              //   color: _kTextSecondary,
+              // ),
                   ],
                 ),
               ],

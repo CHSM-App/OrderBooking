@@ -18,6 +18,7 @@ class ShopDao {
       'created_by': shop.createdBy,
       'latitude': shop.latitude,
       'longitude': shop.longitude,
+      'shop_selfie': shop.shopSelfie,
       'company_id': shop.companyId,
       'is_synced': shop.isSynced ? 1 : 0,
       'is_deleted': shop.isDeleted ?? false ? 1 : 0,
@@ -57,6 +58,16 @@ class ShopDao {
     );
   }
 
+  Future<void> clearSelfie(String localId) async {
+    final db = await AppDatabase.database;
+    await db.update(
+      'shops',
+      {'shop_selfie': null},
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
   Future<void> markDeletedSynced(String localId) async {
     final db = await AppDatabase.database;
 
@@ -88,6 +99,7 @@ class ShopDao {
       createdBy: row['created_by'],
       latitude: row['latitude'],
       longitude: row['longitude'],
+      shopSelfie: row['shop_selfie'],
       companyId: row['company_id'],
       isSynced: row['is_synced'] == 1,
       isDeleted: row['is_deleted'] == 1,

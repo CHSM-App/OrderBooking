@@ -626,6 +626,42 @@ class _ApiService implements ApiService {
   }
 
   @override
+  Future<dynamic> uploadShopImage(File image, String shopId) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = FormData();
+    _data.files.add(
+      MapEntry(
+        'image',
+        MultipartFile.fromFileSync(
+          image.path,
+          filename: image.path.split(Platform.pathSeparator).last,
+        ),
+      ),
+    );
+    _data.fields.add(MapEntry('shop_id', shopId));
+    final _options = _setStreamType<dynamic>(
+      Options(
+            method: 'POST',
+            headers: _headers,
+            extra: _extra,
+            contentType: 'multipart/form-data',
+          )
+          .compose(
+            _dio.options,
+            'upload/shopImage',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    return _value;
+  }
+
+  @override
   Future<dynamic> deleteRegion(int regionId, String companyId) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -885,14 +921,76 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<dynamic> addShopDetails(ShopDetails shopDetails) async {
+  Future<dynamic> addShopDetails(
+    int? shopId,
+    String? shopName,
+    String? ownerName,
+    String? address,
+    String? mobileNo,
+    String? email,
+    int? regionId,
+    int? createdBy,
+    String? companyId,
+    double? latitude,
+    double? longitude,
+    File? image,
+  ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
-    final _data = <String, dynamic>{};
-    _data.addAll(shopDetails.toJson());
+    final _data = FormData();
+    if (shopId != null) {
+      _data.fields.add(MapEntry('shop_id', shopId.toString()));
+    }
+    if (shopName != null) {
+      _data.fields.add(MapEntry('shop_name', shopName));
+    }
+    if (ownerName != null) {
+      _data.fields.add(MapEntry('owner_name', ownerName));
+    }
+    if (address != null) {
+      _data.fields.add(MapEntry('address', address));
+    }
+    if (mobileNo != null) {
+      _data.fields.add(MapEntry('mobile_no', mobileNo));
+    }
+    if (email != null) {
+      _data.fields.add(MapEntry('email', email));
+    }
+    if (regionId != null) {
+      _data.fields.add(MapEntry('region_id', regionId.toString()));
+    }
+    if (createdBy != null) {
+      _data.fields.add(MapEntry('created_by', createdBy.toString()));
+    }
+    if (companyId != null) {
+      _data.fields.add(MapEntry('company_id', companyId));
+    }
+    if (latitude != null) {
+      _data.fields.add(MapEntry('latitude', latitude.toString()));
+    }
+    if (longitude != null) {
+      _data.fields.add(MapEntry('longitude', longitude.toString()));
+    }
+    if (image != null) {
+      _data.files.add(
+        MapEntry(
+          'image',
+          MultipartFile.fromFileSync(
+            image.path,
+            filename: image.path.split(Platform.pathSeparator).last,
+          ),
+        ),
+      );
+    }
     final _options = _setStreamType<dynamic>(
-      Options(method: 'POST', headers: _headers, extra: _extra)
+      Options(
+            method: 'POST',
+            headers: _headers,
+            extra: _extra,
+            contentType: 'multipart/form-data',
+          )
           .compose(
             _dio.options,
             'insert/addShopDetails',
