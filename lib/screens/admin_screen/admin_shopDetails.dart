@@ -347,7 +347,7 @@ class _ShopDetailSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Drag handle ─────────────────────────────────────────────────
+          // ── Drag handle ─────────────────────────────────────~────────────
           const SizedBox(height: 12),
           Container(
             width: 40,
@@ -409,6 +409,40 @@ class _ShopDetailSheet extends StatelessWidget {
               ],
             ),
           ),
+
+          if (shop.shopSelfie != null && shop.shopSelfie!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    shop.shopSelfie!.trim(),
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: _kPrimary),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: _kPrimaryLight,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          color: _kTextSecondary,
+                          size: 36,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 20),
           const Divider(color: _kDivider, height: 1),
