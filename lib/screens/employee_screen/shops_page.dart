@@ -82,131 +82,131 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   }
 
   // ── Location helpers (unchanged logic, removed heavy UI) ─────────────────
-Future<Position?> _getCurrentLocation() async {
-  try {
-    // 1️⃣ Check if location service is enabled
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      final open = await _simpleDialog(
-        icon: Icons.location_off_outlined,
-        iconColor: _kPrimary,
-        title: 'Location Disabled',
-        body: 'Please enable location services to continue.',
-        confirmLabel: 'Enable',
-      );
-
-      if (open) {
-        await Geolocator.openLocationSettings();
-        await Future.delayed(const Duration(seconds: 2));
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) return null;
-      } else {
-        return null;
-      }
-    }
-
-    // 2️⃣ Check permission
-    LocationPermission permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        await _simpleDialog(
-          icon: Icons.location_disabled_outlined,
-          iconColor: Colors.red,
-          title: 'Permission Denied',
-          body: 'Location permission is required.',
-          confirmLabel: 'OK',
-          cancelLabel: null,
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      // 1️⃣ Check if location service is enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        final open = await _simpleDialog(
+          icon: Icons.location_off_outlined,
+          iconColor: _kPrimary,
+          title: 'Location Disabled',
+          body: 'Please enable location services to continue.',
+          confirmLabel: 'Enable',
         );
+
+        if (open) {
+          await Geolocator.openLocationSettings();
+          await Future.delayed(const Duration(seconds: 2));
+          serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          if (!serviceEnabled) return null;
+        } else {
+          return null;
+        }
+      }
+
+      // 2️⃣ Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          await _simpleDialog(
+            icon: Icons.location_disabled_outlined,
+            iconColor: Colors.red,
+            title: 'Permission Denied',
+            body: 'Location permission is required.',
+            confirmLabel: 'OK',
+            cancelLabel: null,
+          );
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        final open = await _simpleDialog(
+          icon: Icons.block_outlined,
+          iconColor: Colors.red,
+          title: 'Permission Required',
+          body:
+              'Location permission permanently denied. Please enable it from app settings.',
+          confirmLabel: 'Settings',
+        );
+
+        if (open) {
+          await Geolocator.openAppSettings();
+        }
         return null;
       }
-    }
 
-    if (permission == LocationPermission.deniedForever) {
-      final open = await _simpleDialog(
-        icon: Icons.block_outlined,
-        iconColor: Colors.red,
-        title: 'Permission Required',
-        body:
-            'Location permission permanently denied. Please enable it from app settings.',
-        confirmLabel: 'Settings',
-      );
+      // 3️⃣ Detect rooted / developer mode
+      // bool jailbroken = await FlutterJailbreakDetection.jailbroken;
+      // bool developerMode = await FlutterJailbreakDetection.developerMode;
+      bool isSecure = await _validateDeviceSecurity();
+      if (!isSecure) {
+        throw Exception(
+          'Security policy violation. Disable developer mode or root access.',
+        );
+      }
+      // if (jailbroken || developerMode) {
+      //   throw Exception(
+      //       'Security policy violation. Disable developer mode or root access.');
+      // }
 
-      if (open) {
-        await Geolocator.openAppSettings();
+      // 4️⃣ Force fresh GPS location (NO lastKnownPosition)
+      Position position =
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.bestForNavigation,
+            ),
+          ).timeout(
+            const Duration(seconds: 60),
+            onTimeout: () {
+              throw Exception('GPS timeout. Move to open area and try again.');
+            },
+          );
+
+      // 5️⃣ Detect mock location
+      if (position.isMocked) {
+        throw Exception('Fake GPS detected. Disable mock location apps.');
+      }
+
+      // 6️⃣ Validate accuracy
+      if (position.accuracy <= 0 || position.accuracy > 150) {
+        throw Exception('Low GPS accuracy. Move to open area and try again.');
+      }
+
+      return position;
+    } catch (e) {
+      if (mounted) {
+        _showSnack(e.toString(), isError: true);
       }
       return null;
     }
+  }
 
-    // 3️⃣ Detect rooted / developer mode
-    // bool jailbroken = await FlutterJailbreakDetection.jailbroken;
-    // bool developerMode = await FlutterJailbreakDetection.developerMode;
-      bool isSecure = await _validateDeviceSecurity();
-      if (!isSecure){
-          throw Exception(
-          'Security policy violation. Disable developer mode or root access.');
-      }
-    // if (jailbroken || developerMode) {
-    //   throw Exception(
-    //       'Security policy violation. Disable developer mode or root access.');
-    // }
+  Future<bool> _validateDeviceSecurity() async {
+    bool isJailBroken = await SafeDevice.isJailBroken;
+    bool isRealDevice = await SafeDevice.isRealDevice;
+    bool isMockLocation = await SafeDevice.isMockLocation;
 
-    // 4️⃣ Force fresh GPS location (NO lastKnownPosition)
-    Position position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-      ),
-    ).timeout(
-      const Duration(seconds: 60),
-      onTimeout: () {
-        throw Exception(
-            'GPS timeout. Move to open area and try again.');
-      },
-    );
-
-    // 5️⃣ Detect mock location
-    if (position.isMocked) {
-      throw Exception('Fake GPS detected. Disable mock location apps.');
+    if (isJailBroken) {
+      _showSnack("Rooted device detected. Punch in blocked.", isError: true);
+      return false;
     }
 
-    // 6️⃣ Validate accuracy
-    if (position.accuracy <= 0 || position.accuracy > 150) {
-      throw Exception(
-          'Low GPS accuracy. Move to open area and try again.');
+    if (!isRealDevice) {
+      _showSnack("Emulator detected. Punch in blocked.", isError: true);
+      return false;
     }
 
-    return position;
-  } catch (e) {
-    if (mounted) {
-      _showSnack(e.toString(), isError: true);
+    if (isMockLocation) {
+      _showSnack("Mock location detected. Disable fake GPS.", isError: true);
+      return false;
     }
-    return null;
+
+    return true;
   }
-}
-
-Future<bool> _validateDeviceSecurity() async {
-  bool isJailBroken = await SafeDevice.isJailBroken;
-  bool isRealDevice = await SafeDevice.isRealDevice;
-  bool isMockLocation = await SafeDevice.isMockLocation;
-
-  if (isJailBroken) {
-    _showSnack("Rooted device detected. Punch in blocked.", isError: true);
-    return false;
-  }
-
-  if (!isRealDevice) {
-    _showSnack("Emulator detected. Punch in blocked.", isError: true);
-    return false;
-  }
-
-  if (isMockLocation) {
-    _showSnack("Mock location detected. Disable fake GPS.", isError: true);
-    return false;
-  }
-
-  return true;
-}
 
   Future<bool> _simpleDialog({
     required IconData icon,
@@ -648,10 +648,7 @@ Future<bool> _validateDeviceSecurity() async {
       'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
 
-    final opened = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
     if (!opened) {
       _showSnack('Unable to open Google Maps.', isError: true);

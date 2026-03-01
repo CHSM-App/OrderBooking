@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:safe_device/safe_device.dart';
 import 'package:uuid/uuid.dart';
 
@@ -448,33 +449,33 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
 }
 
 // ✅ UPDATED camera method with better error handling
-Future<void> _pickSelfieFromCamera() async {
-  try {
-    final XFile? photo = await _imagePicker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-      preferredCameraDevice: CameraDevice.rear,
-    );
+// Future<void> _pickSelfieFromCamera() async {
+//   try {
+//     final XFile? photo = await _imagePicker.pickImage(
+//       source: ImageSource.camera,
+//       imageQuality: 80,
+//       preferredCameraDevice: CameraDevice.rear,
+//     );
 
-    if (photo != null && mounted) {
-      final file = File(photo.path);
-      if (await file.exists()) {
-        setState(() {
-          _selfieFile = file;
-          _selfieFileName = photo.name;
-        });
-      } else {
-        // ✅ File not found — likely process death occurred, retrieveLostData will handle it
-        if (mounted) _showErrorSnackbar("Photo not found. Trying to recover...");
-        await _retrieveLostData();
-      }
-    }
-  } on PlatformException catch (e) {
-    if (mounted) _showErrorSnackbar("Camera error: ${e.message ?? e.code}");
-  } catch (e) {
-    if (mounted) _showErrorSnackbar("Failed to capture selfie: $e");
-  }
-}
+//     if (photo != null && mounted) {
+//       final file = File(photo.path);
+//       if (await file.exists()) {
+//         setState(() {
+//           _selfieFile = file;
+//           _selfieFileName = photo.name;
+//         });
+//       } else {
+//         // ✅ File not found — likely process death occurred, retrieveLostData will handle it
+//         if (mounted) _showErrorSnackbar("Photo not found. Trying to recover...");
+//         await _retrieveLostData();
+//       }
+//     }
+//   } on PlatformException catch (e) {
+//     if (mounted) _showErrorSnackbar("Camera error: ${e.message ?? e.code}");
+//   } catch (e) {
+//     if (mounted) _showErrorSnackbar("Failed to capture selfie: $e");
+//   }
+// }
   void _openSelfieViewer() {
     final File? file = _selfieFile ??
         (_existingSelfiePath != null ? File(_existingSelfiePath!) : null);
@@ -493,6 +494,37 @@ Future<void> _pickSelfieFromCamera() async {
       ),
     );
   }
+
+Future<void> _pickSelfieFromCamera() async {
+  try {
+    // Create a stable file path BEFORE launching camera
+    final dir = await getApplicationDocumentsDirectory();
+    final filePath = '${dir.path}/shop_selfie_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final targetFile = File(filePath);
+
+    final XFile? photo = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+      preferredCameraDevice: CameraDevice.rear,
+    );
+
+    if (photo == null) return;
+
+    // Copy to stable path immediately
+    final saved = await File(photo.path).copy(filePath);
+
+    if (await saved.exists() && mounted) {
+      setState(() {
+        _selfieFile = saved;
+        _selfieFileName = 'shop_selfie.jpg';
+      });
+    }
+  } on PlatformException catch (e) {
+    if (mounted) _showErrorSnackbar("Camera error: ${e.message ?? e.code}");
+  } catch (e) {
+    if (mounted) _showErrorSnackbar("Failed to capture selfie: $e");
+  }
+} 
 
   @override
   Widget build(BuildContext context) {
