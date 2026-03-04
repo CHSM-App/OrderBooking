@@ -138,7 +138,7 @@ static Future<void> _createRegionTable(Database db) async {
       local_id TEXT UNIQUE,
       product_id INTEGER UNIQUE,  -- ðŸ”¥ IMPORTANT
       product_name TEXT,
-      product_type TEXT,
+   
       created_by INTEGER,
       admin_id INTEGER,
       company_id TEXT,
@@ -161,7 +161,7 @@ static Future<void> _createRegionTable(Database db) async {
         server_sub_item_id INTEGER,
         measuring_unit TEXT,
         available_unit REAL,
-        price REAL,
+    
         total REAL,
         is_synced INTEGER DEFAULT 0,
         updated_at TEXT,

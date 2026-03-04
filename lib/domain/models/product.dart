@@ -37,14 +37,17 @@ class Product {
   @JsonKey(name: 'item_total_price')
   final double? itemTotalPrice;
 
+  @JsonKey(name: 'product_unit', includeToJson: false)
   final String? productUnit;
+  @JsonKey(name: 'shop_id', includeToJson: false)
   final int? shopId;
   
-  @JsonKey(name: 'order_date')
+  @JsonKey(name: 'order_date', includeToJson: false)
   final DateTime? orderDate;
 
-  
+  @JsonKey(name: 'total_sales', includeToJson: false)
   final double totalSales;
+  @JsonKey(name: 'order_dates', includeToJson: false)
   final List<DateTime> orderDates;
 
   // ===== LOCAL DB ONLY =====

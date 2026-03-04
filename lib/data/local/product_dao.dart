@@ -22,7 +22,7 @@ class ProductDao {
           'local_id': localId,
           'product_id': product.productId,
           'product_name': product.productName,
-          'product_type': product.productType,
+      
           'created_by': product.createdBy,
           'admin_id': product.adminId,
           'company_id': product.companyId,
@@ -48,7 +48,7 @@ class ProductDao {
               'sub_item_id': sub.subItemId, // must be UNIQUE
               'measuring_unit': sub.measuringUnit,
               'available_unit': sub.availableUnit,
-              'price': sub.price,
+            
               'total': sub.total,
               'is_synced': markSynced ? 1 : 0,
               'is_deleted': 0,
@@ -80,7 +80,7 @@ class ProductDao {
         Product(
           productId: serverProductId,
           productName: row['product_name'] as String?,
-          productType: row['product_type'] as String?,
+       
           createdBy: row['created_by'] as int?,
           adminId: row['admin_id'] as int?,
           companyId: row['company_id'] as String?,
@@ -130,7 +130,7 @@ class ProductDao {
         availableUnit: row['available_unit'] != null
             ? (row['available_unit'] as num).toDouble()
             : null,
-        price: row['price'] != null ? (row['price'] as num).toDouble() : null,
+     
         total: row['total'] as int?,
         localId: row['local_id'] as String?,
         productLocalId: row['product_local_id'] as String?,
