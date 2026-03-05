@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary       = Color(0xFFE8720C);
@@ -156,45 +157,11 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Search bar
-          Container(
-            height: 46,
-            decoration: BoxDecoration(
-              color: _kBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kDivider),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => _onSearchChanged(v, products),
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _kTextPrimary),
-              decoration: InputDecoration(
-                hintText: 'Search products…',
-                hintStyle: const TextStyle(
-                    fontSize: 14,
-                    color: _kTextSecondary,
-                    fontWeight: FontWeight.w400),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    size: 20, color: _kTextSecondary),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded,
-                            size: 18, color: _kTextSecondary),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filterProducts('', products);
-                        },
-                        splashRadius: 16,
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 13),
-                isDense: true,
-              ),
-            ),
+          AppSearchBar(
+            controller: _searchController,
+            hintText: 'Search products…',
+           onChanged: (v) => _onSearchChanged(v, products),
+            onClear: () => _filterProducts('', products),
           ),
           const SizedBox(height: 8),
           Text(

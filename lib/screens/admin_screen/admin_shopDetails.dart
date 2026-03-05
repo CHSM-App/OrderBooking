@@ -4,6 +4,7 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // ── Brand tokens (match your orange/amber theme) ─────────────────────────────
 const _kPrimary = Color(0xFFE8720C); // warm orange
@@ -148,51 +149,10 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: _kSurface,
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: _kDivider, width: 1),
-        ),
-        child: TextField(
-          controller: _searchController,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _kTextPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Search shop, owner, region...',
-            hintStyle: const TextStyle(
-              fontSize: 14,
-              color: _kTextSecondary,
-              fontWeight: FontWeight.w400,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              size: 20,
-              color: _kTextSecondary,
-            ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: _kTextSecondary,
-                    ),
-                    onPressed: () => _searchController.clear(),
-                    splashRadius: 12,
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 20,
-            ),
-            isDense: true,
-          ),
-        ),
+      child: AppSearchBar(
+        controller: _searchController,
+        hintText: 'Search shop, owner, region...',
+
       ),
     );
   }

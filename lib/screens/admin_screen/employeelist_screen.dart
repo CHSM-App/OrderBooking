@@ -5,6 +5,7 @@ import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
 import 'package:order_booking_app/screens/admin_screen/attendance_report.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // Minimal Theme Colors
 class MinimalTheme {
@@ -250,56 +251,11 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                       children: [
                         // Search bar — fills remaining space
                         Expanded(
-                          child: Container(
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: MinimalTheme.cardWhite,
-                              borderRadius: BorderRadius.circular(17),
-                              border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (v) =>
-                                  setState(() => _searchQuery = v),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: MinimalTheme.textDark,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Search employee...',
-                                hintStyle: const TextStyle(
-                                  fontSize: 14,
-                                  color: MinimalTheme.textGray,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.search_rounded,
-                                  size: 20,
-                                  color: MinimalTheme.iconGray,
-                                ),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(
-                                          Icons.close_rounded,
-                                          size: 18,
-                                          color: MinimalTheme.iconGray,
-                                        ),
-                                        onPressed: () => setState(() {
-                                          _searchController.clear();
-                                          _searchQuery = "";
-                                        }),
-                                        splashRadius: 12,
-                                      )
-                                    : null,
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 16,
-                                ),
-                                isDense: true,
-                              ),
-                            ),
+                          child: AppSearchBar(
+                            controller: _searchController,
+                            hintText: 'Search employee...',
+                            onChanged: (v) =>
+                                setState(() => _searchQuery = v),
                           ),
                         ),
                    

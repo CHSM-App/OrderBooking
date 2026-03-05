@@ -5,6 +5,7 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/order_details.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFE8720C);
@@ -297,56 +298,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         children: [
           // Search
           Expanded(
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: _kBackground,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _kDivider),
-              ),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) =>
-                    setState(() => _searchQuery = v.toLowerCase().trim()),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _kTextPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search orders, shops, employees…',
-                  hintStyle: const TextStyle(
-                    fontSize: 14,
-                    color: _kTextSecondary,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 20,
-                    color: _kTextSecondary,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            size: 18,
-                            color: _kTextSecondary,
-                          ),
-                          onPressed: () => setState(() {
-                            _searchCtrl.clear();
-                            _searchQuery = '';
-                          }),
-                          splashRadius: 16,
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 17,
-                  ),
-                  isDense: true,
-                ),
-              ),
+            child: AppSearchBar(
+              controller: _searchCtrl,
+              hintText: 'Search orders, shops, employees…',
+              onChanged: (v) =>
+                  setState(() => _searchQuery = v.toLowerCase().trim()),
             ),
           ),
 

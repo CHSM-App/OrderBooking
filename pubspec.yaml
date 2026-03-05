@@ -53,6 +53,9 @@ dependencies:
   # print
   printing: ^5.12.0
   pdf: ^3.10.7
+
+  # excel
+  excel: ^2.1.0
   
   image_picker: ^1.1.2         # For camera and gallery
   file_picker: ^8.1.2

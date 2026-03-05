@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 7, // incremented version
+      version: 8, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -47,6 +47,12 @@ class AppDatabase {
 
         if (oldVersion < 4) {
           await _createOfflineCheckinStatusTable(db);
+        }
+
+        if (oldVersion < 8) {
+          await db.execute(
+            "ALTER TABLE offline_orders ADD COLUMN is_delivered INTEGER DEFAULT 0",
+          );
         }
 
 
@@ -188,6 +194,7 @@ static Future<void> _createRegionTable(Database db) async {
         total_price REAL,
         company_id TEXT,
         status TEXT,                
+        is_delivered INTEGER DEFAULT 0,
         retry_count INTEGER DEFAULT 0,
         created_at TEXT
     )

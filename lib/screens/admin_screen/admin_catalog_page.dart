@@ -4,6 +4,7 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/screens/admin_screen/admin_addProduct.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFE8720C);
@@ -176,55 +177,10 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: _kSurface,
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: _kDivider),
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (v) => setState(() => _searchQuery = v),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _kTextPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Search products…',
-            hintStyle: const TextStyle(
-              fontSize: 14,
-              color: _kTextSecondary,
-              fontWeight: FontWeight.w400,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              size: 20,
-              color: _kTextSecondary,
-            ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: _kTextSecondary,
-                    ),
-                    onPressed: () => setState(() {
-                      _searchController.clear();
-                      _searchQuery = '';
-                    }),
-                    splashRadius: 16,
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 16,
-            ),
-            isDense: true,
-          ),
-        ),
+      child: AppSearchBar(
+        controller: _searchController,
+        hintText: 'Search products…',
+ onChanged: (v) => setState(() => _searchQuery = v),
       ),
     );
   }

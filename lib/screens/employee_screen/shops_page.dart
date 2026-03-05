@@ -5,6 +5,7 @@ import 'package:order_booking_app/presentation/providers/viewModel_provider.dart
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
 import 'package:order_booking_app/screens/employee_screen/shop_visit_screen.dart';
+import 'package:order_booking_app/widgets/app_search_bar.dart';
 import 'package:safe_device/safe_device.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
@@ -696,51 +697,9 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: _kSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kDivider, width: 1),
-        ),
-        child: TextField(
-          controller: _searchController,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _kTextPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Search shops, owners…',
-            hintStyle: const TextStyle(
-              fontSize: 14,
-              color: _kTextSecondary,
-              fontWeight: FontWeight.w400,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              size: 20,
-              color: _kTextSecondary,
-            ),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: _kTextSecondary,
-                    ),
-                    onPressed: () => _searchController.clear(),
-                    splashRadius: 16,
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 14,
-            ),
-            isDense: true,
-          ),
-        ),
+      child: AppSearchBar(
+        controller: _searchController,
+        hintText: 'Search shops, owners…',
       ),
     );
   }
