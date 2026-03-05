@@ -22,33 +22,29 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   employeeId: (json['employee_id'] as num?)?.toInt(),
   adminId: (json['admin_id'] as num?)?.toInt(),
   totalPrice: (json['total_price'] as num?)?.toDouble(),
-  productUnit: json['productUnit'] as String?,
-  shopId: (json['shopId'] as num?)?.toInt(),
-  totalSales: (json['totalSales'] as num?)?.toDouble() ?? 0,
+  productUnit: json['product_unit'] as String?,
+  shopId: (json['shop_id'] as num?)?.toInt(),
+  totalSales: (json['total_sales'] as num?)?.toDouble() ?? 0,
   orderDates:
-      (json['orderDates'] as List<dynamic>?)
+      (json['order_dates'] as List<dynamic>?)
           ?.map((e) => DateTime.parse(e as String))
           .toList() ??
       const [],
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
-  'product_id': instance.productId,
-  'product_name': instance.productName,
-  'product_type': instance.productType,
-  'created_by': instance.createdBy,
-  'company_id': instance.companyId,
-  'subtypes': instance.subtypes?.map((e) => e.toJson()).toList(),
-  'employee_id': instance.employeeId,
-  'admin_id': instance.adminId,
-  'total_price': instance.totalPrice,
-  'item_total_price': instance.itemTotalPrice,
-  'productUnit': instance.productUnit,
-  'shopId': instance.shopId,
-  'order_date': instance.orderDate?.toIso8601String(),
-  'totalSales': instance.totalSales,
-  'orderDates': instance.orderDates.map((e) => e.toIso8601String()).toList(),
-};
+      if (instance.productId case final value?) 'product_id': value,
+      if (instance.productName case final value?) 'product_name': value,
+      if (instance.productType case final value?) 'product_type': value,
+      if (instance.createdBy case final value?) 'created_by': value,
+      if (instance.companyId case final value?) 'company_id': value,
+      if (instance.subtypes case final value?)
+        'subtypes': value.map((e) => e.toJson()).toList(),
+      if (instance.employeeId case final value?) 'employee_id': value,
+      if (instance.adminId case final value?) 'admin_id': value,
+      if (instance.totalPrice case final value?) 'total_price': value,
+      if (instance.itemTotalPrice case final value?) 'item_total_price': value,
+    };
 
 ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>
     ProductSubType(

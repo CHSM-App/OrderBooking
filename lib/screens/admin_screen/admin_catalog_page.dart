@@ -159,6 +159,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
 
       // FAB
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'admin_catalog_add_product_fab',
         onPressed: () => _openAddEdit(),
         backgroundColor: _kPrimary,
         foregroundColor: Colors.white,
@@ -333,7 +334,7 @@ class _ProductCardState extends State<_ProductCard>
 
   @override
   Widget build(BuildContext context) {
-    final color = _typeColor(widget.product.productType);
+    //final color = _typeColor(widget.product.productType);
     final units = widget.product.subtypes ?? [];
 
     return Padding(
@@ -356,19 +357,19 @@ class _ProductCardState extends State<_ProductCard>
 
                 children: [
                   // Type icon
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _typeIcon(widget.product.productType),
-                      size: 22,
-                      color: color,
-                    ),
-                  ),
+                  // Container(
+                  //   width: 44,
+                  //   height: 44,
+                  //   decoration: BoxDecoration(
+                  //     color: color.withOpacity(0.1),
+                  //     borderRadius: BorderRadius.circular(12),
+                  //   ),
+                  //   child: Icon(
+                  //     _typeIcon(widget.product.productType),
+                  //     size: 22,
+                  //     color: color,
+                  //   ),
+                  // ),
                   const SizedBox(width: 12),
 
                   // Name + type
@@ -388,14 +389,14 @@ class _ProductCardState extends State<_ProductCard>
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
-                        Text(
-                          widget.product.productType ?? '',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        // Text(
+                        //   widget.product.productType ?? '',
+                        //   style: TextStyle(
+                        //     fontSize: 11,
+                        //     color: color,
+                        //     fontWeight: FontWeight.w600,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
@@ -516,7 +517,7 @@ class _ProductCardState extends State<_ProductCard>
               children: [
                 _UnitRow(
                   label: _formatUnit(u.availableUnit, u.measuringUnit),
-                  price: '₹${u.price}',
+                  //price: '₹${u.price}',
                 ),
                 if (!isLast) const Divider(height: 1, color: _kDivider),
               ],
@@ -531,9 +532,9 @@ class _ProductCardState extends State<_ProductCard>
 // ── Unit row ───────────────────────────────────────────────────────────────
 class _UnitRow extends StatelessWidget {
   final String label;
-  final String price;
+  final String? price;
 
-  const _UnitRow({required this.label, required this.price});
+  const _UnitRow({required this.label,  this.price});
 
   @override
   Widget build(BuildContext context) {
@@ -572,14 +573,14 @@ class _UnitRow extends StatelessWidget {
               color: _kGreenLight,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              price,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: _kGreen,
-              ),
-            ),
+            // child: Text(
+            //   price,
+            //   style: const TextStyle(
+            //     fontSize: 13,
+            //     fontWeight: FontWeight.w700,
+            //     color: _kGreen,
+            //   ),
+            // ),
           ),
         ],
       ),
