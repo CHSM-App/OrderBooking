@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_help_center.dart';
 import 'package:order_booking_app/screens/admin_screen/employeelist_screen.dart';
 import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widgets.dart';
@@ -32,6 +33,9 @@ class AdminProfilePage extends ConsumerStatefulWidget {
 }
 
 class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
+  ProviderSubscription<AdminloginState>? _adminListener;
+  bool _initialFetchDone = false;
+
   Future<void> _openPrivacyPolicy() async {
     final uri = Uri.parse(
       'https://orderbooking.vengurlatech.com/login/privacy',
@@ -42,9 +46,22 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
   @override
   void initState() {
     super.initState();
+    _adminListener = ref.listenManual<AdminloginState>(
+      adminloginViewModelProvider,
+      (previous, next) {
+        final mobileNo = next.mobileNo;
+        if (!_initialFetchDone && mobileNo != null && mobileNo.isNotEmpty) {
+          _initialFetchDone = true;
+          ref
+              .read(adminloginViewModelProvider.notifier)
+              .fetchAdminDetails(mobileNo);
+        }
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final mobileNo = ref.read(adminloginViewModelProvider).mobileNo;
-      if (mobileNo != null && mobileNo.isNotEmpty) {
+      if (!_initialFetchDone && mobileNo != null && mobileNo.isNotEmpty) {
+        _initialFetchDone = true;
         ref
             .read(adminloginViewModelProvider.notifier)
             .fetchAdminDetails(mobileNo);
@@ -53,11 +70,11 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
   }
 
   Future<void> _onRefresh() async {
+    final mobileNo = ref.read(adminloginViewModelProvider).mobileNo ?? "";
+    if (mobileNo.isEmpty) return;
     await ref
         .read(adminloginViewModelProvider.notifier)
-        .fetchAdminDetails(
-          ref.read(adminloginViewModelProvider).mobileNo ?? "",
-        );
+        .fetchAdminDetails(mobileNo);
   }
 
   bool _isNetworkError(String? message) {
@@ -81,6 +98,12 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
 
   Widget _buildSomethingWentWrong() {
     return AdminSomethingWentWrongRetry(onRetry: _onRefresh);
+  }
+
+  @override
+  void dispose() {
+    _adminListener?.close();
+    super.dispose();
   }
 
   @override

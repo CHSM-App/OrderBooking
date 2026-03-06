@@ -33,18 +33,17 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
 );
 
 Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
-      if (instance.productId case final value?) 'product_id': value,
-      if (instance.productName case final value?) 'product_name': value,
-      if (instance.productType case final value?) 'product_type': value,
-      if (instance.createdBy case final value?) 'created_by': value,
-      if (instance.companyId case final value?) 'company_id': value,
-      if (instance.subtypes case final value?)
-        'subtypes': value.map((e) => e.toJson()).toList(),
-      if (instance.employeeId case final value?) 'employee_id': value,
-      if (instance.adminId case final value?) 'admin_id': value,
-      if (instance.totalPrice case final value?) 'total_price': value,
-      if (instance.itemTotalPrice case final value?) 'item_total_price': value,
-    };
+  'product_id': instance.productId,
+  'product_name': instance.productName,
+  'product_type': instance.productType,
+  'created_by': instance.createdBy,
+  'company_id': instance.companyId,
+  'subtypes': instance.subtypes?.map((e) => e.toJson()).toList(),
+  'employee_id': instance.employeeId,
+  'admin_id': instance.adminId,
+  'total_price': instance.totalPrice,
+  'item_total_price': instance.itemTotalPrice,
+};
 
 ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>
     ProductSubType(

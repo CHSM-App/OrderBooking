@@ -12,6 +12,7 @@ import 'package:order_booking_app/screens/employee_screen/order_printPdf.dart';
 import 'package:order_booking_app/widgets/app_search_bar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFE8720C);
@@ -227,7 +228,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     return getApplicationDocumentsDirectory();
   }
 
-  Future<void> _exportSelectedToExcel() async {
+Future<void> _exportSelectedToExcel() async {
   final selectedOrders = _selectedIds
       .map((localId) => _orderMap[localId])
       .whereType<Order>()
@@ -248,50 +249,37 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     excel.setDefaultSheet(sheetName);
 
     sheet.appendRow([
-      "Shop Name",
-      'Owner Name',
-      'Mobile No',
-      'Address',
-      'Employee Name',
-      'Order Date/Time',
-      'Product',
-      'Quantity',
-      'Unit',
-      'Price',
+      "Shop Name", 'Owner Name', 'Mobile No', 'Address',
+      'Employee Name', 'Order Date/Time', 'Product',
+      'Quantity', 'Unit', 'Price',
     ]);
 
     for (final order in selectedOrders) {
       if (order.items.isEmpty) {
         sheet.appendRow([
-          order.shopNamep ?? '',
-          order.ownerName ?? '',
-          order.mobileNo ?? '',
-          order.address ?? '',
-          order.empName ?? '',
-          order.orderDate,
-          '',
-          '',
-          '',
-          '',
+          order.shopNamep ?? '', order.ownerName ?? '',
+          order.mobileNo ?? '', order.address ?? '',
+          order.empName ?? '', order.orderDate,
+          '', '', '', '',
         ]);
-        continue;
+      } else {
+        for (int i = 0; i < order.items.length; i++) {
+          final item = order.items[i];
+          final isFirst = i == 0;
+          sheet.appendRow([
+            isFirst ? (order.shopNamep ?? '') : '',
+            isFirst ? (order.ownerName ?? '') : '',
+            isFirst ? (order.mobileNo ?? '') : '',
+            isFirst ? (order.address ?? '') : '',
+            isFirst ? (order.empName ?? '') : '',
+            isFirst ? order.orderDate : '',
+            item.productName ?? item.productId.toString(),
+            item.quantity, item.productUnit, item.price,
+          ]);
+        }
       }
-      for (int i = 0; i < order.items.length; i++) {
-        final item = order.items[i];
-        final isFirst = i == 0;
-        sheet.appendRow([
-          isFirst ? (order.shopNamep ?? '') : '',
-          isFirst ? (order.ownerName ?? '') : '',
-          isFirst ? (order.mobileNo ?? '') : '',
-          isFirst ? (order.address ?? '') : '',
-          isFirst ? (order.empName ?? '') : '',
-          isFirst ? order.orderDate : '',
-          item.productName ?? item.productId.toString(),
-          item.quantity,
-          item.productUnit,
-          item.price,
-        ]);
-      }
+      // Empty row after every order (after all its products)
+      sheet.appendRow(['', '', '', '', '', '', '', '', '', '']);
     }
 
     final bytes = excel.encode();
@@ -302,25 +290,29 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
       );
       return;
     }
-      final dir = await _resolveExportDirectory();
-      final fileName =
-          'orders_${DateTime.now().toIso8601String().replaceAll(':', '-')}.xlsx';
-      final filePath = p.join(dir.path, fileName);
-      final file = File(filePath);
-      await file.writeAsBytes(bytes, flush: true);
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Excel saved: ${file.path}')),
-      );
-    } catch (e) {
+    // Save to temp file, then share
+    final tempDir = await getTemporaryDirectory();
+    final fileName =
+        'orders_${DateTime.now().toIso8601String().replaceAll(':', '-')}.xlsx';
+    final filePath = p.join(tempDir.path, fileName);
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+
+    if (!mounted) return;
+
+    await Share.shareXFiles(
+      [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+      subject: 'Orders Export',
+    );
+
+  } catch (e) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Export failed: $e')),
     );
   }
 }
-
   // ── Sort newest first ───────────────────────────────────────────────────────
   List<Order> _sortDesc(List<Order> orders) {
     final list = List<Order>.from(orders);

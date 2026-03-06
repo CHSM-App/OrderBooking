@@ -16,6 +16,26 @@ const _kTextPrimary = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF6B6B6B);
 const _kDivider = Color(0xFFEEEEEE);
 
+// ── Responsive breakpoints ────────────────────────────────────────────────────
+class _Responsive {
+  final double width;
+  const _Responsive(this.width);
+
+  bool get isSmall => width < 360;
+  bool get isTablet => width >= 600;
+
+  double get horizontalPadding => isTablet ? 24 : (isSmall ? 12 : 16);
+  double get cardPadding => isTablet ? 18 : (isSmall ? 11 : 14);
+  double get searchBarHeight => isSmall ? 42 : 46;
+  double get filterButtonSize => isSmall ? 42 : 46;
+  double get titleFontSize => isTablet ? 17 : (isSmall ? 13 : 15);
+  double get bodyFontSize => isTablet ? 14 : (isSmall ? 11 : 12);
+  double get dateFontSize => isTablet ? 13 : (isSmall ? 10 : 11);
+  double get priceFontSize => isTablet ? 18 : (isSmall ? 14 : 16);
+  double get chipFontSize => isTablet ? 14 : (isSmall ? 11 : 12);
+  double get badgeFontSize => isTablet ? 12 : (isSmall ? 9 : 10);
+}
+
 // ── Filter model ──────────────────────────────────────────────────────────────
 enum OrdersFilterType { today, yesterday, thisMonth, custom }
 
@@ -63,11 +83,8 @@ class OrdersListPage extends ConsumerStatefulWidget {
   final OrdersFilterType? initialFilter;
   final int filterRequestId;
 
-  const OrdersListPage({
-    Key? key,
-    this.initialFilter,
-    this.filterRequestId = 0,
-  }) : super(key: key);
+  const OrdersListPage({Key? key, this.initialFilter, this.filterRequestId = 0})
+    : super(key: key);
 
   @override
   ConsumerState<OrdersListPage> createState() => _OrdersListPageState();
@@ -77,6 +94,12 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
   _ActiveFilter? _filter;
+  String? _selectedRegion;
+
+  // Populated synchronously inside _buildBody every time data arrives.
+  // By the time the user taps the filter button, this is already filled.
+  List<String> _availableRegions = [];
+
   int _lastAppliedRequestId = 0;
 
   @override
@@ -118,7 +141,18 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         );
   }
 
-  // ── Date filter ────────────────────────────────────────────────────────────
+  // ── Extract unique regions ─────────────────────────────────────────────────
+  List<String> _extractRegions(List<Order> orders) {
+    return orders
+        .map((o) => o.regionName)
+        .where((r) => r != null && r.trim().isNotEmpty)
+        .map((r) => r!.trim())
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  // ── Filters ────────────────────────────────────────────────────────────────
   bool _passesFilter(Order o) {
     if (_filter == null) return true;
     DateTime d;
@@ -143,29 +177,29 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
   }
 
+  bool _passesRegion(Order o) {
+    if (_selectedRegion == null) return true;
+    return (o.regionName?.trim() ?? '') == _selectedRegion;
+  }
+
   DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
   DateTime? _parseOrderDate(String raw) {
     final parsed = DateTime.tryParse(raw);
     if (parsed != null) return parsed;
-
     final re = RegExp(
       r'^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$',
     );
     final m = re.firstMatch(raw.trim());
     if (m == null) return null;
-
     final p1 = int.tryParse(m.group(1) ?? '');
     final p2 = int.tryParse(m.group(2) ?? '');
     final year = int.tryParse(m.group(3) ?? '');
     if (p1 == null || p2 == null || year == null) return null;
-
     final hour = int.tryParse(m.group(4) ?? '') ?? 0;
     final minute = int.tryParse(m.group(5) ?? '') ?? 0;
     final second = int.tryParse(m.group(6) ?? '') ?? 0;
-
-    int day = p1;
-    int month = p2;
+    int day = p1, month = p2;
     if (p1 > 12 && p2 <= 12) {
       day = p1;
       month = p2;
@@ -173,7 +207,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       day = p2;
       month = p1;
     }
-
     try {
       return DateTime(year, month, day, hour, minute, second);
     } catch (_) {
@@ -181,46 +214,36 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
   }
 
-  // ── Enhanced Search ────────────────────────────────────────────────────────
   bool _passesSearch(Order o, int number, String q) {
     if (q.isEmpty) return true;
     final qLower = q.toLowerCase();
-
-    final orderMap = <String, String>{
-      'orderNo': number.toString(),
-      'serverOrderId': o.serverOrderId?.toString() ?? '',
-      'employeeId': o.employeeId.toString(),
-      'shopId': o.shopId.toString(),
-      'employee': o.empName ?? '',
-      'shop': o.shopNamep ?? '',
-      'address': o.address ?? '',
-      'total': o.totalPrice.toString(),
-      'orderDate': o.orderDate,
-      'itemsCount': o.items.length.toString(),
-      'itemsCountText':
-          '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
-      'formattedDate': _fmt(o.orderDate),
-    };
-
-    for (final v in orderMap.values) {
-      if (v.toLowerCase().contains(qLower)) return true;
-    }
-
+    final fields = [
+      number.toString(),
+      o.serverOrderId?.toString() ?? '',
+      o.employeeId.toString(),
+      o.shopId.toString(),
+      o.empName ?? '',
+      o.shopNamep ?? '',
+      o.address ?? '',
+      o.regionName ?? '',
+      o.totalPrice.toString(),
+      o.orderDate,
+      '${o.items.length} item${o.items.length == 1 ? '' : 's'}',
+      _fmt(o.orderDate),
+    ];
+    if (fields.any((f) => f.toLowerCase().contains(qLower))) return true;
     for (final item in o.items) {
-      final itemMap = <String, String>{
-        'productName': item.productName ?? '',
-        'productUnit': item.productUnit,
-        'productId': item.productId.toString(),
-        'subItemId': item.subItemId.toString(),
-        'quantity': item.quantity.toString(),
-        'price': item.price.toString(),
-        'totalPrice': item.totalPrice.toString(),
-      };
-      for (final v in itemMap.values) {
-        if (v.toLowerCase().contains(qLower)) return true;
-      }
+      final itemFields = [
+        item.productName ?? '',
+        item.productUnit,
+        item.productId.toString(),
+        item.subItemId.toString(),
+        item.quantity.toString(),
+        item.price.toString(),
+        item.totalPrice.toString(),
+      ];
+      if (itemFields.any((f) => f.toLowerCase().contains(qLower))) return true;
     }
-
     return false;
   }
 
@@ -270,68 +293,79 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     }
   }
 
+  bool get _hasActiveFilters => _filter != null || _selectedRegion != null;
+
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ordersViewModelProvider);
-    return Scaffold(
-      backgroundColor: _kBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            // if (_filter != null) _buildFilterChip(),
-            Expanded(child: _buildBody(state)),
-          ],
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final r = _Responsive(constraints.maxWidth);
+        return Scaffold(
+          backgroundColor: _kBackground,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(r),
+                Expanded(child: _buildBody(state, r)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // ── Header: search + filter ────────────────────────────────────────────────
-  Widget _buildHeader() {
-    final isFiltered = _filter != null;
+  // ── Header ─────────────────────────────────────────────────────────────────
+  Widget _buildHeader(_Responsive r) {
     return Container(
       color: _kSurface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: EdgeInsets.fromLTRB(
+        r.horizontalPadding,
+        12,
+        r.horizontalPadding,
+        12,
+      ),
       child: Row(
         children: [
-          // Search
           Expanded(
-            child: AppSearchBar(
-              controller: _searchCtrl,
-              hintText: 'Search orders, shops, employees…',
-              onChanged: (v) =>
-                  setState(() => _searchQuery = v.toLowerCase().trim()),
+            child: SizedBox(
+              height: r.searchBarHeight,
+              child: AppSearchBar(
+                controller: _searchCtrl,
+                hintText: r.isSmall
+                    ? 'Search orders…'
+                    : 'Search orders, shops, employees…',
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase().trim()),
+              ),
             ),
           ),
-
-          const SizedBox(width: 10),
-
-          // Filter button
+          SizedBox(width: r.isSmall ? 8 : 10),
           GestureDetector(
             onTap: () => _showFilter(context),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: r.filterButtonSize,
+                  height: r.filterButtonSize,
                   decoration: BoxDecoration(
-                    color: isFiltered ? _kPrimaryLight : _kSurface,
+                    color: _hasActiveFilters ? _kPrimaryLight : _kSurface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isFiltered ? _kPrimary : _kDivider,
-                      width: isFiltered ? 1.5 : 1,
+                      color: _hasActiveFilters ? _kPrimary : _kDivider,
+                      width: _hasActiveFilters ? 1.5 : 1,
                     ),
                   ),
                   child: Icon(
                     Icons.filter_list_rounded,
-                    size: 20,
-                    color: isFiltered ? _kPrimary : _kTextSecondary,
+                    size: r.isSmall ? 18 : 20,
+                    color: _hasActiveFilters ? _kPrimary : _kTextSecondary,
                   ),
                 ),
-                if (isFiltered)
+                if (_hasActiveFilters)
                   Positioned(
                     top: -3,
                     right: -3,
@@ -352,109 +386,53 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     );
   }
 
-  // ── Active filter chip ─────────────────────────────────────────────────────
-  Widget _buildFilterChip(int count, double totalAmount) {
+  // ── Filter chips ───────────────────────────────────────────────────────────
+  Widget _buildFilterChips(_Responsive r, int count, double totalAmount) {
     return Container(
-      color: _kSurface,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: Row(
+      width: double.infinity,
+      alignment: Alignment.centerLeft,
+      margin: const EdgeInsets.only(top: 8, left: 15),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _kPrimaryLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _kPrimary.withOpacity(0.4)),
+          if (_filter != null)
+            _FilterChip(
+              icon: Icons.calendar_today_outlined,
+              label: _filter!.label,
+              count: _selectedRegion == null ? count : null,
+              onRemove: () => setState(() => _filter = null),
+              fontSize: r.chipFontSize,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  size: 13,
-                  color: _kPrimary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _filter!.label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _kPrimary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _kPrimary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() => _filter = null),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: _kPrimary,
-                  ),
-                ),
-              ],
+          if (_selectedRegion != null)
+            _FilterChip(
+              icon: Icons.location_on_outlined,
+              label: _selectedRegion!,
+              count: _filter == null ? count : null,
+              onRemove: () => setState(() => _selectedRegion = null),
+              fontSize: r.chipFontSize,
             ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: _kSurface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _kDivider),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.currency_rupee_rounded,
-                  size: 12,
-                  color: _kTextSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatINR(totalAmount),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _kTextPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _AmountBadge(amount: totalAmount, fontSize: r.chipFontSize),
         ],
       ),
     );
   }
 
   // ── Body ───────────────────────────────────────────────────────────────────
-  Widget _buildBody(ordersState state) {
+  Widget _buildBody(ordersState state, _Responsive r) {
     if (state.isLoading) return _buildLoading();
 
     if (state.orders != null) {
       return state.orders!.when(
         data: (orders) {
-          // Sort newest→oldest for display
+          // ── THE FIX ──────────────────────────────────────────────────────
+          // Assign directly (no setState) — this is safe inside build().
+          // _availableRegions is updated every rebuild so it's always current
+          // before the user opens the filter sheet.
+          _availableRegions = _extractRegions(orders);
+          // ─────────────────────────────────────────────────────────────────
+
           final sorted = List<Order>.from(orders)
             ..sort((a, b) {
               final da = _parseOrderDate(a.orderDate);
@@ -465,7 +443,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               return db.compareTo(da);
             });
 
-          // Stable number: oldest = #1
           final numberMap = <String, int>{};
           for (var i = 0; i < sorted.length; i++) {
             numberMap[_orderKey(sorted[i])] = sorted.length - i;
@@ -475,6 +452,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               .where(
                 (o) =>
                     _passesFilter(o) &&
+                    _passesRegion(o) &&
                     _passesSearch(
                       o,
                       numberMap[_orderKey(o)] ?? 0,
@@ -485,13 +463,13 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
           final totalAmount = visible.fold<double>(
             0.0,
-            (sum, o) => sum + _orderAmount(o),
+            (s, o) => s + _orderAmount(o),
           );
 
           if (visible.isEmpty) {
             return Column(
               children: [
-                if (_filter != null) _buildFilterChip(0, 0.0),
+                if (_hasActiveFilters) _buildFilterChips(r, 0, 0.0),
                 Expanded(child: _buildEmpty()),
               ],
             );
@@ -499,9 +477,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
 
           return Column(
             children: [
-              if (_filter != null)
-                _buildFilterChip(visible.length, totalAmount),
-              Expanded(child: _buildList(visible, numberMap)),
+              if (_hasActiveFilters)
+                _buildFilterChips(r, visible.length, totalAmount),
+              Expanded(child: _buildList(visible, numberMap, r)),
             ],
           );
         },
@@ -522,7 +500,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 
   // ── List ───────────────────────────────────────────────────────────────────
-  Widget _buildList(List<Order> orders, Map<String, int> numberMap) {
+  Widget _buildList(
+    List<Order> orders,
+    Map<String, int> numberMap,
+    _Responsive r,
+  ) {
     return RefreshIndicator(
       color: _kPrimary,
       backgroundColor: _kSurface,
@@ -532,11 +514,17 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(
+          r.horizontalPadding,
+          12,
+          r.horizontalPadding,
+          24,
+        ),
         itemCount: orders.length,
         itemBuilder: (_, i) => _OrderCard(
           order: orders[i],
           orderNumber: numberMap[_orderKey(orders[i])] ?? (i + 1),
+          responsive: r,
         ),
       ),
     );
@@ -558,31 +546,27 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     );
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
-  Widget _buildLoading() {
-    return _wrapRefresh(
-      Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
-            const SizedBox(height: 16),
-            Text(
-              'Loading orders…',
-              style: TextStyle(
-                fontSize: 14,
-                color: _kTextSecondary.withOpacity(0.8),
-              ),
+  Widget _buildLoading() => _wrapRefresh(
+    Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
+          const SizedBox(height: 16),
+          Text(
+            'Loading orders…',
+            style: TextStyle(
+              fontSize: 14,
+              color: _kTextSecondary.withOpacity(0.8),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-  // ── Empty ──────────────────────────────────────────────────────────────────
   Widget _buildEmpty() {
-    final isFiltered = _filter != null || _searchQuery.isNotEmpty;
+    final isFiltered = _hasActiveFilters || _searchQuery.isNotEmpty;
     return _wrapRefresh(
       Center(
         child: Column(
@@ -613,17 +597,22 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              isFiltered
-                  ? 'Try a different search or filter'
-                  : 'Orders will appear here once created.',
-              style: const TextStyle(fontSize: 13, color: _kTextSecondary),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                isFiltered
+                    ? 'Try a different search or filter'
+                    : 'Orders will appear here once created.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: _kTextSecondary),
+              ),
             ),
             if (isFiltered) ...[
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () => setState(() {
                   _filter = null;
+                  _selectedRegion = null;
                   _searchCtrl.clear();
                   _searchQuery = '';
                 }),
@@ -642,10 +631,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     );
   }
 
-  // ── No internet ────────────────────────────────────────────────────────────
-  Widget _buildNoInternet() {
-    return _wrapRefresh(AdminNoInternetRetry(onRetry: _refresh));
-  }
+  Widget _buildNoInternet() =>
+      _wrapRefresh(AdminNoInternetRetry(onRetry: _refresh));
+  Widget _buildError(String _) =>
+      _wrapRefresh(AdminSomethingWentWrongRetry(onRetry: _refresh));
 
   String _formatINR(num value) {
     final isNegative = value < 0;
@@ -653,13 +642,11 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     final parts = value.toStringAsFixed(2).split('.');
     var intPart = parts[0];
     final decPart = parts.length > 1 ? parts[1] : '00';
-    if (intPart.length <= 3) {
+    if (intPart.length <= 3)
       return '${isNegative ? '-' : ''}₹$intPart.$decPart';
-    }
     final lastThree = intPart.substring(intPart.length - 3);
     var remaining = intPart.substring(0, intPart.length - 3);
-    final reg = RegExp(r'\B(?=(\d{2})+(?!\d))');
-    remaining = remaining.replaceAll(reg, ',');
+    remaining = remaining.replaceAll(RegExp(r'\B(?=(\d{2})+(?!\d))'), ',');
     return '${isNegative ? '-' : ''}₹$remaining,$lastThree.$decPart';
   }
 
@@ -667,12 +654,6 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     final amount = o.totalPrice;
     if (amount is String) return double.tryParse(amount as String) ?? 0.0;
     return amount.toDouble();
-    return 0.0;
-  }
-
-  // ── Error ──────────────────────────────────────────────────────────────────
-  Widget _buildError(String msg) {
-    return _wrapRefresh(AdminSomethingWentWrongRetry(onRetry: _refresh));
   }
 
   // ── Filter bottom sheet ────────────────────────────────────────────────────
@@ -682,160 +663,246 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => StatefulBuilder(
-        builder: (sheetCtx, setSheet) => Container(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            20,
-            16,
-            MediaQuery.of(sheetCtx).viewInsets.bottom + 32,
-          ),
-          decoration: const BoxDecoration(
-            color: _kSurface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _kDivider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        builder: (sheetCtx, setSheet) {
+          final r = _Responsive(MediaQuery.of(sheetCtx).size.width);
+          // Read straight from the instance field — always the latest value
+          final regions = _availableRegions;
+
+          return Container(
+            padding: EdgeInsets.fromLTRB(
+              r.horizontalPadding,
+              20,
+              r.horizontalPadding,
+              MediaQuery.of(sheetCtx).viewInsets.bottom + 32,
+            ),
+            decoration: const BoxDecoration(
+              color: _kSurface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Filter by Date',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _kTextPrimary,
-                    ),
-                  ),
-                  if (_filter != null)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() => _filter = null);
-                        setSheet(() {});
-                        Navigator.pop(sheetCtx);
-                      },
-                      child: const Text(
-                        'Clear',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _kPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _kDivider,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _FilterSheetRow(
-                icon: Icons.today_outlined,
-                label: 'Today',
-                sublabel: _todayLabel(),
-                isSelected: _filter?.type == OrdersFilterType.today,
-                onTap: () {
-                  setState(
-                    () => _filter = const _ActiveFilter(OrdersFilterType.today),
-                  );
-                  setSheet(() {});
-                  Navigator.pop(sheetCtx);
-                },
-              ),
-              const SizedBox(height: 8),
-              _FilterSheetRow(
-                icon: Icons.history_outlined,
-                label: 'Yesterday',
-                sublabel: _yesterdayLabel(),
-                isSelected: _filter?.type == OrdersFilterType.yesterday,
-                onTap: () {
-                  setState(
-                    () =>
-                        _filter = const _ActiveFilter(OrdersFilterType.yesterday),
-                  );
-                  setSheet(() {});
-                  Navigator.pop(sheetCtx);
-                },
-              ),
-              const SizedBox(height: 8),
-              _FilterSheetRow(
-                icon: Icons.calendar_month_outlined,
-                label: 'This Month',
-                sublabel: _thisMonthLabel(),
-                isSelected: _filter?.type == OrdersFilterType.thisMonth,
-                onTap: () {
-                  setState(
-                    () =>
-                        _filter = const _ActiveFilter(OrdersFilterType.thisMonth),
-                  );
-                  setSheet(() {});
-                  Navigator.pop(sheetCtx);
-                },
-              ),
-              const SizedBox(height: 8),
-              _FilterSheetRow(
-                icon: Icons.date_range_outlined,
-                label: 'Custom Range',
-                sublabel: _filter?.type == OrdersFilterType.custom
-                    ? _filter!.label
-                    : 'Pick start & end date',
-                isSelected: _filter?.type == OrdersFilterType.custom,
-                onTap: () async {
-                  Navigator.pop(sheetCtx);
-                  await Future.delayed(const Duration(milliseconds: 200));
-                  if (!mounted) return;
+                  ),
+                  const SizedBox(height: 16),
 
-                  final now = DateTime.now();
-                  final picked = await showDateRangePicker(
-                    context: context,
-                    firstDate: DateTime(now.year - 5),
-                    lastDate: now,
-                    initialDateRange:
-                        _filter?.customRange ??
-                        DateTimeRange(
-                          start: now.subtract(const Duration(days: 6)),
-                          end: now,
+                  // Title + clear
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filters',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _kTextPrimary,
                         ),
-                    builder: (ctx, child) => Theme(
-                      data: Theme.of(ctx).copyWith(
-                        colorScheme: const ColorScheme.light(
-                          primary: _kPrimary,
-                          onPrimary: Colors.white,
-                          surface: _kSurface,
-                          onSurface: _kTextPrimary,
-                        ),
-                        textButtonTheme: TextButtonThemeData(
-                          style: TextButton.styleFrom(
-                            foregroundColor: _kPrimary,
+                      ),
+                      if (_hasActiveFilters)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _filter = null;
+                              _selectedRegion = null;
+                            });
+                            setSheet(() {});
+                            Navigator.pop(sheetCtx);
+                          },
+                          child: const Text(
+                            'Clear all',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _kPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      child: child!,
-                    ),
-                  );
+                    ],
+                  ),
 
-                  if (picked != null && mounted) {
-                    setState(
-                      () => _filter = _ActiveFilter(
-                        OrdersFilterType.custom,
-                        customRange: picked,
-                      ),
-                    );
-                  }
-                },
+                  // ── Region section ────────────────────────────────────────
+                  if (regions.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const _SectionLabel(label: 'Region'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: regions.map((region) {
+                        final isSelected = _selectedRegion == region;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(
+                              () =>
+                                  _selectedRegion = isSelected ? null : region,
+                            );
+                            setSheet(() {});
+                            Navigator.pop(sheetCtx);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected ? _kPrimary : _kBackground,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? _kPrimary : _kDivider,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 13,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : _kTextSecondary,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  region,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : _kTextPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
+                  const SizedBox(height: 18),
+
+                  // ── Date section ──────────────────────────────────────────
+                  const _SectionLabel(label: 'Date'),
+                  const SizedBox(height: 10),
+                  _FilterSheetRow(
+                    icon: Icons.today_outlined,
+                    label: 'Today',
+                    sublabel: _todayLabel(),
+                    isSelected: _filter?.type == OrdersFilterType.today,
+                    onTap: () {
+                      setState(
+                        () => _filter = const _ActiveFilter(
+                          OrdersFilterType.today,
+                        ),
+                      );
+                      setSheet(() {});
+                      Navigator.pop(sheetCtx);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _FilterSheetRow(
+                    icon: Icons.history_outlined,
+                    label: 'Yesterday',
+                    sublabel: _yesterdayLabel(),
+                    isSelected: _filter?.type == OrdersFilterType.yesterday,
+                    onTap: () {
+                      setState(
+                        () => _filter = const _ActiveFilter(
+                          OrdersFilterType.yesterday,
+                        ),
+                      );
+                      setSheet(() {});
+                      Navigator.pop(sheetCtx);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _FilterSheetRow(
+                    icon: Icons.calendar_month_outlined,
+                    label: 'This Month',
+                    sublabel: _thisMonthLabel(),
+                    isSelected: _filter?.type == OrdersFilterType.thisMonth,
+                    onTap: () {
+                      setState(
+                        () => _filter = const _ActiveFilter(
+                          OrdersFilterType.thisMonth,
+                        ),
+                      );
+                      setSheet(() {});
+                      Navigator.pop(sheetCtx);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _FilterSheetRow(
+                    icon: Icons.date_range_outlined,
+                    label: 'Custom Range',
+                    sublabel: _filter?.type == OrdersFilterType.custom
+                        ? _filter!.label
+                        : 'Pick start & end date',
+                    isSelected: _filter?.type == OrdersFilterType.custom,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      await Future.delayed(const Duration(milliseconds: 200));
+                      if (!mounted) return;
+                      final now = DateTime.now();
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(now.year - 5),
+                        lastDate: now,
+                        initialDateRange:
+                            _filter?.customRange ??
+                            DateTimeRange(
+                              start: now.subtract(const Duration(days: 6)),
+                              end: now,
+                            ),
+                        builder: (ctx, child) => Theme(
+                          data: Theme.of(ctx).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: _kPrimary,
+                              onPrimary: Colors.white,
+                              surface: _kSurface,
+                              onSurface: _kTextPrimary,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor: _kPrimary,
+                              ),
+                            ),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null && mounted) {
+                        setState(
+                          () => _filter = _ActiveFilter(
+                            OrdersFilterType.custom,
+                            customRange: picked,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -898,11 +965,148 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
   }
 }
 
+// ── Section label ─────────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: _kTextSecondary,
+          letterSpacing: 0.5,
+        ),
+      ),
+      const SizedBox(width: 10),
+      const Expanded(child: Divider(color: _kDivider, height: 1)),
+    ],
+  );
+}
+
+// ── Filter chip ───────────────────────────────────────────────────────────────
+class _FilterChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int? count;
+  final VoidCallback onRemove;
+  final double fontSize;
+
+  const _FilterChip({
+    required this.icon,
+    required this.label,
+    this.count,
+    required this.onRemove,
+    this.fontSize = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: _kPrimaryLight,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: _kPrimary.withOpacity(0.4)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: _kPrimary),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: _kPrimary,
+          ),
+        ),
+        if (count != null) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: _kPrimary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: fontSize - 1,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: onRemove,
+          child: const Icon(Icons.close_rounded, size: 14, color: _kPrimary),
+        ),
+      ],
+    ),
+  );
+}
+
+// ── Amount badge ──────────────────────────────────────────────────────────────
+class _AmountBadge extends StatelessWidget {
+  final double amount;
+  final double fontSize;
+  const _AmountBadge({required this.amount, this.fontSize = 12});
+
+  String _fmt(num value) {
+    final neg = value < 0;
+    value = value.abs();
+    final parts = value.toStringAsFixed(2).split('.');
+    var int_ = parts[0];
+    final dec = parts.length > 1 ? parts[1] : '00';
+    if (int_.length <= 3) return '${neg ? '-' : ''}₹$int_.$dec';
+    final last3 = int_.substring(int_.length - 3);
+    var rest = int_
+        .substring(0, int_.length - 3)
+        .replaceAll(RegExp(r'\B(?=(\d{2})+(?!\d))'), ',');
+    return '${neg ? '-' : ''}₹$rest,$last3.$dec';
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: _kSurface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: _kDivider),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.currency_rupee_rounded,
+          size: 12,
+          color: _kTextSecondary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          _fmt(amount).replaceFirst('₹', ''),
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: _kTextPrimary,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 // ── Filter sheet row ──────────────────────────────────────────────────────────
 class _FilterSheetRow extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String sublabel;
+  final String label, sublabel;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -915,85 +1119,84 @@ class _FilterSheetRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? _kPrimaryLight : _kBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? _kPrimary : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isSelected ? _kPrimary : _kSurface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : _kDivider,
-                ),
-              ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: isSelected ? Colors.white : _kTextSecondary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                      color: isSelected ? _kPrimary : _kTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    sublabel,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected
-                          ? _kPrimary.withOpacity(0.7)
-                          : _kTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              isSelected ? Icons.check_rounded : Icons.chevron_right_rounded,
-              size: 18,
-              color: isSelected ? _kPrimary : _kTextSecondary,
-            ),
-          ],
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isSelected ? _kPrimaryLight : _kBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? _kPrimary : Colors.transparent,
+          width: 1.5,
         ),
       ),
-    );
-  }
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isSelected ? _kPrimary : _kSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? Colors.transparent : _kDivider,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : _kTextSecondary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? _kPrimary : _kTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  sublabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected
+                        ? _kPrimary.withOpacity(0.7)
+                        : _kTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            isSelected ? Icons.check_rounded : Icons.chevron_right_rounded,
+            size: 18,
+            color: isSelected ? _kPrimary : _kTextSecondary,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Order Card
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Order Card ────────────────────────────────────────────────────────────────
 class _OrderCard extends StatelessWidget {
   final Order order;
   final int orderNumber;
+  final _Responsive responsive;
 
-  const _OrderCard({required this.order, required this.orderNumber});
+  const _OrderCard({
+    required this.order,
+    required this.orderNumber,
+    required this.responsive,
+  });
 
   String _formatDate(String raw) {
     try {
@@ -1023,8 +1226,7 @@ class _OrderCard extends StatelessWidget {
       final d = DateTime.parse(raw);
       final h = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
       final m = d.minute.toString().padLeft(2, '0');
-      final p = d.hour >= 12 ? 'PM' : 'AM';
-      return '$h:$m $p';
+      return '$h:$m ${d.hour >= 12 ? 'PM' : 'AM'}';
     } catch (_) {
       return '';
     }
@@ -1032,6 +1234,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = responsive;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -1051,7 +1254,7 @@ class _OrderCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: _kDivider),
             ),
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(r.cardPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1064,8 +1267,8 @@ class _OrderCard extends StatelessWidget {
                         children: [
                           Text(
                             order.shopNamep ?? 'Unknown',
-                            style: const TextStyle(
-                              fontSize: 15,
+                            style: TextStyle(
+                              fontSize: r.titleFontSize,
                               fontWeight: FontWeight.w700,
                               color: _kTextPrimary,
                               letterSpacing: -0.3,
@@ -1076,33 +1279,23 @@ class _OrderCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             '${_formatDate(order.orderDate)} • ${_formatTime(order.orderDate)}',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            style: TextStyle(
+                              fontSize: r.dateFontSize,
                               color: _kTextSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '₹${order.totalPrice.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: _kTextPrimary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        // const Icon(
-                        //   Icons.chevron_right_rounded,
-                        //   size: 16,
-                        //   color: _kTextSecondary,
-                        // ),
-                      ],
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹${order.totalPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: r.priceFontSize,
+                        fontWeight: FontWeight.w700,
+                        color: _kTextPrimary,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ],
                 ),
@@ -1111,17 +1304,17 @@ class _OrderCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.storefront_outlined,
-                      size: 13,
+                      size: r.isSmall ? 11 : 13,
                       color: _kTextSecondary,
                     ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         '${order.items.length} item${order.items.length == 1 ? '' : 's'}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: r.bodyFontSize,
                           color: _kTextSecondary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1129,21 +1322,48 @@ class _OrderCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 12),
-
-                                  const Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: _kTextSecondary,
-              ),
-
-              //       const SizedBox(width: 12),
-
-              //                     const Icon(
-              //   Icons.chevron_right_rounded,
-              //   size: 18,
-              //   color: _kTextSecondary,
-              // ),
+                    const Spacer(),
+                    if ((order.regionName ?? '').isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kPrimaryLight,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 140),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: r.isSmall ? 9 : 10,
+                              color: _kPrimary,
+                            ),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                order.regionName!,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: r.badgeFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  color: _kPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: r.isSmall ? 16 : 18,
+                      color: _kTextSecondary,
+                    ),
                   ],
                 ),
               ],

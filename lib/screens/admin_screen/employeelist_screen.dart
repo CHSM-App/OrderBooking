@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_addEmployee.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_employeeDetails.dart';
 import 'package:order_booking_app/screens/admin_screen/attendance_report.dart';
@@ -31,16 +32,36 @@ class AdminEmployeesPage extends ConsumerStatefulWidget {
 class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  ProviderSubscription<AdminloginState>? _adminListener;
+  bool _initialFetchDone = false;
 
   @override
   void initState() {
     super.initState();
+    _adminListener = ref.listenManual<AdminloginState>(
+      adminloginViewModelProvider,
+      (previous, next) {
+        final companyId = next.companyId;
+        if (!_initialFetchDone &&
+            companyId != null &&
+            companyId.isNotEmpty) {
+          _initialFetchDone = true;
+          ref
+              .read(employeeloginViewModelProvider.notifier)
+              .getEmployeeList(companyId);
+        }
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(employeeloginViewModelProvider.notifier)
-          .getEmployeeList(
-            ref.read(adminloginViewModelProvider).companyId ?? '',
-          );
+      final companyId = ref.read(adminloginViewModelProvider).companyId;
+      if (!_initialFetchDone &&
+          companyId != null &&
+          companyId.isNotEmpty) {
+        _initialFetchDone = true;
+        ref
+            .read(employeeloginViewModelProvider.notifier)
+            .getEmployeeList(companyId);
+      }
     });
   }
 
@@ -52,8 +73,10 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   }
 
   Future<void> _onRefresh() async {
+    final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
+    if (companyId.isEmpty) return;
     await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(
-          ref.read(adminloginViewModelProvider).companyId ?? '',
+          companyId,
           useCacheFirst: false,
         );
   }
@@ -83,6 +106,7 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
 
   @override
   void dispose() {
+    _adminListener?.close();
     _searchController.dispose();
     super.dispose();
   }
