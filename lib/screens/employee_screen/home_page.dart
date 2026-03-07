@@ -116,6 +116,8 @@ class _HomePageState extends ConsumerState<HomePage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 380;
+        final roleId = ref.watch(tokenProvider).roleId ?? 0;
+        final locationLabel = roleId == 3 ? 'Godown' : 'Shops';
 
         final todayOrders = ref.watch(ordersViewModelProvider).todayOrdars ?? 0;
         final todayRevenue = ref.watch(ordersViewModelProvider).todayRevenue ?? 0;
@@ -154,7 +156,7 @@ class _HomePageState extends ConsumerState<HomePage>
               children: [
                 Expanded(
                   child: _StatCard(
-                    title: 'Shops',
+                    title: locationLabel,
                     value: todayVisitedShops.toString(),
                     icon: Icons.store_outlined,
                     color: const Color(0xFFFF6B6B),
@@ -534,8 +536,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 13,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isSmall ? 11 : 13,
               color: Color(0xFF757575),
               fontWeight: FontWeight.w500,
             ),
