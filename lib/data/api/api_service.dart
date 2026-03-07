@@ -93,7 +93,7 @@ abstract class ApiService {
   @POST("login/logout")
   Future<dynamic> logOut(@Body() TokenResponse tokenResponse);
 
-  @POST("insert/addAdminDetails")
+  @POST("login/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
   @POST("insert/addRegion")
