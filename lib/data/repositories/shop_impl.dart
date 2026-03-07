@@ -66,6 +66,7 @@ class ShopImpl implements ShopRepository {
             shop.companyId,
             shop.latitude,
             shop.longitude,
+            shop.type,
             _fileFromPath(shop.shopSelfie),
           );
 
@@ -87,6 +88,7 @@ class ShopImpl implements ShopRepository {
             shop.companyId,
             shop.latitude,
             shop.longitude,
+            shop.type,
             _fileFromPath(shop.shopSelfie),
           );
 
@@ -126,9 +128,9 @@ class ShopImpl implements ShopRepository {
   }
 
   // 🔹 Sync Server → Local
-  Future<void> syncServerToLocal(String companyId, int regionId) async {
+  Future<void> syncServerToLocal(String companyId, int regionId,int type) async {
     try {
-      final serverShops = await apiService.getEmpShopList(companyId, regionId);
+      final serverShops = await apiService.getEmpShopList(companyId, regionId,type);
 
       for (final shop in serverShops) {
         final exists = await local.existsByServerId(shop.shopId!);
@@ -158,9 +160,10 @@ class ShopImpl implements ShopRepository {
   Future<List<ShopDetails>> getEmpShopList(
     String companyId,
     int regionId,
+    int type
   ) async {
     await syncLocalToServer();
-    await syncServerToLocal(companyId, regionId);
+    await syncServerToLocal(companyId, regionId,type);
 
     return await local.getAll();
   }

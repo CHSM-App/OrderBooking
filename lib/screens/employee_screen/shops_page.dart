@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/shop_viewmodel.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
@@ -31,6 +32,7 @@ class ShopListPage extends ConsumerStatefulWidget {
 class _ShopListPageState extends ConsumerState<ShopListPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  int get _shopType => (ref.read(tokenProvider).roleId ?? 0) == 3 ? 2 : 1;
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           .getEmpShopList(
             ref.read(adminloginViewModelProvider).companyId ?? '',
             ref.read(adminloginViewModelProvider).regionId ?? 0,
+            _shopType,
           );
     });
 
@@ -59,6 +62,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
         .getEmpShopList(
           ref.read(adminloginViewModelProvider).companyId ?? '',
           ref.read(adminloginViewModelProvider).regionId ?? 0,
+          _shopType,
         );
   }
 
@@ -522,6 +526,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           .getEmpShopList(
             ref.read(adminloginViewModelProvider).companyId ?? '',
             ref.read(adminloginViewModelProvider).regionId ?? 0,
+            _shopType,
           );
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) _showSnack('Shop deleted');
@@ -706,12 +711,16 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
   // ── FAB ───────────────────────────────────────────────────────────────────
   Widget _buildFAB(ShopState shopState) {
+    final isGodownMode = (ref.read(tokenProvider).roleId ?? 0) == 3;
+    final entityLabel = isGodownMode ? 'Godown' : 'Shop';
+
     return FloatingActionButton.extended(
       onPressed: () async {
         final result = await Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const AddShopScreen(),
+            pageBuilder: (_, __, ___) =>
+                AddShopScreen(isGodown: isGodownMode),
             transitionsBuilder: (_, anim, __, child) => SlideTransition(
               position: Tween(
                 begin: const Offset(0, 1),
@@ -728,6 +737,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
               .getEmpShopList(
                 ref.read(adminloginViewModelProvider).companyId ?? '',
                 ref.read(adminloginViewModelProvider).regionId ?? 0,
+                _shopType,
               );
         }
       },
@@ -736,8 +746,8 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       icon: const Icon(Icons.add_rounded, size: 22),
-      label: const Text(
-        'Add Shop',
+      label: Text(
+        'Add $entityLabel',
         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
     );
@@ -901,6 +911,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
                   .getEmpShopList(
                     ref.read(adminloginViewModelProvider).companyId ?? '',
                     ref.read(adminloginViewModelProvider).regionId ?? 0,
+                    _shopType,
                   ),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text(

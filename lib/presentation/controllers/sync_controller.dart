@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/presentation/providers/connectivity_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 
@@ -14,12 +15,13 @@ final syncControllerProvider = Provider<void>((ref) {
           final companyId = ref.read(adminloginViewModelProvider).companyId??"";
           final userId = ref.read(adminloginViewModelProvider).userId;
           final regionId = ref.read(adminloginViewModelProvider).regionId?? 0;
+          final type = (ref.read(tokenProvider).roleId ?? 0) == 3 ? 2 : 1;
       // Trigger sync only when transitioning from offline -> online
       if (wasOffline && isOnline && companyId.isNotEmpty ) {
         try {
           // Call sync methods for all offline data
           await ref.read(visitViewModelProvider.notifier).sync();
-          await ref.read(shopViewModelProvider.notifier).getEmpShopList(companyId, regionId);
+          await ref.read(shopViewModelProvider.notifier).getEmpShopList(companyId, regionId,type);
           await ref.read(productViewModelProvider.notifier).fetchProductList(companyId);
           await ref.read(ordersViewModelProvider.notifier).getAllOrders(userId);
          // await ref.read(regionofflineViewModelProvider.notifier).fetchRegions(companyId);

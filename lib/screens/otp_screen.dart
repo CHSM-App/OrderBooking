@@ -76,7 +76,17 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
-    } else {
+    } 
+    else if (roleId == 3) {
+      // Employee
+      //  final allowLocation = await _showPermissionDialog();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      );
+    } 
+    
+    else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unknown role!'),

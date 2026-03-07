@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/orders_page.dart';
 
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
@@ -38,33 +39,36 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     ProfilePage(),
   ];
 
-  final List<_NavItem> _navItems = const [
-    _NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    _NavItem(
-      icon: Icons.store_outlined,
-      activeIcon: Icons.store_rounded,
-      label: 'Shops',
-    ),
-    _NavItem(
-      icon: Icons.shopping_bag_outlined,
-      activeIcon: Icons.shopping_bag_rounded,
-      label: 'Orders',
-    ),
-    _NavItem(
-      icon: Icons.grid_view_outlined,
-      activeIcon: Icons.grid_view_rounded,
-      label: 'Products',
-    ),
-    _NavItem(
-      icon: Icons.person_outline_rounded,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-    ),
-  ];
+  List<_NavItem> _navItems(int roleId) {
+    final shopLabel = roleId == 3 ? 'Godown' : 'Shops';
+    return [
+      const _NavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home',
+      ),
+      _NavItem(
+        icon: Icons.store_outlined,
+        activeIcon: Icons.store_rounded,
+        label: shopLabel,
+      ),
+      const _NavItem(
+        icon: Icons.shopping_bag_outlined,
+        activeIcon: Icons.shopping_bag_rounded,
+        label: 'Orders',
+      ),
+      const _NavItem(
+        icon: Icons.grid_view_outlined,
+        activeIcon: Icons.grid_view_rounded,
+        label: 'Products',
+      ),
+      const _NavItem(
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: 'Profile',
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -227,6 +231,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final loginState = ref.watch(adminloginViewModelProvider);
     final checkInState = ref.watch(checkInViewModelProvider);
+    final roleId = ref.watch(tokenProvider).roleId ?? 0;
 
     final employeeName = loginState.name ?? "Employee";
     final isCheckedIn = checkInState.isCheckedIn;
@@ -393,7 +398,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         bottomNavigationBar: _PillBottomNavBar(
           currentIndex: _currentIndex,
           isEnabled: true,
-          items: _navItems,
+          items: _navItems(roleId),
           onTap: _onTabTapped,
           activeColor: AppTheme.primaryColor,
         ),

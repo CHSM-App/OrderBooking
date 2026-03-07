@@ -20,8 +20,10 @@ class ShopDao {
       'longitude': shop.longitude,
       'shop_selfie': shop.shopSelfie,
       'company_id': shop.companyId,
+            'type': shop.type,
       'is_synced': shop.isSynced ? 1 : 0,
       'is_deleted': shop.isDeleted ?? false ? 1 : 0,
+
       'sync_action': shop.syncAction,
       'updated_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -101,8 +103,10 @@ class ShopDao {
       longitude: row['longitude'],
       shopSelfie: row['shop_selfie'],
       companyId: row['company_id'],
+          type: row['type'],
       isSynced: row['is_synced'] == 1,
       isDeleted: row['is_deleted'] == 1,
+  
       syncAction: row['sync_action'],
       updatedAt: DateTime.parse(row['updated_at']),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/domain/models/shop_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,8 +38,10 @@ class AddShopTheme {
 
 class AddShopScreen extends ConsumerStatefulWidget {
   final ShopDetails? initialShop;
+  final bool? isGodown;
 
-  const AddShopScreen({Key? key, this.initialShop}) : super(key: key);
+  const AddShopScreen({Key? key, this.initialShop, this.isGodown})
+      : super(key: key);
 
   @override
   ConsumerState<AddShopScreen> createState() => _AddShopScreenState();
@@ -64,10 +67,16 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   String? _selfieFileName;
   String? _existingSelfiePath;
   bool _existingSelfieFileAvailable = false;
+  late final bool _isGodownMode;
+
+  String get _entityTitle => _isGodownMode ? 'Godown' : 'Shop';
+  String get _entityTitleLower => _isGodownMode ? 'godown' : 'shop';
 
   @override
   void initState() {
     super.initState();
+    _isGodownMode =
+        widget.isGodown ?? ((ref.read(tokenProvider).roleId ?? 0) == 3);
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     _retrieveLostData();
@@ -116,7 +125,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     final longitude = position?.longitude ?? widget.initialShop?.longitude;
     if (latitude == null || longitude == null) {
       if (mounted) {
-        _showErrorSnackbar('Location is required to save the shop.');
+        _showErrorSnackbar(
+            'Location is required to save the ${_entityTitleLower}.');
       }
       if (mounted) setState(() => _isSaving = false);
       return;
@@ -125,7 +135,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     final selfiePath = _selfieFile?.path ?? _existingSelfiePath;
     if (selfiePath == null || selfiePath.isEmpty) {
       if (mounted) {
-        _showErrorSnackbar('Shop selfie is required to save the shop.');
+        _showErrorSnackbar(
+            '${_entityTitle} selfie is required to save the ${_entityTitleLower}.');
       }
       if (mounted) setState(() => _isSaving = false);
       return;
@@ -147,6 +158,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       latitude: latitude,
       longitude: longitude,
       shopSelfie: selfiePath,
+      type:_isGodownMode?2:1
+
     );
 
     try {
@@ -160,7 +173,9 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
 
       if (state.error == null) {
         _showSuccessDialog(
-          title: widget.initialShop == null ? 'Shop Added' : 'Shop Updated',
+          title: widget.initialShop == null
+              ? '$_entityTitle Added'
+              : '$_entityTitle Updated',
           subtitle: widget.initialShop == null
               ? 'Saved successfully'
               : 'Updated successfully',
@@ -176,6 +191,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       await ref.read(shopViewModelProvider.notifier).getEmpShopList(
             ref.read(adminloginViewModelProvider).companyId ?? "",
             ref.read(adminloginViewModelProvider).regionId ?? 0,
+            _isGodownMode ? 2 : 1,
           );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -189,7 +205,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
         icon: Icons.location_off_outlined,
         iconColor: AddShopTheme.primaryPink,
         title: 'Location Disabled',
-        body: 'Please enable location services to save this shop.',
+        body: 'Please enable location services to save this ${_entityTitleLower}.',
         confirmLabel: 'Enable',
       );
       if (open) {
@@ -211,7 +227,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
             icon: Icons.location_disabled_outlined,
             iconColor: Colors.red,
             title: 'Permission Denied',
-            body: 'Location permission is required to save the shop.',
+            body: 'Location permission is required to save the ${_entityTitleLower}.',
             confirmLabel: 'OK',
             cancelLabel: null,
           );
@@ -489,7 +505,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => _ImageViewerPage(
-          title: _selfieFileName ?? 'Shop Selfie',
+          title: _selfieFileName ?? '$_entityTitle Selfie',
           file: file,
         ),
       ),
@@ -500,8 +516,7 @@ Future<void> _pickSelfieFromCamera() async {
   try {
     // Create a stable file path BEFORE launching camera
     final dir = await getApplicationDocumentsDirectory();
-    final filePath = '${dir.path}/shop_selfie_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final targetFile = File(filePath);
+    final filePath = '${dir.path}/${_entityTitleLower}_selfie_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
     final XFile? photo = await _imagePicker.pickImage(
       source: ImageSource.camera,
@@ -517,7 +532,7 @@ Future<void> _pickSelfieFromCamera() async {
     if (await saved.exists() && mounted) {
       setState(() {
         _selfieFile = saved;
-        _selfieFileName = 'shop_selfie.jpg';
+        _selfieFileName = '${_entityTitleLower}_selfie.jpg';
       });
     }
   } on PlatformException catch (e) {
@@ -539,7 +554,9 @@ Future<void> _pickSelfieFromCamera() async {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          widget.initialShop == null ? "Add New Shop" : "Update Shop",
+          widget.initialShop == null
+              ? "Add New $_entityTitle"
+              : "Update $_entityTitle",
           style: TextStyle(
               color: AddShopTheme.textDark, fontWeight: FontWeight.bold),
         ),
@@ -557,11 +574,11 @@ Future<void> _pickSelfieFromCamera() async {
                 child: Column(
                   children: [
                     _buildCard(
-                      title: "Shop Information",
+                      title: "$_entityTitle Information",
                       children: [
                         _buildTextField(
                             controller: _shopNameController,
-                            label: "Shop Name"),
+                            label: "$_entityTitle Name"),
                         const SizedBox(height: 14),
                         _buildTextField(
                             controller: _addressController,
@@ -702,7 +719,7 @@ Future<void> _pickSelfieFromCamera() async {
                     const SizedBox(height: 30),
 
                     _buildCard(
-                      title: "Shop Selfie",
+                      title: "$_entityTitle Selfie",
                       children: [
                         (_selfieFile == null && !_existingSelfieFileAvailable)
                             ? InkWell(
@@ -743,8 +760,8 @@ Future<void> _pickSelfieFromCamera() async {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text(
-                                        "Add Shop Selfie",
+                                      Text(
+                                        "Add $_entityTitle Selfie",
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -875,8 +892,8 @@ Future<void> _pickSelfieFromCamera() async {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                "Save Shop",
+                            : Text(
+                                "Save $_entityTitle",
                                 style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600),

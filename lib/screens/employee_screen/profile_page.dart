@@ -748,13 +748,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                     .read(adminloginViewModelProvider)
                                     .regionId ??
                                 0;
+                            final type =
+                                (ref.read(tokenProvider).roleId ?? 0) == 3
+                                    ? 2
+                                    : 1;
 
                             await ref
                                 .read(visitViewModelProvider.notifier)
                                 .sync();
                             await ref
                                 .read(shopViewModelProvider.notifier)
-                                .getEmpShopList(companyId, regionId);
+                                .getEmpShopList(companyId, regionId, type);
                             await ref
                                 .read(productViewModelProvider.notifier)
                                 .fetchProductList(companyId);

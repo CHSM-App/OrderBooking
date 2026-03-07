@@ -715,6 +715,7 @@ class _ApiService implements ApiService {
   Future<List<ShopDetails>> getEmpShopList(
     String companyId,
     int regionID,
+    int type,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -724,7 +725,7 @@ class _ApiService implements ApiService {
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'users/employeeShopList/${companyId}/${regionID}',
+            'users/employeeShopList/${companyId}/${regionID}/${type}',
             queryParameters: queryParameters,
             data: _data,
           )
@@ -933,6 +934,7 @@ class _ApiService implements ApiService {
     String? companyId,
     double? latitude,
     double? longitude,
+    int? type,
     File? image,
   ) async {
     final _extra = <String, dynamic>{};
@@ -972,6 +974,9 @@ class _ApiService implements ApiService {
     }
     if (longitude != null) {
       _data.fields.add(MapEntry('longitude', longitude.toString()));
+    }
+    if (type != null) {
+      _data.fields.add(MapEntry('type', type.toString()));
     }
     if (image != null) {
       _data.files.add(
