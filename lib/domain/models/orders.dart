@@ -44,11 +44,15 @@ class Order {
   @JsonKey(name: 'region_name')
   final String? regionName;
 
+  @JsonKey(name: 'is_delivered')
+  final int? isDelivered;
+
   @JsonKey(name: 'mobile_no')
   final String? mobileNo;
   final String? status;  
 
   Order({
+    this.isDelivered,
     this.mobileNo,
     this.regionName,
     this.shopNamep,
@@ -82,6 +86,7 @@ class Order {
     normalized['owner_name'] ??= json['ownerName'];
     normalized['region_name'] ??= json['regionName'];
     normalized['mobile_no'] ??= json['mobileNo'];
+    normalized['is_delivered'] ??= json['isDelivered'];
 
     return _$OrderFromJson(normalized);
   }

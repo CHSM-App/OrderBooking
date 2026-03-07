@@ -13,4 +13,6 @@ abstract class OrdersRepository {
   Future<void> cacheOrderList(String companyId, List<Order> orders);
 
   Future<List<Order>> getEmployeeOrders(int empId);
+
+  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds);
 }

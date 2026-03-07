@@ -47,6 +47,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
           mobileNo: o['mobile_no'],
           orderDate: o['order_date'],
           companyId: o['company_id'],
+          isDelivered: o['is_delivered'],
           items: items,
           totalPrice: o['total_price'],
         );
@@ -64,110 +65,131 @@ class OrdersRepositoryImpl implements OrdersRepository {
     }
   }
 
-
   Future<List<Order>> getAllOrders(int empId) async {
+    try {
+      await syncOfflineOrders();
+    } catch (_) {
+      // Ignore sync errors and fall back to local data.
+    }
+    try {
+      await syncServerOrdersToLocal(empId);
+    } catch (_) {
+      // Ignore sync errors and fall back to local data.
+    }
+    final rows = await offlineOrderDao.fetchAllOrders();
 
-  try {
-    await syncOfflineOrders();
-  } catch (_) {
-    // Ignore sync errors and fall back to local data.
-  }
-  try {
-    await syncServerOrdersToLocal(empId);
-  } catch (_) {
-    // Ignore sync errors and fall back to local data.
-  }
-  final rows = await offlineOrderDao.fetchAllOrders();
+    final result = <Order>[];
 
-  final result = <Order>[];
+    for (final row in rows) {
+      final localOrderId = row['local_order_id'] as String;
 
-  for (final row in rows) {
-    final localOrderId = row['local_order_id'] as String;
+      final itemRows = await offlineOrderDao.fetchItems(localOrderId);
 
-    final itemRows =
-        await offlineOrderDao.fetchItems(localOrderId);
+      final items = itemRows.map((r) {
+        return OrderItem(
+          productId: r['product_id'],
+          subItemId: r['sub_item_id'],
+          productName: r['product_name'],
+          productUnit: r['product_unit'],
+          price: (r['price'] as num).toDouble(),
+          quantity: r['quantity'],
+        );
+      }).toList();
 
-    final items = itemRows.map((r) {
-      return OrderItem(
-        productId: r['product_id'],
-        subItemId: r['sub_item_id'],
-        productName: r['product_name'],
-        productUnit: r['product_unit'],
-        price: (r['price'] as num).toDouble(),
-        quantity: r['quantity'],
+      result.add(
+        Order(
+          localOrderId: row['local_order_id'],
+          serverOrderId: row['server_order_id'],
+          employeeId: row['employee_id'],
+          shopId: row['shop_id'],
+          shopNamep: row['shop_name'],
+          empName: row['emp_name'],
+          address: row['address'],
+          ownerName: row['owner_name'],
+          mobileNo: row['mobile_no'],
+          orderDate: row['order_date'],
+          isDelivered: row['is_delivered'],
+          items: items,
+          totalPrice: (row['total_price'] as num).toDouble(),
+          companyId: row['company_id'],
+        ),
       );
-    }).toList();
+    }
 
-    result.add(
-      Order(
-        localOrderId: row['local_order_id'],
-        employeeId: row['employee_id'],
-        shopId: row['shop_id'],
-        shopNamep: row['shop_name'],
-        empName: row['emp_name'],
-        address: row['address'],
-        ownerName: row['owner_name'],
-        mobileNo: row['mobile_no'],
-        orderDate: row['order_date'],
-        items: items,
-        totalPrice: (row['total_price'] as num).toDouble(),
-        companyId: row['company_id'],
-      ),
-    );
+    return result;
   }
-
-  return result;
-}
-
 
   Future<void> syncServerOrdersToLocal(int employeeId) async {
+    // Push pending delivered order ids before pulling latest orders
+    try {
+      await _syncDeliveredOrders();
+    } catch (_) {
+      // Ignore delivery sync errors; keep them pending.
+    }
 
-  // 1️⃣ Fetch from server
-  final serverOrders = await _apiService.getOrders(employeeId);
-  // assuming this returns List<Order>
+    // 1️⃣ Fetch from server
+    final serverOrders = await _apiService.getOrders(employeeId);
+    // assuming this returns List<Order>
 
-  for (final serverOrder in serverOrders) {
-    // 🔑 server order id must come from API
-    final serverOrderId = serverOrder.serverOrderId; // or from JSON if mapped
+    for (final serverOrder in serverOrders) {
+      // 🔑 server order id must come from API
+      final serverOrderId = serverOrder.serverOrderId; // or from JSON if mapped
 
-    // 2️⃣ Skip if already stored locally
-    final exists =
-        await offlineOrderDao.existsByServerOrderId(serverOrderId??0);
+      // 2️⃣ Skip if already stored locally
+      final exists = await offlineOrderDao.existsByServerOrderId(
+        serverOrderId ?? 0,
+      );
 
-    if (exists) continue;
+      if (exists) continue;
 
-    // 3️⃣ Create a stable localOrderId
-    final localOrderId = 'server-$serverOrderId';
+      // 3️⃣ Create a stable localOrderId
+      final localOrderId = 'server-$serverOrderId';
 
-    final localOrder = Order(
-      localOrderId: localOrderId,
-      ownerName: serverOrder.ownerName,
-      mobileNo: serverOrder.mobileNo,
-      employeeId: serverOrder.employeeId,
-      shopId: serverOrder.shopId,
-      shopNamep: serverOrder.shopNamep,
-      empName: serverOrder.empName,
-      address: serverOrder.address,
-      orderDate: serverOrder.orderDate,
-      items: serverOrder.items,
-      totalPrice: serverOrder.totalPrice,
-      companyId: serverOrder.companyId,
-    );
+      final localOrder = Order(
+        localOrderId: localOrderId,
+        ownerName: serverOrder.ownerName,
+        mobileNo: serverOrder.mobileNo,
+        employeeId: serverOrder.employeeId,
+        shopId: serverOrder.shopId,
+        shopNamep: serverOrder.shopNamep,
+        empName: serverOrder.empName,
+        address: serverOrder.address,
+        orderDate: serverOrder.orderDate,
+        items: serverOrder.items,
+        totalPrice: serverOrder.totalPrice,
+        isDelivered: serverOrder.isDelivered,
+        companyId: serverOrder.companyId,
+      );
 
-    // 4️⃣ Save to local DB
-    await offlineOrderDao.insertRemoteOrder(
-      order: localOrder,
-      serverOrderId: serverOrderId??0,
-    );
+      // 4️⃣ Save to local DB
+      await offlineOrderDao.insertRemoteOrder(
+        order: localOrder,
+        serverOrderId: serverOrderId ?? 0,
+      );
+    }
   }
-}
- 
-  Future<List<Order>> getOrderList(String companyId){
-     return _apiService.getOrderList(companyId);
+
+  Future<void> markDeliveredByLocalIds(
+    List<String> localIds,
+    List<int> serverIds,
+  ) async {
+    await offlineOrderDao.markDeliveredByLocalIds(localIds);
+    await offlineOrderDao.insertDeliveredOrders(serverIds);
   }
 
-  Future<List<Order>> getEmployeeOrders(int empId){
-     return _apiService.getOrders(empId);
+  Future<void> _syncDeliveredOrders() async {
+    final pendingIds = await offlineOrderDao.fetchPendingDeliveredServerIds();
+    if (pendingIds.isEmpty) return;
+    await _apiService.markDelivered(pendingIds);
+    await offlineOrderDao.markDeliveredSynced(pendingIds);
+  }
+
+  Future<List<Order>> getOrderList(String companyId) {
+    return _apiService.getOrderList(companyId);
+  }
+
+  Future<List<Order>> getEmployeeOrders(int empId) {
+    return _apiService.getOrders(empId);
   }
 
   Future<List<Order>> getCachedOrderList(String companyId) async {

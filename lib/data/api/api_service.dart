@@ -202,6 +202,8 @@ abstract class ApiService {
   @POST("insert/addOrder")
   Future<dynamic> addOrder(@Body() Order product);
 
+  @POST("insert/markDelivered")
+  Future<dynamic> markDelivered(@Body() List<int> orderIds);
 
   // DELETE API
   @DELETE("index/deleteShop/{shop_id}")

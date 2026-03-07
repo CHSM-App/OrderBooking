@@ -36,4 +36,8 @@ class OrderUsecase {
   Future<List<Order>> getEmployeeOrders(int empId) async {
     return ordersRepository.getEmployeeOrders(empId);
   }
+
+  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds) async {
+    return ordersRepository.markDeliveredByLocalIds(localIds, serverIds);
+  }
 }

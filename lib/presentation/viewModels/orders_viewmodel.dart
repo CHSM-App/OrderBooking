@@ -220,4 +220,16 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
       return false;
     }
   }
+
+  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds) async {
+
+      state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
+      try {
+        await usecase.markDeliveredByLocalIds(localIds, serverIds);
+        state = state.copyWith(isLoading: false, isSuccess: true);
+      } catch (e) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString(), isSuccess: false);
+      }
+  }
 }
+

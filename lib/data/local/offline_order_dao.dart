@@ -16,7 +16,7 @@ class OfflineOrderDao {
       'emp_name': order.empName,
       'address': order.address,
       'owner_name': order.ownerName,
-      'mobile_no' : order.mobileNo,
+      'mobile_no': order.mobileNo,
       'order_date': order.orderDate,
       'total_price': order.totalPrice,
       'status': 'pending',
@@ -107,8 +107,8 @@ class OfflineOrderDao {
     final batch = db.batch();
 
     batch.insert('offline_orders', {
-      'owner_name' : order.ownerName,
-      'mobile_no' : order.mobileNo,
+      'owner_name': order.ownerName,
+      'mobile_no': order.mobileNo,
       'local_order_id': order.localOrderId,
       'server_order_id': serverOrderId,
       'employee_id': order.employeeId,
@@ -120,6 +120,7 @@ class OfflineOrderDao {
       'total_price': order.totalPrice,
       'company_id': order.companyId,
       'status': 'synced',
+      'is_delivered': order.isDelivered??0,
       'created_at': DateTime.now().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
 
@@ -184,42 +185,34 @@ class OfflineOrderDao {
         final serverOrderId = o.serverOrderId;
         if (serverOrderId == null) continue;
         final localId = 'server-$serverOrderId';
-        batch.insert(
-          'offline_orders',
-          {
-            'local_order_id': localId,
-            'server_order_id': serverOrderId,
-            'employee_id': o.employeeId,
-            'shop_id': o.shopId,
-            'owner_name': o.ownerName,
-            'mobile_no': o.mobileNo,
-            'shop_name': o.shopNamep,
-            'emp_name': o.empName,
-            'address': o.address,
-            'order_date': o.orderDate,
-            'total_price': o.totalPrice,
-            'company_id': o.companyId ?? companyId,
-            'status': 'synced',
-            'created_at': DateTime.now().toIso8601String(),
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        batch.insert('offline_orders', {
+          'local_order_id': localId,
+          'server_order_id': serverOrderId,
+          'employee_id': o.employeeId,
+          'shop_id': o.shopId,
+          'owner_name': o.ownerName,
+          'mobile_no': o.mobileNo,
+          'shop_name': o.shopNamep,
+          'emp_name': o.empName,
+          'address': o.address,
+          'order_date': o.orderDate,
+          'total_price': o.totalPrice,
+          'company_id': o.companyId ?? companyId,
+          'status': 'synced',
+          'created_at': DateTime.now().toIso8601String(),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
 
         for (final item in o.items) {
-          batch.insert(
-            'offline_order_items',
-            {
-              'local_order_id': localId,
-              'product_id': item.productId,
-              'product_name': item.productName,
-              'sub_item_id': item.subItemId,
-              'product_unit': item.productUnit,
-              'price': item.price,
-              'quantity': item.quantity,
-              'total_price': item.totalPrice,
-            },
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
+          batch.insert('offline_order_items', {
+            'local_order_id': localId,
+            'product_id': item.productId,
+            'product_name': item.productName,
+            'sub_item_id': item.subItemId,
+            'product_unit': item.productUnit,
+            'price': item.price,
+            'quantity': item.quantity,
+            'total_price': item.totalPrice,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
 
@@ -268,5 +261,63 @@ class OfflineOrderDao {
     );
   }
 
-  
+  Future<void> markDeliveredByLocalIds(List<String> localOrderIds) async {
+    if (localOrderIds.isEmpty) return;
+    final db = await AppDatabase.database;
+    final placeholders = List.filled(localOrderIds.length, '?').join(',');
+    await db.rawUpdate('''
+      UPDATE offline_orders
+      SET is_delivered = 1
+      WHERE local_order_id IN ($placeholders)
+    ''', localOrderIds);
+  }
+
+  Future<void> insertDeliveredOrders(
+    List<int> serverOrderIds, {
+    String status = 'pending',
+    DateTime? deliveredOn,
+  }) async {
+    if (serverOrderIds.isEmpty) return;
+    final db = await AppDatabase.database;
+    final day = deliveredOn ?? DateTime.now();
+    final dateOnly = DateTime(day.year, day.month, day.day).toIso8601String();
+
+    final batch = db.batch();
+    for (final serverId in serverOrderIds) {
+      batch.insert('delivered_orders', {
+        'server_order_id': serverId ,
+        'status': status,
+        'delivered_on': dateOnly,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<int>> fetchPendingDeliveredServerIds() async {
+    final db = await AppDatabase.database;
+    final rows = await db.query(
+      'delivered_orders',
+      columns: ['server_order_id'],
+      where: 'status = ?',
+      whereArgs: ['pending'],
+    );
+    return rows
+        .map((r) => r['server_order_id'])
+        .whereType<int>()
+        .toList();
+  }
+
+  Future<void> markDeliveredSynced(List<int> serverOrderIds) async {
+    if (serverOrderIds.isEmpty) return;
+    final db = await AppDatabase.database;
+    final placeholders = List.filled(serverOrderIds.length, '?').join(',');
+    await db.rawUpdate(
+      '''
+      UPDATE delivered_orders
+      SET status = ?
+      WHERE server_order_id IN ($placeholders)
+    ''',
+      ['synced', ...serverOrderIds],
+    );
+  }
 }

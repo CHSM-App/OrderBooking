@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 8, // incremented version
+      version: 9, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -25,47 +25,12 @@ class AppDatabase {
         await _createOfflineOrdersTable(db);
         await _createOfflineOrdersItemsTable(db);
         await _createOfflineCheckinStatusTable(db);
+        await _createDeliveredOrdersTable(db);
         await createEmployeeTable(db);
       },
       
       onUpgrade: (db, oldVersion, newVersion) async {
-        /// VERSION 2 Changes
-        if (oldVersion < 2) {
-          // Example: Adding new column
-          // await db.execute(
-          //   "ALTER TABLE shops ADD COLUMN gst_number TEXT"
-          // );
-
-          //  Example: Creating new table
-          // await db.execute('''
-          //   CREATE TABLE IF NOT EXISTS new_table (
-          //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-          //     name TEXT
-          //   )
-          // ''');
-        }
-
-        if (oldVersion < 4) {
-          await _createOfflineCheckinStatusTable(db);
-        }
-
-        if (oldVersion < 8) {
-          await db.execute(
-            "ALTER TABLE offline_orders ADD COLUMN is_delivered INTEGER DEFAULT 0",
-          );
-        }
-
-
-        // if (oldVersion < 5) {
-        //   await db.execute(
-        //     "ALTER TABLE offline_visits ADD COLUMN server_location_id INTEGER",
-        //   );
-        //   await db.execute(
-        //     'CREATE UNIQUE INDEX IF NOT EXISTS idx_offline_visits_server_location_id '
-        //     'ON offline_visits(server_location_id)',
-        //   );
-        // }
-
+        
       },
     );
   }
@@ -220,6 +185,17 @@ static Future<void> _createRegionTable(Database db) async {
     ''');
   }
 
+  static Future<void> _createDeliveredOrdersTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS delivered_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_order_id INTEGER UNIQUE,
+        status TEXT,
+        delivered_on TEXT
+      )
+    ''');
+  }
+
   static Future<void> _createOfflineOrdersItemsTable(Database db) async {
     await db.execute('''
       CREATE TABLE offline_order_items (
@@ -266,7 +242,7 @@ static Future<void> _createRegionTable(Database db) async {
 
   await db.transaction((txn) async {
 
-    // ðŸ‘‡ Add every table here
+
     await txn.delete('products');
     await txn.delete('product_subtypes');
     await txn.delete('offline_orders');

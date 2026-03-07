@@ -4,6 +4,7 @@ import 'package:excel/excel.dart' as xl;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:order_booking_app/data/local/offline_order_dao.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
@@ -22,6 +23,7 @@ const _kBackground = Color(0xFFFFFFFF);
 const _kTextPrimary = Color(0xFF1A1A1A);
 const _kTextSecondary = Color(0xFF6B6B6B);
 const _kDivider = Color(0xFFEEEEEE);
+const _kDelivered = Color(0xFF2E7D32); // green for delivered badge
 
 // ── Date group label ──────────────────────────────────────────────────────────
 String _groupLabel(DateTime d) {
@@ -72,21 +74,22 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // ── Delivery filter ─────────────────────────────────────────────────────────
+  // false = show pending only (default), true = show delivered only
+  bool _showDelivered = false;
+
   // ── Selection state ─────────────────────────────────────────────────────────
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
   final Map<String, Order> _orderMap = {};
   final Map<String, int> _orderNumberMap = {};
 
-  // ── Animation — nullable so there's no "not initialized" risk ───────────────
-  // Both are set together in initState; neither is accessed before then.
   AnimationController? _bottomBarController;
   Animation<Offset>? _bottomBarSlide;
 
   @override
   void initState() {
     super.initState();
-    // vsync is available after super.initState(), so this is always safe.
     final controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 280),
@@ -176,7 +179,7 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     });
   }
 
-  void _onMarkAsDelivered() {
+  Future<void> _onMarkAsDelivered() async {
     final result = _selectedIds
         .map((localId) => _orderMap[localId])
         .whereType<Order>()
@@ -186,9 +189,20 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
             })
         .toList();
 
-    // TODO: call your delivery API here with [result]
-    debugPrint('Mark as delivered: $result');
+    final localIds = result
+        .map((e) => e['localId'])
+        .whereType<String>()
+        .toList();
+    final serverIds = result
+        .map((e) => e['serverId'])
+        .whereType<int>()
+        .toList();
+    if (localIds.isNotEmpty) {
+      await ref.read(ordersViewModelProvider.notifier).markDeliveredByLocalIds(localIds, serverIds);
+      await ref.read(ordersViewModelProvider.notifier).getAllOrders(ref.read(adminloginViewModelProvider).userId);
+    }
 
+    debugPrint('Mark as delivered: $result');
     _exitSelectionMode();
   }
 
@@ -214,105 +228,89 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
     );
   }
 
-  Future<Directory> _resolveExportDirectory() async {
-    if (Platform.isAndroid) {
-      final external = await getExternalStorageDirectory();
-      if (external != null) {
-        final downloadDir = Directory(p.join(external.path, 'Download'));
-        if (!await downloadDir.exists()) {
-          await downloadDir.create(recursive: true);
-        }
-        return downloadDir;
-      }
-    }
-    return getApplicationDocumentsDirectory();
-  }
-
-Future<void> _exportSelectedToExcel() async {
-  final selectedOrders = _selectedIds
-      .map((localId) => _orderMap[localId])
-      .whereType<Order>()
-      .toList();
-  if (selectedOrders.isEmpty) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Select at least one order to export.')),
-    );
-    return;
-  }
-
-  try {
-    final excel = xl.Excel.createExcel();
-    final sheetName =
-        excel.sheets.keys.contains('Sheet1') ? 'Sheet1' : 'Orders';
-    final sheet = excel[sheetName];
-    excel.setDefaultSheet(sheetName);
-
-    sheet.appendRow([
-      "Shop Name", 'Owner Name', 'Mobile No', 'Address',
-      'Employee Name', 'Order Date/Time', 'Product',
-      'Quantity', 'Unit', 'Price',
-    ]);
-
-    for (final order in selectedOrders) {
-      if (order.items.isEmpty) {
-        sheet.appendRow([
-          order.shopNamep ?? '', order.ownerName ?? '',
-          order.mobileNo ?? '', order.address ?? '',
-          order.empName ?? '', order.orderDate,
-          '', '', '', '',
-        ]);
-      } else {
-        for (int i = 0; i < order.items.length; i++) {
-          final item = order.items[i];
-          final isFirst = i == 0;
-          sheet.appendRow([
-            isFirst ? (order.shopNamep ?? '') : '',
-            isFirst ? (order.ownerName ?? '') : '',
-            isFirst ? (order.mobileNo ?? '') : '',
-            isFirst ? (order.address ?? '') : '',
-            isFirst ? (order.empName ?? '') : '',
-            isFirst ? order.orderDate : '',
-            item.productName ?? item.productId.toString(),
-            item.quantity, item.productUnit, item.price,
-          ]);
-        }
-      }
-      // Empty row after every order (after all its products)
-      sheet.appendRow(['', '', '', '', '', '', '', '', '', '']);
-    }
-
-    final bytes = excel.encode();
-    if (bytes == null) {
+  Future<void> _exportSelectedToExcel() async {
+    final selectedOrders = _selectedIds
+        .map((localId) => _orderMap[localId])
+        .whereType<Order>()
+        .toList();
+    if (selectedOrders.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to generate Excel file.')),
+        const SnackBar(content: Text('Select at least one order to export.')),
       );
       return;
     }
 
-    // Save to temp file, then share
-    final tempDir = await getTemporaryDirectory();
-    final fileName =
-        'orders_${DateTime.now().toIso8601String().replaceAll(':', '-')}.xlsx';
-    final filePath = p.join(tempDir.path, fileName);
-    final file = File(filePath);
-    await file.writeAsBytes(bytes, flush: true);
+    try {
+      final excel = xl.Excel.createExcel();
+      final sheetName =
+          excel.sheets.keys.contains('Sheet1') ? 'Sheet1' : 'Orders';
+      final sheet = excel[sheetName];
+      excel.setDefaultSheet(sheetName);
 
-    if (!mounted) return;
+      sheet.appendRow([
+        "Shop Name", 'Owner Name', 'Mobile No', 'Address',
+        'Employee Name', 'Order Date/Time', 'Product',
+        'Quantity', 'Unit', 'Price',
+      ]);
 
-    await Share.shareXFiles(
-      [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
-      subject: 'Orders Export',
-    );
+      for (final order in selectedOrders) {
+        if (order.items.isEmpty) {
+          sheet.appendRow([
+            order.shopNamep ?? '', order.ownerName ?? '',
+            order.mobileNo ?? '', order.address ?? '',
+            order.empName ?? '', order.orderDate,
+            '', '', '', '',
+          ]);
+        } else {
+          for (int i = 0; i < order.items.length; i++) {
+            final item = order.items[i];
+            final isFirst = i == 0;
+            sheet.appendRow([
+              isFirst ? (order.shopNamep ?? '') : '',
+              isFirst ? (order.ownerName ?? '') : '',
+              isFirst ? (order.mobileNo ?? '') : '',
+              isFirst ? (order.address ?? '') : '',
+              isFirst ? (order.empName ?? '') : '',
+              isFirst ? order.orderDate : '',
+              item.productName ?? item.productId.toString(),
+              item.quantity, item.productUnit, item.price,
+            ]);
+          }
+        }
+        sheet.appendRow(['', '', '', '', '', '', '', '', '', '']);
+      }
 
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Export failed: $e')),
-    );
+      final bytes = excel.encode();
+      if (bytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate Excel file.')),
+        );
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final fileName =
+          'orders_${DateTime.now().toIso8601String().replaceAll(':', '-')}.xlsx';
+      final filePath = p.join(tempDir.path, fileName);
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      if (!mounted) return;
+
+      await Share.shareXFiles(
+        [XFile(filePath, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+        subject: 'Orders Export',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
+    }
   }
-}
+
   // ── Sort newest first ───────────────────────────────────────────────────────
   List<Order> _sortDesc(List<Order> orders) {
     final list = List<Order>.from(orders);
@@ -333,11 +331,18 @@ Future<void> _exportSelectedToExcel() async {
   List<_ListItem> _buildItems(List<Order> rawOrders) {
     _orderMap.clear();
     _orderNumberMap.clear();
-    for (final o in rawOrders) {
+
+    // ── Apply delivery filter BEFORE numbering ──────────────────────────────
+    // isDelivered == 1 → delivered, isDelivered == 0 → pending
+    final filtered = rawOrders
+        .where((o) => _showDelivered ? o.isDelivered == 1 : o.isDelivered != 1)
+        .toList();
+
+    for (final o in filtered) {
       if (o.localOrderId != null) _orderMap[o.localOrderId!] = o;
     }
 
-    final sorted = _sortDesc(rawOrders);
+    final sorted = _sortDesc(filtered);
     final total = sorted.length;
     final numbered = [
       for (var i = 0; i < total; i++) (order: sorted[i], number: total - i),
@@ -407,7 +412,7 @@ Future<void> _exportSelectedToExcel() async {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ordersViewModelProvider);
-    final slide = _bottomBarSlide; // local copy — avoids null-check repetition
+    final slide = _bottomBarSlide;
 
     return PopScope(
       canPop: !_isSelectionMode,
@@ -420,12 +425,11 @@ Future<void> _exportSelectedToExcel() async {
           child: Column(
             children: [
               _buildSearchBar(),
+              _buildFilterBar(),       // ← new filter toggle row
               Expanded(child: _buildBody(state)),
             ],
           ),
         ),
-        // Only attach the bottomNavigationBar when the animation is ready
-        // AND we are in selection mode — avoids the "not initialized" crash.
         bottomNavigationBar: (slide != null && _isSelectionMode)
             ? SlideTransition(
                 position: slide,
@@ -439,7 +443,7 @@ Future<void> _exportSelectedToExcel() async {
   Widget _buildSearchBar() {
     return Container(
       color: _kSurface,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
           if (_isSelectionMode)
@@ -457,6 +461,43 @@ Future<void> _exportSelectedToExcel() async {
               onChanged: (v) =>
                   setState(() => _searchQuery = v.toLowerCase().trim()),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Delivery filter toggle bar ──────────────────────────────────────────────
+  Widget _buildFilterBar() {
+    return Container(
+      color: _kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'Pending',
+            icon: Icons.hourglass_empty_rounded,
+            isSelected: !_showDelivered,
+            selectedColor: _kPrimary,
+            onTap: () {
+              if (_showDelivered) {
+                _exitSelectionMode();
+                setState(() => _showDelivered = false);
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Delivered',
+            icon: Icons.check_circle_rounded,
+            isSelected: _showDelivered,
+            selectedColor: _kDelivered,
+            onTap: () {
+              if (!_showDelivered) {
+                _exitSelectionMode();
+                setState(() => _showDelivered = true);
+              }
+            },
           ),
         ],
       ),
@@ -497,26 +538,29 @@ Future<void> _exportSelectedToExcel() async {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: count > 0 ? _onMarkAsDelivered : null,
-              icon: const Icon(Icons.local_shipping_rounded, size: 18),
-              label: const Text(
-                'Mark as Delivered',
-                style:
-                    TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          // Only show "Mark as Delivered" when viewing pending orders
+          if (!_showDelivered)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: count > 0 ? _onMarkAsDelivered : null,
+                icon: const Icon(Icons.local_shipping_rounded, size: 18),
+                label: const Text(
+                  'Mark as Delivered',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: _kDivider,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kDivider,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
+            )
+          else
+            const Spacer(),
           const SizedBox(width: 8),
           SizedBox(
             height: 46,
@@ -630,6 +674,7 @@ Future<void> _exportSelectedToExcel() async {
               orderNumber: item.number,
               isSelectionMode: _isSelectionMode,
               isSelected: isSelected,
+              showDeliveredBadge: _showDelivered, // shows green badge in delivered view
               onLongPress: () => _enterSelectionMode(item.order),
               onTap: () {
                 if (_isSelectionMode) {
@@ -656,8 +701,7 @@ Future<void> _exportSelectedToExcel() async {
 
   // ── States ──────────────────────────────────────────────────────────────────
   Widget _buildLoading() => const Center(
-        child:
-            CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
+        child: CircularProgressIndicator(color: _kPrimary, strokeWidth: 2.5),
       );
 
   Widget _buildEmpty() => Center(
@@ -674,7 +718,11 @@ Future<void> _exportSelectedToExcel() async {
             ),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isNotEmpty ? 'No results found' : 'No orders yet',
+              _searchQuery.isNotEmpty
+                  ? 'No results found'
+                  : _showDelivered
+                      ? 'No delivered orders yet'
+                      : 'No pending orders',
               style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -684,9 +732,10 @@ Future<void> _exportSelectedToExcel() async {
             Text(
               _searchQuery.isNotEmpty
                   ? 'Try a different search term.'
-                  : 'Orders will appear here once created.',
-              style:
-                  const TextStyle(fontSize: 13, color: _kTextSecondary),
+                  : _showDelivered
+                      ? 'Delivered orders will appear here.'
+                      : 'Orders will appear here once created.',
+              style: const TextStyle(fontSize: 13, color: _kTextSecondary),
             ),
           ],
         ),
@@ -738,6 +787,62 @@ Future<void> _exportSelectedToExcel() async {
           ),
         ),
       );
+}
+
+// ── Filter chip ───────────────────────────────────────────────────────────────
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final Color selectedColor;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.selectedColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor.withOpacity(0.12) : _kDivider,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? selectedColor : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? selectedColor : _kTextSecondary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? selectedColor : _kTextSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Date section header ───────────────────────────────────────────────────────
@@ -867,6 +972,7 @@ class _OrderCard extends StatelessWidget {
   final int orderNumber;
   final bool isSelectionMode;
   final bool isSelected;
+  final bool showDeliveredBadge; // shows green "Delivered" tag
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -875,6 +981,7 @@ class _OrderCard extends StatelessWidget {
     required this.orderNumber,
     required this.isSelectionMode,
     required this.isSelected,
+    required this.showDeliveredBadge,
     required this.onTap,
     required this.onLongPress,
   });
@@ -890,6 +997,7 @@ class _OrderCard extends StatelessWidget {
       return '';
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -958,6 +1066,26 @@ class _OrderCard extends StatelessWidget {
                               style: const TextStyle(
                                   fontSize: 11, color: _kTextSecondary),
                             ),
+                            // ── Delivered badge inline ─────────────────────
+                            if (showDeliveredBadge) ...[
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _kDelivered.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Delivered',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: _kDelivered,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
