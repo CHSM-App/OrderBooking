@@ -51,7 +51,10 @@ class Order {
   final String? mobileNo;
   final String? status;  
 
+  final int? type;
+
   Order({
+    this.type,
     this.isDelivered,
     this.mobileNo,
     this.regionName,
@@ -87,6 +90,7 @@ class Order {
     normalized['region_name'] ??= json['regionName'];
     normalized['mobile_no'] ??= json['mobileNo'];
     normalized['is_delivered'] ??= json['isDelivered'];
+    normalized['type'] ??= json['type'];
 
     return _$OrderFromJson(normalized);
   }
