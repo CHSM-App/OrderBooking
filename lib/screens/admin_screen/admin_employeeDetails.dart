@@ -625,6 +625,11 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
     final state = ref.watch(employeeloginViewModelProvider);
     final detailsAsync = state.employeeDetails;
 
+    final isSuperadmin =
+        ref.watch(adminloginViewModelProvider).isSuperadmin;
+
+        print("IS SUPERADMIN: $isSuperadmin");
+
     if (detailsAsync.isLoading) {
       return const Scaffold(
         backgroundColor: MinimalTheme.backgroundGray,
@@ -672,31 +677,21 @@ class _EmployeeDetailsPageState extends ConsumerState<EmployeeDetailsPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-       actions: [
-
+      
+        actions: [
+  // Edit button (always visible)
   IconButton(
     icon: const Icon(Icons.edit_outlined, color: Colors.white),
     onPressed: _editEmployee,
   ),
 
-    employee.activeStatus == 1
-        ? TextButton(
-            onPressed: () => _deleteEmployee(employee.activeStatus),
-            child: const Text(
-              "Enable",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-            ),
-          ),
-        )
-        : IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.white),
-            onPressed: () => _deleteEmployee(employee.activeStatus),
-          ),
-
+  // Show delete icon only if superadmin
+  if (isSuperadmin ?? false)
+    IconButton(
+      icon: const Icon(Icons.delete_outline, color: Colors.white),
+      onPressed: () => _deleteEmployee(employee.activeStatus),
+    ),
 ],
-
       ),
       body: SingleChildScrollView(
         child: Column(

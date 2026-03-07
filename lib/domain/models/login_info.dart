@@ -10,7 +10,7 @@ class LoginInfo {
 
   final String? name;
 
-    @JsonKey(name: 'token')
+  @JsonKey(name: 'token')
   final String? Token;
 
   @JsonKey(name: 'mobile_no')
@@ -48,13 +48,17 @@ class LoginInfo {
   @JsonKey(name: 'isCheckedIn')
   final String? isCheckedIn;
 
-    @JsonKey(name: 'admin_id')
+  @JsonKey(name: 'admin_id')
   final int? adminId;
-    @JsonKey(name: 'emp_id')
+
+  @JsonKey(name: 'emp_id')
   final int? empId;
-      @JsonKey(name: 'company_id')
+  
+  @JsonKey(name: 'company_id')
   final String? companyId;
 
+  @JsonKey(name: 'is_superadmin')
+  final bool? isSuperadmin;
 
   LoginInfo({
     this.isCheckedIn,
@@ -74,7 +78,8 @@ class LoginInfo {
     this.activeStatus,
     this.adminId,
     this.empId,
-    this.companyId
+    this.companyId,
+    this.isSuperadmin,
   });
 
   /// From JSON
