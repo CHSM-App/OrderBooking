@@ -28,10 +28,8 @@ class AppDatabase {
         await _createDeliveredOrdersTable(db);
         await createEmployeeTable(db);
       },
-      
-      onUpgrade: (db, oldVersion, newVersion) async {
-        
-      },
+
+      onUpgrade: (db, oldVersion, newVersion) async {},
     );
   }
 
@@ -53,8 +51,8 @@ class AppDatabase {
     );
   }
 
-static Future<void> _createShopsTable(Database db) async {
-  await db.execute('''
+  static Future<void> _createShopsTable(Database db) async {
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS shops (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       local_id TEXT UNIQUE,
@@ -76,12 +74,10 @@ static Future<void> _createShopsTable(Database db) async {
       updated_at TEXT
     )
   ''');
-}
+  }
 
-
-
-static Future<void> _createRegionTable(Database db) async {
-  await db.execute('''
+  static Future<void> _createRegionTable(Database db) async {
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS offline_regions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       local_id TEXT UNIQUE,
@@ -99,8 +95,7 @@ static Future<void> _createRegionTable(Database db) async {
       updated_at TEXT
     )
   ''');
-}
-
+  }
 
   static Future<void> _createProductsTable(Database db) async {
     await db.execute('''
@@ -165,7 +160,7 @@ static Future<void> _createRegionTable(Database db) async {
     )
   ''');
   }
-          
+
   static Future<void> _createOfflineCheckinStatusTable(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS offline_checkin_status (
@@ -214,7 +209,7 @@ static Future<void> _createRegionTable(Database db) async {
   }
 
   static Future<void> createEmployeeTable(Database db) async {
-  await db.execute('''
+    await db.execute('''
     CREATE TABLE IF NOT EXISTS employee (
       emp_id INTEGER PRIMARY KEY,
       emp_name TEXT,
@@ -234,27 +229,31 @@ static Future<void> _createRegionTable(Database db) async {
       checkin_status INTEGER
     )
   ''');
-}
-
+  }
 
   static Future<void> clearAllTables() async {
-  final db = await database;
+    final db = await database;
 
-  await db.transaction((txn) async {
-
-
-    await txn.delete('products');
-    await txn.delete('product_subtypes');
-    await txn.delete('offline_orders');
-    await txn.delete('offline_order_items');
-    await txn.delete('offline_visits');
-    await txn.delete('offline_checkin_status');
-    await txn.delete('shops');
-    await txn.delete('offline_regions');
-    await txn.delete('employee');
-
-  });
+    await db.transaction((txn) async {
+      await txn.delete('products');
+      await txn.delete('product_subtypes');
+      await txn.delete('offline_orders');
+      await txn.delete('offline_order_items');
+      await txn.delete('offline_visits');
+      await txn.delete('offline_checkin_status');
+      await txn.delete('shops');
+      await txn.delete('offline_regions');
+      await txn.delete('employee');
+    });
+  }
 }
 
 
-}
+
+
+
+
+
+
+
+
