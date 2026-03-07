@@ -37,7 +37,7 @@ class _AddAdminPageState extends ConsumerState<AddAdminPage> {
   void initState() {
     super.initState();
 
-    /// If admin object received → Edit Mode
+    // If admin object received → Edit Mode
     if (widget.admin != null) {
       isEdit = true;
 
@@ -55,45 +55,46 @@ class _AddAdminPageState extends ConsumerState<AddAdminPage> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+Future<void> _submit() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    final body = AdminLogin(
-      adminId: isEdit ? widget.admin!.adminId : 0,
-      adminName: _nameController.text,
-      mobileNo: _mobileController.text,
-      email: _emailController.text,
-      companyId: ref.read(adminloginViewModelProvider).companyId,
-      role_id: 1,
-      isSuperadmin: false,
-    );
+  final body = AdminLogin(
+    adminId: isEdit ? widget.admin!.adminId : 0,
+    adminName: _nameController.text,
+    mobileNo: _mobileController.text,
+    email: _emailController.text,
+    companyId: ref.read(adminloginViewModelProvider).companyId,
+    role_id: 1,
+    isSuperadmin: false,
+  );
 
-    final result =
-        await ref.read(adminloginViewModelProvider.notifier).addAdmin(body);
+  final result = await ref
+      .read(adminloginViewModelProvider.notifier)
+      .addUpdateAdmin(body); 
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    final message = result["message"];
-    final success = result["success"] == 1;
+  final message = result["message"];
+  final success = result["success"] == 1;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor:
-            success ? MinimalTheme.successGreen : MinimalTheme.errorRed,
-      ),
-    );
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor:
+          success ? MinimalTheme.successGreen : MinimalTheme.errorRed,
+    ),
+  );
 
-    if (success) {
-      await ref
-          .read(adminloginViewModelProvider.notifier)
-          .fetchAdmins(
-              ref.read(adminloginViewModelProvider).companyId ?? '');
+  if (success) {
+    await ref
+        .read(adminloginViewModelProvider.notifier)
+        .fetchAdmins(
+          ref.read(adminloginViewModelProvider).companyId ?? '',
+        );
 
-      Navigator.pop(context);
-    }
+    Navigator.pop(context);
   }
-
+}
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminloginViewModelProvider);
@@ -123,7 +124,7 @@ class _AddAdminPageState extends ConsumerState<AddAdminPage> {
               /// Mobile
               TextFormField(
                 controller: _mobileController,
-                enabled: !isEdit,
+                enabled: true,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(labelText: "Mobile"),

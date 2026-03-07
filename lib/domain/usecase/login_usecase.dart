@@ -22,12 +22,18 @@ class AdminloginUsecase {
     adminloginRepository.logoutUser(refreshToken);
   }
 
-  Future<dynamic> addAdmin(AdminLogin admin){
-    return adminloginRepository.addAdmin(admin);
+  Future<dynamic> addUpdateAdmin(AdminLogin admin){
+    return adminloginRepository.addUpdateAdmin(admin);
   }
 
   Future<List<AdminLogin>> fetchAdmins(String companyId) {
      return adminloginRepository.fetchAdmins(companyId);
   }
+
+  Future<dynamic> deleteAdmin(int adminId){
+    return adminloginRepository.deleteAdmin(adminId);
+  }
+
+
 
 }

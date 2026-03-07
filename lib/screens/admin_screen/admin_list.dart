@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/add_admin.dart';
 
@@ -135,14 +136,23 @@ class _AdminListPageState extends ConsumerState<AdminListPage> {
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: admins.length,
-              itemBuilder: (context, index) {
-                final admin = admins[index];
-                return _AdminCard(admin: admin, index: index);
-              },
+         return ListView.builder(
+  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+  itemCount: admins.length,
+  itemBuilder: (context, index) {
+    final admin = admins[index];
+    return _AdminCard(
+      admin: admin,
+      index: index,
+      onDeleted: () {
+        // Refresh list
+        ref.read(adminloginViewModelProvider.notifier).fetchAdmins(
+              ref.read(adminloginViewModelProvider).companyId ?? '',
             );
+      },
+    );
+  },
+);
           },
           loading: () => const Center(
             child: CircularProgressIndicator(
@@ -217,10 +227,11 @@ class _AdminListPageState extends ConsumerState<AdminListPage> {
 // ── Admin Card ────────────────────────────────────────────────────────────────
 
 class _AdminCard extends StatelessWidget {
-  final dynamic admin;
+  final AdminLogin admin;
   final int index;
+  final VoidCallback onDeleted;
 
-  const _AdminCard({required this.admin, required this.index});
+  const _AdminCard({required this.admin, required this.index, required this.onDeleted,});
 
   Color _avatarColor(int index) {
     const colors = [
@@ -242,6 +253,50 @@ class _AdminCard extends StatelessWidget {
     }
     return parts[0][0].toUpperCase();
   }
+
+
+  void _showDeleteDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Consumer(
+        builder: (context, ref, _) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: const Text("Delete Admin"),
+            content: const Text(
+              "Are you sure you want to delete this admin?",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  Navigator.pop(context);
+
+                  final result = await ref
+                      .read(adminloginViewModelProvider.notifier)
+                      .deleteAdmin(admin.adminId!);
+
+                  if (result['success'] == 1) {
+                    // Call parent callback to refresh
+                    onDeleted();
+                  }
+                },
+                child: const Text("Delete"),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +383,7 @@ class _AdminCard extends StatelessWidget {
                           // Delete Icon
                           InkWell(
                             onTap: () {
-                              // Call delete API
+                              _showDeleteDialog(context);
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 6),

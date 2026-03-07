@@ -3,7 +3,7 @@ import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/usecase/login_usecase.dart';
-   
+
 class AdminloginState {
   final bool isLoading;
   final String? error;
@@ -49,7 +49,7 @@ class AdminloginState {
     String? error,
     AsyncValue<List<AdminLogin>>? adminDetails,
     AsyncValue<List<LoginInfo>>? phoneCheckResult,
-     AsyncValue<List<AdminLogin>>? adminList,
+    AsyncValue<List<AdminLogin>>? adminList,
     int? userId,
     String? name,
     String? mobileNo,
@@ -78,8 +78,8 @@ class AdminloginState {
       token: token ?? this.token,
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       companyId: companyId ?? this.companyId,
-      joiningDate: joiningDate?? this.joiningDate,
-      isSuperadmin: isSuperadmin ?? this.isSuperadmin
+      joiningDate: joiningDate ?? this.joiningDate,
+      isSuperadmin: isSuperadmin ?? this.isSuperadmin,
     );
   }
 }
@@ -123,7 +123,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       regionId: regionId,
       joiningDate: joiningDate,
       isSuperadmin: isSuperadmin,
-      
+
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
@@ -193,7 +193,6 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
   }
 
   Future<void> clearLogin(String refreshToken) async {
-
     await usecase.logOut(refreshToken);
     state = const AdminloginState(
       isLoading: false,
@@ -214,27 +213,21 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     await TokenStorage.clear();
   }
 
-  Future<Map<String, dynamic>> addAdmin(AdminLogin admin) async {
-  state = state.copyWith(isLoading: true, error: null);
+  Future<Map<String, dynamic>> addUpdateAdmin(AdminLogin admin) async {
+    state = state.copyWith(isLoading: true, error: null);
 
-  try {
-    final response = await usecase.addAdmin(admin);
+    try {
+      final response = await usecase.addUpdateAdmin(admin);
 
-    state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false);
 
-    return response; // contains success & message from SP
-  } catch (e) {
-    state = state.copyWith(
-      isLoading: false,
-      error: e.toString(),
-    );
+      return response; // contains success & message from SP
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
 
-    return {
-      "success": 0,
-      "message": "Something went wrong"
-    };
+      return {"success": 0, "message": "Something went wrong"};
+    }
   }
-}
 
   Future<void> fetchAdmins(String companyId) async {
     state = state.copyWith(
@@ -253,6 +246,26 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
         adminList: AsyncValue.error(e, StackTrace.current),
       );
     }
-
   }
+
+  Future<Map<String, dynamic>> deleteAdmin(int adminId) async {
+  state = state.copyWith(isLoading: true, error: null);
+
+  try {
+    final response = await usecase.deleteAdmin(adminId);
+
+    state = state.copyWith(isLoading: false);
+
+    return response; // contains success & message from SP
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      error: e.toString(),
+    );
+
+    return {"success": 0, "message": "Something went wrong"};
+  }
+}
+
+  
 }

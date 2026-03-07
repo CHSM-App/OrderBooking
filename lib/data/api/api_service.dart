@@ -51,11 +51,8 @@ abstract class ApiService {
     @Path("mobile_no") String mobileNo,
   );
 
-   @GET("users/fetchAdmins/{company_id}")
-  Future<List<AdminLogin>> fetchAdmins(
-    @Path("company_id") String companyId
-  );
-
+  @GET("users/fetchAdmins/{company_id}")
+  Future<List<AdminLogin>> fetchAdmins(@Path("company_id") String companyId);
 
   @GET("users/shopList/{company_id}")
   Future<List<ShopDetails>> getShopList(@Path("company_id") String companyId);
@@ -81,9 +78,7 @@ abstract class ApiService {
   );
 
   @GET("users/getEmployeeAttendance/{emp_id}")
-  Future<List<CheckInStatusRequest>> getAttendance(
-    @Path("emp_id") int emp_id,
-  );
+  Future<List<CheckInStatusRequest>> getAttendance(@Path("emp_id") int emp_id);
 
   //POST API
   @POST("login/CreateLogin")
@@ -95,15 +90,17 @@ abstract class ApiService {
   @POST("insert/employee")
   Future<dynamic> addEmployee(@Body() EmployeeLogin employeeLogin);
 
-    
   @POST("login/logout")
   Future<dynamic> logOut(@Body() TokenResponse tokenResponse);
 
   @POST("login/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);
 
-    @POST("insert/addMultipleAdmins")
-  Future<dynamic> addAdmin(@Body() AdminLogin admin);
+  @POST("insert/addMultipleAdmins")
+  Future<dynamic> addUpdateAdmin(@Body() AdminLogin admin);
+
+  @POST("insert/deleteAdmin/{admin_id}")
+  Future<dynamic> deleteAdmin(@Path("admin_id") int adminId);
 
   @POST("insert/addRegion")
   Future<dynamic> addRegion(@Body() Region region);

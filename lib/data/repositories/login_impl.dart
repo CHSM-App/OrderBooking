@@ -1,4 +1,3 @@
- 
 import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/logout_dao.dart';
@@ -7,7 +6,6 @@ import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 
 import 'package:order_booking_app/domain/repository/login_repo.dart';
-
 
 class AdminloginImpl implements AdminloginRepository {
   final ApiService apiService;
@@ -19,46 +17,75 @@ class AdminloginImpl implements AdminloginRepository {
   Future<dynamic> addAdminDetails(AdminLogin adminLogin) {
     return apiService.addAdminDetails(adminLogin);
   }
-     @override
+
+  @override
   Future<List<AdminLogin>> fetchAdminDetails(String mobileNo) {
     return apiService.fetchAdminDetails(mobileNo);
   }
-    @override
-  Future<List<LoginInfo>> checkPhoneNumber(String mobile_no) async {
-    final response =  await apiService.CheckPhone(mobile_no);
 
-        if (response.isNotEmpty) {
+  @override
+  Future<List<LoginInfo>> checkPhoneNumber(String mobile_no) async {
+    final response = await apiService.CheckPhone(mobile_no);
+
+    if (response.isNotEmpty) {
       // Save values in secure storage
 
       await TokenStorage.saveValue('user_id', response[0].userId.toString());
       await TokenStorage.saveValue('name', response[0].name.toString());
-      await TokenStorage.saveValue('mobile_no', response[0].mobileNo.toString());
+      await TokenStorage.saveValue(
+        'mobile_no',
+        response[0].mobileNo.toString(),
+      );
       await TokenStorage.saveValue('email', response[0].email.toString());
       await TokenStorage.saveValue('role_id', response[0].roleId.toString());
-      await TokenStorage.saveValue('company_name', response[0].companyName.toString());
+      await TokenStorage.saveValue(
+        'company_name',
+        response[0].companyName.toString(),
+      );
       await TokenStorage.saveValue('token', response[0].Token.toString());
-      await TokenStorage.saveValue('isCheckedIn', response[0].isCheckedIn.toString());
-      await TokenStorage.saveValue('company_id', response[0].companyId.toString());
-      await TokenStorage.saveValue('region_id', response[0].regionId.toString());
-      await TokenStorage.saveValue('joining_date', response[0].joiningDate.toString());
-      await TokenStorage.saveValue('is_superadmin', response[0].isSuperadmin.toString());
-
+      await TokenStorage.saveValue(
+        'isCheckedIn',
+        response[0].isCheckedIn.toString(),
+      );
+      await TokenStorage.saveValue(
+        'company_id',
+        response[0].companyId.toString(),
+      );
+      await TokenStorage.saveValue(
+        'region_id',
+        response[0].regionId.toString(),
+      );
+      await TokenStorage.saveValue(
+        'joining_date',
+        response[0].joiningDate.toString(),
+      );
+      await TokenStorage.saveValue(
+        'is_superadmin',
+        response[0].isSuperadmin.toString(),
+      );
     }
     return response;
   }
 
   Future<void> logoutUser(String refreshToken) async {
-    await apiService.logOut( TokenResponse(refreshToken: refreshToken),);
+    await apiService.logOut(TokenResponse(refreshToken: refreshToken));
     await logout.logout();
   }
 
-   @override
-  Future<dynamic> addAdmin(AdminLogin admin) {
-    return apiService.addAdmin(admin);
+  @override
+  Future<dynamic> addUpdateAdmin(AdminLogin admin) {
+    return apiService.addUpdateAdmin(admin);
   }
 
-   @override
+  @override
   Future<List<AdminLogin>> fetchAdmins(String companyId) {
     return apiService.fetchAdmins(companyId);
   }
+
+   @override
+  Future<dynamic> deleteAdmin(int admin) {
+    return apiService.deleteAdmin(admin);
+  }
+
+
 }

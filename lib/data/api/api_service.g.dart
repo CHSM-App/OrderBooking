@@ -515,7 +515,7 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<dynamic> addAdmin(AdminLogin admin) async {
+  Future<dynamic> addUpdateAdmin(AdminLogin admin) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -526,6 +526,27 @@ class _ApiService implements ApiService {
           .compose(
             _dio.options,
             'insert/addMultipleAdmins',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
+    return _value;
+  }
+
+  @override
+  Future<dynamic> deleteAdmin(int adminId) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<dynamic>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'insert/deleteAdmin/${adminId}',
             queryParameters: queryParameters,
             data: _data,
           )
