@@ -29,12 +29,13 @@ class ShopDao {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<ShopDetails>> getAll() async {
+  Future<List<ShopDetails>> getAll(int type) async {
     final db = await AppDatabase.database;
 
     final rows = await db.query(
       'shops',
-      where: 'is_deleted = 0',
+      where: 'is_deleted = 0 AND type = ?',
+      whereArgs: [type],
       orderBy: 'shop_name',
     );
 
