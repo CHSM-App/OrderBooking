@@ -165,7 +165,7 @@ class ShopImpl implements ShopRepository {
     await syncLocalToServer();
     await syncServerToLocal(companyId, regionId,type);
 
-    return await local.getAll();
+    return await local.getAll(type);
   }
 
   Future<List<ShopDetails>> getShopList(String companyId) async {

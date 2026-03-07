@@ -36,7 +36,8 @@ class ShopViewModel extends StateNotifier<ShopState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await usecase.addShop(shopDetails);
-      await getEmpShopList(shopDetails.companyId, shopDetails.regionId ?? 0,shopDetails.type??0);
+      final listType = (shopDetails.type ?? 1) == 2 ? 2 : 1;
+      await getEmpShopList(shopDetails.companyId, shopDetails.regionId ?? 0, listType);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

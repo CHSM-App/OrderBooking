@@ -72,7 +72,7 @@ class AppDatabase {
       is_synced INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,
       sync_action TEXT, -- create | update | delete
-      updated_at TEXT,
+      updated_at TEXT
     )
   ''');
   }
