@@ -16,6 +16,8 @@ AdminLogin _$AdminLoginFromJson(Map<String, dynamic> json) => AdminLogin(
   address: json['address'] as String?,
   gstinNo: json['gstin_no'] as String?,
   role_id: (json['role_id'] as num?)?.toInt(),
+  companyId: json['company_id'] as String?,
+  isSuperadmin: json['is_superadmin'] as bool?,
 );
 
 Map<String, dynamic> _$AdminLoginToJson(AdminLogin instance) =>
@@ -28,5 +30,7 @@ Map<String, dynamic> _$AdminLoginToJson(AdminLogin instance) =>
       'email': instance.email,
       'address': instance.address,
       'gstin_no': instance.gstinNo,
+      'company_id': instance.companyId,
       'role_id': instance.role_id,
+      'is_superadmin': instance.isSuperadmin,
     };

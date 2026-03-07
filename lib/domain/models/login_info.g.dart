@@ -25,6 +25,7 @@ LoginInfo _$LoginInfoFromJson(Map<String, dynamic> json) => LoginInfo(
   adminId: (json['admin_id'] as num?)?.toInt(),
   empId: (json['emp_id'] as num?)?.toInt(),
   companyId: json['company_id'] as String?,
+  isSuperadmin: json['is_superadmin'] as bool?,
 );
 
 Map<String, dynamic> _$LoginInfoToJson(LoginInfo instance) => <String, dynamic>{
@@ -46,4 +47,5 @@ Map<String, dynamic> _$LoginInfoToJson(LoginInfo instance) => <String, dynamic>{
   'admin_id': instance.adminId,
   'emp_id': instance.empId,
   'company_id': instance.companyId,
+  'is_superadmin': instance.isSuperadmin,
 };

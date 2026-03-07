@@ -20,15 +20,27 @@ class AdminLogin {
   @JsonKey(name: 'mobile_no')
   final String? mobileNo;
 
+  @JsonKey(name: 'email')
   final String? email;
 
+  @JsonKey(name: 'address')
   final String? address;
 
   @JsonKey(name: 'gstin_no')
   final String? gstinNo;
+
+   @JsonKey(name: 'company_id')
+  final String? companyId;
   
   @JsonKey(name: 'role_id')
   final int? role_id;
+
+  @JsonKey(name: 'is_superadmin')
+  final bool? isSuperadmin;
+
+
+
+
 
   AdminLogin({
     this.Token,
@@ -39,7 +51,9 @@ class AdminLogin {
     this.email,
     this.address,
     this.gstinNo,
-    this.role_id
+    this.role_id,
+    this.companyId,
+    this.isSuperadmin,
   });
 
   /// 🔹 From JSON

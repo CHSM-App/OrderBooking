@@ -41,6 +41,8 @@ class AdminloginImpl implements AdminloginRepository {
       await TokenStorage.saveValue('company_id', response[0].companyId.toString());
       await TokenStorage.saveValue('region_id', response[0].regionId.toString());
       await TokenStorage.saveValue('joining_date', response[0].joiningDate.toString());
+      await TokenStorage.saveValue('is_superadmin', response[0].isSuperadmin.toString());
+
     }
     return response;
   }
@@ -48,5 +50,15 @@ class AdminloginImpl implements AdminloginRepository {
   Future<void> logoutUser(String refreshToken) async {
     await apiService.logOut( TokenResponse(refreshToken: refreshToken),);
     await logout.logout();
+  }
+
+   @override
+  Future<dynamic> addAdmin(AdminLogin admin) {
+    return apiService.addAdmin(admin);
+  }
+
+   @override
+  Future<List<AdminLogin>> fetchAdmins(String companyId) {
+    return apiService.fetchAdmins(companyId);
   }
 }

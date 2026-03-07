@@ -8,4 +8,8 @@ abstract class AdminloginRepository {
    Future<List<LoginInfo>> checkPhoneNumber(String mobile_no);
    Future<void> logoutUser(String refreshToken);
 
+   Future<dynamic> addAdmin(AdminLogin admin);
+
+  Future<List<AdminLogin>> fetchAdmins(String companyId);
+
 }
