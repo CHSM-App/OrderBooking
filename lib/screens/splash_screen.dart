@@ -36,7 +36,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           context,
           MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
-      } else {
+      } 
+      else if (tokenState.roleId == 3) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      } 
+      
+      else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),

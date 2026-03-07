@@ -57,6 +57,8 @@ class ShopDetails {
   @JsonKey(name: 'is_deleted')
   final bool? isDeleted;
 
+  @JsonKey(name: 'type')
+  final int? type;
 
   ShopDetails({
     this.isDeleted,
@@ -77,6 +79,7 @@ class ShopDetails {
     this.isSynced = false,
     this.updatedAt,
     required this.companyId,
+    this.type
   });
 
   /// FROM API JSON
@@ -98,6 +101,7 @@ class ShopDetails {
     int? regionId,
     String? regionName,
     int? createdBy,
+    int? type,
     double? latitude,
     double? longitude,
     String? shopSelfie,
@@ -119,6 +123,7 @@ class ShopDetails {
       regionId: regionId ?? this.regionId,
       regionName: regionName ?? this.regionName,
       createdBy: createdBy ?? this.createdBy,
+          type: type ?? this.type,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       shopSelfie: shopSelfie ?? this.shopSelfie,

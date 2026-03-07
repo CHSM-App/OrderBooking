@@ -143,10 +143,11 @@ abstract class ApiService {
     @Path("mobile_no") String mobileNo,
   );
 
-  @GET("users/employeeShopList/{company_id}/{region_id}")
+  @GET("users/employeeShopList/{company_id}/{region_id}/{type}")
   Future<List<ShopDetails>> getEmpShopList(
     @Path("company_id") String companyId,
     @Path("region_id") int regionID,
+    @Path("type") int type,
   );
 
   @GET("users/current/{emp_id}")
@@ -185,6 +186,7 @@ abstract class ApiService {
     @Part(name: "company_id") String? companyId,
     @Part(name: "latitude") double? latitude,
     @Part(name: "longitude") double? longitude,
+    @Part(name: "type") int? type,
     @Part(name: "image") File? image,
   );
 

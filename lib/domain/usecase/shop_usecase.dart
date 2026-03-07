@@ -17,8 +17,8 @@ class ShopUsecase {
     return shoprepository.deleteShop(shopDetails);
   }
 
-     Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID) {
-    return shoprepository.getEmpShopList(companyId, regionID );
+     Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID,int type) {
+    return shoprepository.getEmpShopList(companyId, regionID ,type);
   }
      Future<List<ShopDetails>> getShopList(String companyId) {
     return shoprepository.getShopList(companyId );

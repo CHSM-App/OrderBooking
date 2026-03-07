@@ -68,6 +68,7 @@ class AppDatabase {
       longitude REAL,
       shop_selfie TEXT,
       company_id TEXT,
+        type INTEGER,
       is_synced INTEGER DEFAULT 0,
       is_deleted INTEGER DEFAULT 0,
       sync_action TEXT, -- create | update | delete

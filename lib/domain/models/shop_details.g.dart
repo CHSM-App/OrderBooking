@@ -27,6 +27,7 @@ ShopDetails _$ShopDetailsFromJson(Map<String, dynamic> json) => ShopDetails(
       ? null
       : DateTime.parse(json['updatedAt'] as String),
   companyId: json['company_id'] as String,
+  type: (json['type'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
@@ -49,4 +50,5 @@ Map<String, dynamic> _$ShopDetailsToJson(ShopDetails instance) =>
       'region_name': instance.regionName,
       'sync_Action': instance.syncAction,
       'is_deleted': instance.isDeleted,
+      'type': instance.type,
     };

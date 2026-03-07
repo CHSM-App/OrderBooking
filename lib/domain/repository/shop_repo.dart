@@ -5,7 +5,7 @@ abstract class ShopRepository {
   // Future<void> updateShop(ShopDetails shopDetails);
   Future<void> deleteShop(ShopDetails shopDetails);
 
-  Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID);
+  Future<List<ShopDetails>> getEmpShopList(String companyId, int regionID,int type);
   Future<List<ShopDetails>> getShopList(String companyId);
 
   

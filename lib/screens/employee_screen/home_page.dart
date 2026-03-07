@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
 
@@ -115,6 +116,8 @@ class _HomePageState extends ConsumerState<HomePage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 380;
+        final roleId = ref.watch(tokenProvider).roleId ?? 0;
+        final locationLabel = roleId == 3 ? 'Godown' : 'Shops';
 
         final todayOrders = ref.watch(ordersViewModelProvider).todayOrdars ?? 0;
         final todayRevenue = ref.watch(ordersViewModelProvider).todayRevenue ?? 0;
@@ -153,7 +156,7 @@ class _HomePageState extends ConsumerState<HomePage>
               children: [
                 Expanded(
                   child: _StatCard(
-                    title: 'Shops',
+                    title: locationLabel,
                     value: todayVisitedShops.toString(),
                     icon: Icons.store_outlined,
                     color: const Color(0xFFFF6B6B),
@@ -180,59 +183,129 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C6FDC).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.flash_on_rounded,
-                color: Color(0xFF7C6FDC),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'Quick Actions',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3142),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const SizedBox(width: 12),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.add_business_rounded,
-                label: 'Add Shop',
-                backgroundColor: const Color(0xFFD4F4E7),
-                iconColor: const Color(0xFF00C853),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddShopScreen()),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildQuickActions(BuildContext context) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Container(
+  //             padding: const EdgeInsets.all(8),
+  //             decoration: BoxDecoration(
+  //               color: const Color(0xFF7C6FDC).withOpacity(0.15),
+  //               borderRadius: BorderRadius.circular(10),
+  //             ),
+  //             child: const Icon(
+  //               Icons.flash_on_rounded,
+  //               color: Color(0xFF7C6FDC),
+  //               size: 20,
+  //             ),
+  //           ),
+  //           const SizedBox(width: 10),
+  //           const Text(
+  //             'Quick Actions',
+  //             style: TextStyle(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.bold,
+  //               color: Color(0xFF2D3142),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 16),
+  //       Row(
+  //         children: [
+  //           const SizedBox(width: 12),
+  //           Expanded(
+  //             child: _QuickActionButton(
+  //               icon: Icons.add_business_rounded,
+  //               label: 'Add Shop',
+  //               backgroundColor: const Color(0xFFD4F4E7),
+  //               iconColor: const Color(0xFF00C853),
+  //               onTap: () {
+  //                 Navigator.push(
+  //                   context,
+  //                   MaterialPageRoute(builder: (context) => AddShopScreen()),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
+Widget _buildQuickActions(BuildContext context) {
+  final tokenState = ref.read(tokenProvider); // Get roleId
 
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C6FDC).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.flash_on_rounded,
+              color: Color(0xFF7C6FDC),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3142),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          const SizedBox(width: 12),
+          Expanded(
+            child: tokenState.roleId == 2
+                ? _QuickActionButton(
+                    icon: Icons.add_business_rounded,
+                    label: 'Add Shop',
+                    backgroundColor: const Color(0xFFD4F4E7),
+                    iconColor: const Color(0xFF00C853),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const AddShopScreen(isGodown: false)),
+                      );
+                    },
+                  )
+                : tokenState.roleId == 3
+                    ? _QuickActionButton(
+                        icon: Icons.warehouse_rounded,
+                        label: 'Add Godown',
+                        backgroundColor: const Color(0xFFD4E7F4),
+                        iconColor: const Color(0xFF2196F3),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AddShopScreen(isGodown: true)),
+                          );
+                        },
+                      )
+                    : const SizedBox(), // Hide button for other roles
+          ),
+        ],
+      ),
+    ],
+  );
+}
   Widget _buildPerformanceSection() {
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final companyName =
@@ -463,8 +536,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 13,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isSmall ? 11 : 13,
               color: Color(0xFF757575),
               fontWeight: FontWeight.w500,
             ),
