@@ -29,22 +29,29 @@ class AdminEmployeesPage extends ConsumerStatefulWidget {
   ConsumerState<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
 }
 
-class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
+class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   ProviderSubscription<AdminloginState>? _adminListener;
   bool _initialFetchDone = false;
 
+  late TabController _tabController;
+
+  // roleId: 2 = SO, 3 = ASM
+  static const int _soRoleId = 2;
+  static const int _asmRoleId = 3;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+
     _adminListener = ref.listenManual<AdminloginState>(
       adminloginViewModelProvider,
       (previous, next) {
         final companyId = next.companyId;
-        if (!_initialFetchDone &&
-            companyId != null &&
-            companyId.isNotEmpty) {
+        if (!_initialFetchDone && companyId != null && companyId.isNotEmpty) {
           _initialFetchDone = true;
           ref
               .read(employeeloginViewModelProvider.notifier)
@@ -52,11 +59,10 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
         }
       },
     );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final companyId = ref.read(adminloginViewModelProvider).companyId;
-      if (!_initialFetchDone &&
-          companyId != null &&
-          companyId.isNotEmpty) {
+      if (!_initialFetchDone && companyId != null && companyId.isNotEmpty) {
         _initialFetchDone = true;
         ref
             .read(employeeloginViewModelProvider.notifier)
@@ -66,7 +72,9 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   }
 
   void _refreshEmployeeList() {
-    ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(
+    ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(
           ref.read(adminloginViewModelProvider).companyId ?? '',
           useCacheFirst: false,
         );
@@ -75,10 +83,9 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
   Future<void> _onRefresh() async {
     final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
     if (companyId.isEmpty) return;
-    await ref.read(employeeloginViewModelProvider.notifier).getEmployeeList(
-          companyId,
-          useCacheFirst: false,
-        );
+    await ref
+        .read(employeeloginViewModelProvider.notifier)
+        .getEmployeeList(companyId, useCacheFirst: false);
   }
 
   bool _isNetworkError(String? message) {
@@ -96,54 +103,48 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
     ].any(msg.contains);
   }
 
-  Widget _buildNoInternet() {
-    return AdminNoInternetRetry(onRetry: _onRefresh);
-  }
-
-  Widget _buildError() {
-    return AdminSomethingWentWrongRetry(onRetry: _onRefresh);
-  }
+  Widget _buildNoInternet() => AdminNoInternetRetry(onRetry: _onRefresh);
+  Widget _buildError() => AdminSomethingWentWrongRetry(onRetry: _onRefresh);
 
   @override
   void dispose() {
     _adminListener?.close();
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(employeeloginViewModelProvider);
-    final listAsync = state.employeeList;
-    final companyId =
-        ref.read(adminloginViewModelProvider).companyId ?? '';
+  /// Builds the employee list for a given roleId (2=SO, 3=ASM)
+  List<Map<String, dynamic>> _getEmployeesByRole(
+    List<dynamic> list,
+    int roleId,
+  ) {
+    return list
+        .where((e) {
+          final matchesRole = e.roleId == roleId;
+          if (widget.activeStatus == 0 || widget.activeStatus == 1) {
+            return matchesRole && e.activeStatus == widget.activeStatus;
+          }
+          return matchesRole;
+        })
+        .map(
+          (e) => {
+            "id": e.empId,
+            "name": e.empName ?? "",
+            "mobile": e.empMobile,
+            "email": e.empEmail ?? "",
+            "address": e.empAddress ?? "",
+            "region": e.regionName ?? "",
+            "status": e.checkinStatus == 1 ? "Active" : "Inactive",
+          },
+        )
+        .toList();
+  }
 
-    final employees = state.employeeList.when(
-      data: (list) => list
-          .where((e) {
-            if (widget.activeStatus == 0 || widget.activeStatus == 1) {
-              return e.activeStatus == widget.activeStatus;
-            }
-            return true;
-          })
-          .map(
-            (e) => {
-              "id": e.empId,
-              "name": e.empName ?? "",
-              "mobile": e.empMobile ,
-              "email": e.empEmail ?? "",
-              "address": e.empAddress ?? "",
-              "region": e.regionName ?? "",
-              "status": e.checkinStatus == 1 ? "Active" : "Inactive",
-            },
-          )
-          .toList(),
-      loading: () => <Map<String, dynamic>>[],
-      error: (_, __) => <Map<String, dynamic>>[],
-    );
-
-    final filteredEmployees = employees.where((e) {
-      final q = _searchQuery.toLowerCase();
+  List<Map<String, dynamic>> _applySearch(List<Map<String, dynamic>> list) {
+    final q = _searchQuery.toLowerCase();
+    if (q.isEmpty) return list;
+    return list.where((e) {
       return e["name"].toLowerCase().contains(q) ||
           e["mobile"].toLowerCase().contains(q) ||
           e["email"].toLowerCase().contains(q) ||
@@ -151,13 +152,13 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
           e["region"].toLowerCase().contains(q) ||
           e["status"].toLowerCase().contains(q);
     }).toList();
+  }
 
-    final activeCount = filteredEmployees
-        .where((e) => e["status"] == "Active")
-        .length;
-    final inactiveCount = filteredEmployees
-        .where((e) => e["status"] == "Inactive")
-        .length;
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(employeeloginViewModelProvider);
+    final listAsync = state.employeeList;
+    final companyId = ref.read(adminloginViewModelProvider).companyId ?? '';
 
     return Scaffold(
       backgroundColor: MinimalTheme.backgroundGray,
@@ -169,9 +170,14 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
                 backgroundColor: MinimalTheme.primaryOrange,
                 elevation: 2,
                 onPressed: () async {
+                  // Pass the roleId that matches the currently selected tab:
+                  // tab 0 → SO (roleId 2), tab 1 → ASM (roleId 3)
+                  final int roleId = _tabController.index == 0 ? 2 : 3;
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddEmployeeForm()),
+                    MaterialPageRoute(
+                      builder: (_) => AddEmployeeForm(roleId: roleId),
+                    ),
                   );
                   if (result == true) _refreshEmployeeList();
                 },
@@ -198,188 +204,327 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage> {
             ? _isNetworkError(listAsync.error.toString())
                   ? _buildNoInternet()
                   : _buildError()
-            : ListView(
-                children: [
-                  // ── Header with Stats ───────────────────
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    decoration: BoxDecoration(
-                      color: MinimalTheme.cardWhite,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            : listAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (allEmployees) {
+                  final soList = _applySearch(
+                    _getEmployeesByRole(allEmployees, _soRoleId),
+                  );
+                  final asmList = _applySearch(
+                    _getEmployeesByRole(allEmployees, _asmRoleId),
+                  );
+
+                  return NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                      SliverToBoxAdapter(
+                        child: Column(
                           children: [
-                            Row(
-                              children: [
-                                if (widget.activeStatus != 0)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.arrow_back,
-                                      color: MinimalTheme.textDark,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => Navigator.pop(context),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    splashRadius: 20,
-                                  ),
-                                if (widget.activeStatus != 0)
-                                  const SizedBox(width: 8),
-                                Text(
-                                  widget.activeStatus == 0
-                                      ? 'Employees'
-                                      : 'Deleted Employee',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: MinimalTheme.textDark,
-                                  ),
+                            // ── Header ──────────────────────────
+                            if (widget.activeStatus != 0)
+                              Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  40,
+                                  16,
+                                  12,
                                 ),
-                              ],
-                            ),
-                            if (widget.activeStatus != 1)
-                              Row(
+                                decoration: BoxDecoration(
+                                  color: MinimalTheme.cardWhite,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        if (widget.activeStatus != 0)
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.arrow_back,
+                                              color: MinimalTheme.textDark,
+                                              size: 20,
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            splashRadius: 20,
+                                          ),
+                                        if (widget.activeStatus != 0)
+                                          const SizedBox(width: 8),
+                                        Text(
+                                          widget.activeStatus == 0
+                                              ? 'Employees'
+                                              : 'Deleted Employees',
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: MinimalTheme.textDark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (widget.activeStatus != 1)
+                                      Row(
+                                        children: [
+                                          _compactStat(
+                                            label: 'Active',
+                                            count: (soList + asmList)
+                                                .where(
+                                                  (e) =>
+                                                      e["status"] == "Active",
+                                                )
+                                                .length,
+                                            color: MinimalTheme.successGreen,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          _compactStat(
+                                            label: 'Inactive',
+                                            count: (soList + asmList)
+                                                .where(
+                                                  (e) =>
+                                                      e["status"] == "Inactive",
+                                                )
+                                                .length,
+                                            color: MinimalTheme.errorRed,
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+
+                            // ── Search Bar + Attendance Button ───
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                              child: Row(
                                 children: [
-                                  _compactStat(
-                                    label: 'Active',
-                                    count: activeCount,
-                                    color: MinimalTheme.successGreen,
+                                  Expanded(
+                                    child: AppSearchBar(
+                                      controller: _searchController,
+                                      hintText: 'Search employee...',
+                                      onChanged: (v) =>
+                                          setState(() => _searchQuery = v),
+                                    ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  _compactStat(
-                                    label: 'Inactive',
-                                    count: inactiveCount,
-                                    color: MinimalTheme.errorRed,
+                                  if (widget.activeStatus == 0) ...[
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AttendanceReportPage(
+                                            companyId: companyId,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Container(
+                                        height: 46,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: MinimalTheme.cardWhite,
+                                          borderRadius: BorderRadius.circular(
+                                            17,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(
+                                              0xFF6366F1,
+                                            ).withOpacity(0.25),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(
+                                              Icons.bar_chart_rounded,
+                                              color: Color(0xFF6366F1),
+                                              size: 18,
+                                            ),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Report',
+                                              style: TextStyle(
+                                                color: Color(0xFF6366F1),
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            // ── Tab Bar ──────────────────────────
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              decoration: BoxDecoration(
+                                color: MinimalTheme.cardWhite,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ── Search Bar + Attendance Button ───────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        // Search bar — fills remaining space
-                        Expanded(
-                          child: AppSearchBar(
-                            controller: _searchController,
-                            hintText: 'Search employee...',
-                            onChanged: (v) =>
-                                setState(() => _searchQuery = v),
-                          ),
-                        ),
-                   
-                      if(widget.activeStatus == 0)
-                        const SizedBox(width: 8),
-
-                        // ── Attendance Report Button ─────────
-                          if(widget.activeStatus == 0)
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AttendanceReportPage(
-                                companyId: companyId,
-                              ),
-                            ),
-                          ),
-                          child: Container(
-                            height: 46,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color: MinimalTheme.cardWhite,
-                              borderRadius: BorderRadius.circular(17),
-                              border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.bar_chart_rounded,
-                                  color: Color(0xFF6366F1),
-                                  size: 18,
+                              child: TabBar(
+                                controller: _tabController,
+                                labelColor: MinimalTheme.primaryOrange,
+                                unselectedLabelColor: MinimalTheme.textGray,
+                                indicatorColor: MinimalTheme.primaryOrange,
+                                indicatorWeight: 2.5,
+                                labelStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Report',
-                                  style: TextStyle(
-                                    color: Color(0xFF6366F1),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
+                                unselectedLabelStyle: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                tabs: [
+                                  Tab(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Text('SO'),
+                                        const SizedBox(width: 6),
+                                        _tabCountBadge(
+                                          active: soList
+                                              .where(
+                                                (e) => e["status"] == "Active",
+                                              )
+                                              .length,
+                                          total: soList.length,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      
-                      
-                      ],
-                    ),
-                  ),
-
-                  // ── Employee List ────────────────────────
-                  if (filteredEmployees.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 40),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 64,
-                              color: MinimalTheme.iconGray.withOpacity(0.5),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No employees found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: MinimalTheme.textDark,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Try adjusting your search',
-                              style: TextStyle(
-                                color: MinimalTheme.textGray,
-                                fontSize: 13,
+                                  Tab(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Text('ASM'),
+                                        const SizedBox(width: 6),
+                                        _tabCountBadge(
+                                          active: asmList
+                                              .where(
+                                                (e) => e["status"] == "Active",
+                                              )
+                                              .length,
+                                          total: asmList.length,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    )
-                  else
-                    ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-                      itemCount: filteredEmployees.length,
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        final emp = filteredEmployees[index];
-                        return _employeeCard(context, emp);
-                      },
+                    ],
+                    body: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // SO Tab
+                        _buildEmployeeListView(soList),
+                        // ASM Tab
+                        _buildEmployeeListView(asmList),
+                      ],
                     ),
-                ],
+                  );
+                },
               ),
       ),
+    );
+  }
+
+  /// Count badge shown next to tab label — displays "active/total"
+  Widget _tabCountBadge({required int active, required int total}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: MinimalTheme.primaryOrange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: active.toString(),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: MinimalTheme.primaryOrange,
+              ),
+            ),
+            TextSpan(
+              text: '/$total',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: MinimalTheme.primaryOrange.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmployeeListView(List<Map<String, dynamic>> employees) {
+    if (employees.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: MinimalTheme.iconGray.withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No employees found',
+              style: TextStyle(
+                fontSize: 16,
+                color: MinimalTheme.textDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Try adjusting your search',
+              style: TextStyle(color: MinimalTheme.textGray, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 80),
+      itemCount: employees.length,
+      itemBuilder: (context, index) {
+        return _employeeCard(context, employees[index]);
+      },
     );
   }
 

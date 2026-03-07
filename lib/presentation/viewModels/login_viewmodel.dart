@@ -17,9 +17,11 @@ class AdminloginState {
   final String? companyId;
   final int? regionId;
   final String? joiningDate;
+  final bool? isSuperadmin;
 
   final AsyncValue<List<AdminLogin>>? adminDetails;
   final AsyncValue<List<LoginInfo>> phoneCheckResult;
+  final AsyncValue<List<AdminLogin>> adminList;
   final int userId;
   const AdminloginState({
     this.joiningDate,
@@ -28,6 +30,7 @@ class AdminloginState {
     this.error,
     this.adminDetails = const AsyncValue.loading(),
     this.phoneCheckResult = const AsyncValue.data([]),
+    this.adminList = const AsyncValue.data([]),
     this.userId = 0,
     this.name,
     this.mobileNo,
@@ -37,6 +40,7 @@ class AdminloginState {
     this.token,
     this.isCheckedIn,
     this.companyId,
+    this.isSuperadmin,
   });
 
   AdminloginState copyWith({
@@ -45,6 +49,7 @@ class AdminloginState {
     String? error,
     AsyncValue<List<AdminLogin>>? adminDetails,
     AsyncValue<List<LoginInfo>>? phoneCheckResult,
+     AsyncValue<List<AdminLogin>>? adminList,
     int? userId,
     String? name,
     String? mobileNo,
@@ -54,7 +59,8 @@ class AdminloginState {
     String? token,
     String? isCheckedIn,
     String? companyId,
-    String? joiningDate
+    String? joiningDate,
+    bool? isSuperadmin,
   }) {
     return AdminloginState(
       regionId: regionId ?? this.regionId,
@@ -62,6 +68,7 @@ class AdminloginState {
       error: error ?? this.error,
       adminDetails: adminDetails ?? this.adminDetails,
       phoneCheckResult: phoneCheckResult ?? this.phoneCheckResult,
+      adminList: adminList ?? this.adminList,
       userId: userId ?? this.userId,
       name: name ?? this.name,
       mobileNo: mobileNo ?? this.mobileNo,
@@ -71,7 +78,8 @@ class AdminloginState {
       token: token ?? this.token,
       isCheckedIn: isCheckedIn ?? this.isCheckedIn,
       companyId: companyId ?? this.companyId,
-      joiningDate: joiningDate?? this.joiningDate
+      joiningDate: joiningDate?? this.joiningDate,
+      isSuperadmin: isSuperadmin ?? this.isSuperadmin
     );
   }
 }
@@ -98,6 +106,10 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final regionIdStr = await TokenStorage.getValue('region_id');
     final regionId = int.tryParse(regionIdStr ?? '');
     final joiningDate = await TokenStorage.getValue('joining_date');
+    final isSuperadminStr = await TokenStorage.getValue('is_superadmin');
+    print("IS SUPERADMINSTR: $isSuperadminStr");
+    final isSuperadmin = isSuperadminStr?.toString() == 'true';
+    print("IS SUPERADMIN: $isSuperadmin");
     state = state.copyWith(
       userId: userId,
       name: name,
@@ -110,6 +122,8 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
       companyId: companyId,
       regionId: regionId,
       joiningDate: joiningDate,
+      isSuperadmin: isSuperadmin,
+      
       phoneCheckResult: AsyncValue.data([
         LoginInfo(
           name: name,
@@ -198,5 +212,47 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     );
 
     await TokenStorage.clear();
+  }
+
+  Future<Map<String, dynamic>> addAdmin(AdminLogin admin) async {
+  state = state.copyWith(isLoading: true, error: null);
+
+  try {
+    final response = await usecase.addAdmin(admin);
+
+    state = state.copyWith(isLoading: false);
+
+    return response; // contains success & message from SP
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      error: e.toString(),
+    );
+
+    return {
+      "success": 0,
+      "message": "Something went wrong"
+    };
+  }
+}
+
+  Future<void> fetchAdmins(String companyId) async {
+    state = state.copyWith(
+      isLoading: true,
+      adminList: const AsyncValue.loading(),
+    );
+    try {
+      final details = await usecase.fetchAdmins(companyId);
+      state = state.copyWith(
+        isLoading: false,
+        adminList: AsyncValue.data(details),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        adminList: AsyncValue.error(e, StackTrace.current),
+      );
+    }
+
   }
 }
