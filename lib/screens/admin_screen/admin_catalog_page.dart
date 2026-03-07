@@ -181,7 +181,7 @@ class _AdminCatalogPageState extends ConsumerState<AdminCatalogPage> {
       child: AppSearchBar(
         controller: _searchController,
         hintText: 'Search products…',
- onChanged: (v) => setState(() => _searchQuery = v),
+        onChanged: (v) => setState(() => _searchQuery = v),
       ),
     );
   }
@@ -348,118 +348,117 @@ class _ProductCardState extends State<_ProductCard>
         child: Column(
           children: [
             // ── Header row ─────────────────────────────────────────────
-           GestureDetector(
-  onTap: _toggle,
-  behavior: HitTestBehavior.opaque,
-  child: Padding(
-    padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-    child: Row(
+            GestureDetector(
+              onTap: _toggle,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                child: Row(
+                  children: [
+                    // Type icon
+                    // Container(
+                    //   width: 44,
+                    //   height: 44,
+                    //   decoration: BoxDecoration(
+                    //     color: color.withOpacity(0.1),
+                    //     borderRadius: BorderRadius.circular(12),
+                    //   ),
+                    //   child: Icon(
+                    //     _typeIcon(widget.product.productType),
+                    //     size: 22,
+                    //     color: color,
+                    //   ),
+                    // ),
+                    const SizedBox(width: 12),
 
-                children: [
-                  // Type icon
-                  // Container(
-                  //   width: 44,
-                  //   height: 44,
-                  //   decoration: BoxDecoration(
-                  //     color: color.withOpacity(0.1),
-                  //     borderRadius: BorderRadius.circular(12),
-                  //   ),
-                  //   child: Icon(
-                  //     _typeIcon(widget.product.productType),
-                  //     size: 22,
-                  //     color: color,
-                  //   ),
-                  // ),
-                  const SizedBox(width: 12),
-
-                  // Name + type
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.product.productName ?? '',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _kTextPrimary,
-                            letterSpacing: -0.2,
+                    // Name + type
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.product.productName ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: _kTextPrimary,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        // Text(
-                        //   widget.product.productType ?? '',
-                        //   style: TextStyle(
-                        //     fontSize: 11,
-                        //     color: color,
-                        //     fontWeight: FontWeight.w600,
-                        //   ),
-                        // ),
-                      ],
+                          const SizedBox(height: 3),
+                          // Text(
+                          //   widget.product.productType ?? '',
+                          //   style: TextStyle(
+                          //     fontSize: 11,
+                          //     color: color,
+                          //     fontWeight: FontWeight.w600,
+                          //   ),
+                          // ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // Unit count pill
-                  if (units.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                    // Unit count pill
+                    if (units.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kBackground,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: _kDivider),
+                        ),
+                        child: Text(
+                          '${units.length} unit${units.length == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: _kBackground,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _kDivider),
+
+                    // Edit button
+                    GestureDetector(
+                      onTap: widget.onEdit,
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: _kPrimaryLight,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: _kPrimary,
+                        ),
                       ),
-                      child: Text(
-                        '${units.length} unit${units.length == 1 ? '' : 's'}',
-                        style: const TextStyle(
-                          fontSize: 11,
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Expand chevron
+                    GestureDetector(
+                      onTap: _toggle,
+                      child: AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 250),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 22,
                           color: _kTextSecondary,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-
-                  // Edit button
-                  GestureDetector(
-                    onTap: widget.onEdit,
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: _kPrimaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.edit_outlined,
-                        size: 16,
-                        color: _kPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Expand chevron
-                  GestureDetector(
-                    onTap: _toggle,
-                    child: AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 250),
-                      child: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 22,
-                        color: _kTextSecondary,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-           ),
             // ── Expandable units ───────────────────────────────────────
             SizeTransition(
               sizeFactor: _expandAnim,
@@ -517,7 +516,7 @@ class _ProductCardState extends State<_ProductCard>
               children: [
                 _UnitRow(
                   label: _formatUnit(u.availableUnit, u.measuringUnit),
-                  //price: '₹${u.price}',
+                  price: '₹',
                 ),
                 if (!isLast) const Divider(height: 1, color: _kDivider),
               ],
@@ -534,7 +533,7 @@ class _UnitRow extends StatelessWidget {
   final String label;
   final String? price;
 
-  const _UnitRow({required this.label,  this.price});
+  const _UnitRow({required this.label, this.price});
 
   @override
   Widget build(BuildContext context) {
@@ -567,21 +566,21 @@ class _UnitRow extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: _kGreenLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            // child: Text(
-            //   price,
-            //   style: const TextStyle(
-            //     fontSize: 13,
-            //     fontWeight: FontWeight.w700,
-            //     color: _kGreen,
-            //   ),
-            // ),
-          ),
+          // Container(
+          //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          //   decoration: BoxDecoration(
+          //     color: _kGreenLight,
+          //     borderRadius: BorderRadius.circular(20),
+          //   ),
+          //   child: Text(
+          //     price,
+          //     style: const TextStyle(
+          //       fontSize: 13,
+          //       fontWeight: FontWeight.w700,
+          //       color: _kGreen,
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
