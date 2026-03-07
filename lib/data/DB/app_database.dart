@@ -73,7 +73,6 @@ class AppDatabase {
       is_deleted INTEGER DEFAULT 0,
       sync_action TEXT, -- create | update | delete
       updated_at TEXT,
-      type INTEGER
     )
   ''');
   }
