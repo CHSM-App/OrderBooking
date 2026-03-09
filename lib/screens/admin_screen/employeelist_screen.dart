@@ -9,6 +9,34 @@ import 'package:order_booking_app/screens/admin_screen/widgets/admin_retry_widge
 import 'package:order_booking_app/widgets/app_search_bar.dart';
 
 // Minimal Theme Colors
+// ─── Premium Design Tokens ───────────────────────────────────────────────────
+class AppTheme {
+  // Primary palette
+  static const orange500 = Color(0xFFFF6B2B);
+  static const orange400 = Color(0xFFFF8C42);
+  static const orange100 = Color(0xFFFFF0E8);
+  static const orange50 = Color(0xFFFFF8F4);
+
+  // Neutrals
+  static const ink900 = Color(0xFF1A1A2E);
+  static const ink700 = Color(0xFF374151);
+  static const ink400 = Color(0xFF6B7280);
+  static const ink200 = Color(0xFFD1D5DB);
+  static const ink50 = Color(0xFFF9FAFB);
+
+  // Surface
+  static const surface = Color(0xFFFFFFFF);
+  static const canvas = Color(0xFFF3F4F6);
+
+  // Semantic
+  static const emerald = Color(0xFF059669);
+  static const emeraldBg = Color(0xFFECFDF5);
+  static const rose = Color(0xFFDC2626);
+  static const roseBg = Color(0xFFFEF2F2);
+  static const violet = Color(0xFF7C3AED);
+  static const violetBg = Color(0xFFF5F3FF);
+}
+
 class MinimalTheme {
   static const primaryOrange = Color(0xFFFF8C42);
   static const backgroundGray = Color(0xFFF5F5F5);
@@ -303,6 +331,59 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
                               ),
 
                             // ── Search Bar + Attendance Button ───
+
+                            // ── Tab Bar ──────────────────────────
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDEDED),
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                labelColor: AppTheme.orange500,
+                                unselectedLabelColor: AppTheme.ink400,
+                                indicator: BoxDecoration(
+                                  color: const Color(0xFFFFF3E8),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: AppTheme.orange500,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                dividerColor: Colors.transparent,
+                                splashFactory: NoSplash.splashFactory,
+                                overlayColor: WidgetStateProperty.all(
+                                  Colors.transparent,
+                                ),
+                                labelStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                unselectedLabelStyle: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                tabs: [
+                                  Tab(
+                                    child: _tabLabel(
+                                      title: 'Sales Officers',
+                                      list: soList,
+                                      activeIcon: Icons.storefront_rounded,
+                                    ),
+                                  ),
+                                  Tab(
+                                    child: _tabLabel(
+                                      title: 'ASM',
+                                      list: asmList,
+                                      activeIcon: Icons.manage_accounts_rounded,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                               child: Row(
@@ -318,14 +399,22 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
                                   if (widget.activeStatus == 0) ...[
                                     const SizedBox(width: 8),
                                     GestureDetector(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => AttendanceReportPage(
-                                            companyId: companyId,
+                                      onTap: () {
+                                        final int selectedRoleId =
+                                            _tabController.index == 0
+                                            ? _soRoleId
+                                            : _asmRoleId;
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                AttendanceReportPage(
+                                                  companyId: companyId,
+                                                  roleId: selectedRoleId,
+                                                ),
                                           ),
-                                        ),
-                                      ),
+                                        );
+                                      },
                                       child: Container(
                                         height: 46,
                                         padding: const EdgeInsets.symmetric(
@@ -367,75 +456,6 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
                                 ],
                               ),
                             ),
-
-                            // ── Tab Bar ──────────────────────────
-                            Container(
-                              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                              decoration: BoxDecoration(
-                                color: MinimalTheme.cardWhite,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.03),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: TabBar(
-                                controller: _tabController,
-                                labelColor: MinimalTheme.primaryOrange,
-                                unselectedLabelColor: MinimalTheme.textGray,
-                                indicatorColor: MinimalTheme.primaryOrange,
-                                indicatorWeight: 2.5,
-                                labelStyle: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                unselectedLabelStyle: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                tabs: [
-                                  Tab(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Text('SO'),
-                                        const SizedBox(width: 6),
-                                        _tabCountBadge(
-                                          active: soList
-                                              .where(
-                                                (e) => e["status"] == "Active",
-                                              )
-                                              .length,
-                                          total: soList.length,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Tab(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Text('ASM'),
-                                        const SizedBox(width: 6),
-                                        _tabCountBadge(
-                                          active: asmList
-                                              .where(
-                                                (e) => e["status"] == "Active",
-                                              )
-                                              .length,
-                                          total: asmList.length,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -456,36 +476,47 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
     );
   }
 
-  /// Count badge shown next to tab label — displays "active/total"
-  Widget _tabCountBadge({required int active, required int total}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: MinimalTheme.primaryOrange.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: active.toString(),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: MinimalTheme.primaryOrange,
-              ),
+  Widget _tabLabel({
+    required String title,
+    required List<Map<String, dynamic>> list,
+    required IconData activeIcon,
+  }) {
+    final active = list.where((e) => e['status'] == 'Active').length;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(title),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppTheme.orange500.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: active.toString(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.orange500,
+                  ),
+                ),
+                TextSpan(
+                  text: '/${list.length}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.orange500.withOpacity(0.6),
+                  ),
+                ),
+              ],
             ),
-            TextSpan(
-              text: '/$total',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: MinimalTheme.primaryOrange.withOpacity(0.7),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/domain/models/attendance.dart';
+import 'package:order_booking_app/domain/models/employee.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -35,7 +36,13 @@ class _T {
 // ─────────────────────────────────────────────────────────────────────────────
 class AttendanceReportPage extends ConsumerStatefulWidget {
   final String companyId;
-  const AttendanceReportPage({super.key, required this.companyId});
+  final int? roleId;
+
+  const AttendanceReportPage({
+    super.key,
+    required this.companyId,
+    this.roleId,
+  });
 
   @override
   ConsumerState<AttendanceReportPage> createState() =>
@@ -178,6 +185,14 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
   @override
   Widget build(BuildContext context) {
     final attendanceState = ref.watch(employeeloginViewModelProvider);
+    final employees = attendanceState.employeeList.maybeWhen(
+      data: (list) => list,
+      orElse: () => const <EmployeeLogin>[],
+    );
+    final roleFilteredReports = attendanceState.attendanceReport.maybeWhen(
+      data: (list) => _filterReportsByRole(list, employees),
+      orElse: () => const <AttendanceReport>[],
+    );
 
     return Scaffold(
       backgroundColor: _T.bg,
@@ -189,7 +204,7 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
             child: Column(
               children: [
                 // ── App-bar ──────────────────────────────────────────
-                _buildAppBar(attendanceState.attendanceReport.value ?? []),
+                _buildAppBar(roleFilteredReports),
 
                 Padding(
                   padding:
@@ -202,7 +217,9 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
                   child: attendanceState.attendanceReport.when(
                     loading: () => const _Loader(),
                     error:   (e, _) => _ErrorView(message: e.toString()),
-                    data:    (list) => _buildList(list),
+                    data:    (list) => _buildList(
+                      _filterReportsByRole(list, employees),
+                    ),
                   ),
                 ),
               ],
@@ -340,6 +357,22 @@ class _AttendanceReportPageState extends ConsumerState<AttendanceReportPage>
   }
 
   // ── Employee list ────────────────────────────────────────────────────────────
+  List<AttendanceReport> _filterReportsByRole(
+    List<AttendanceReport> reports,
+    List<EmployeeLogin> employees,
+  ) {
+    if (widget.roleId == null || employees.isEmpty) return reports;
+
+    final roleEmployeeIds = employees
+        .where((e) => e.roleId == widget.roleId)
+        .map((e) => e.empId)
+        .whereType<int>()
+        .toSet();
+
+    if (roleEmployeeIds.isEmpty) return const <AttendanceReport>[];
+    return reports.where((r) => roleEmployeeIds.contains(r.empId)).toList();
+  }
+
   Widget _buildList(List<AttendanceReport> list) {
     final filtered = list.map((emp) {
       if (emp.month == _selectedMonthKey) return emp;

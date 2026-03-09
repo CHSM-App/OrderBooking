@@ -263,7 +263,10 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
           data: (orders) {
             final today = DateTime.now();
             return orders
-                .where((o) => isSameDay(DateTime.parse(o.orderDate), today))
+                .where((o) =>
+                    o.type == 1 &&
+                    o.isDelivered==1 &&
+                    isSameDay(DateTime.parse(o.orderDate), today))
                 .length;
           },
         ) ??
@@ -275,7 +278,10 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
           data: (orders) {
             final today = DateTime.now();
             return orders
-                .where((o) => isSameDay(DateTime.parse(o.orderDate), today))
+                .where((o) =>
+                    o.type == 1 &&
+                     o.isDelivered==1 &&
+                    isSameDay(DateTime.parse(o.orderDate), today))
                 .fold<double>(0.0, (sum, o) {
               final amount = o.totalPrice;
               return sum +
