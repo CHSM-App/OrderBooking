@@ -330,15 +330,20 @@ class _AdminEmployeesPageState extends ConsumerState<AdminEmployeesPage>
                                 ),
                               ),
 
-                            // ── Search Bar + Attendance Button ───
-
-                            // ── Tab Bar ──────────────────────────
+                            //Tab Bar
                             Container(
                               margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                              padding: const EdgeInsets.all(4),
+                              padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEDEDED),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(28),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: TabBar(
                                 controller: _tabController,
