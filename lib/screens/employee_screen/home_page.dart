@@ -313,7 +313,8 @@ Widget _buildQuickActions(BuildContext context) {
         ? (employeeState.employeeDetails.value!.first.companyName ?? '')
         : '';
 
-    final userName = ref.read(adminloginViewModelProvider).name ?? 'there';
+    final userName = ref.read(adminloginViewModelProvider).name ?? '';
+    final roleId = employeeState.roleId ?? 0;
 
     final hour = DateTime.now().hour;
     final greeting = hour < 12
@@ -321,6 +322,17 @@ Widget _buildQuickActions(BuildContext context) {
         : hour < 17
         ? 'Good Afternoon'
         : 'Good Evening';
+
+    
+String roleName;
+ if (roleId == 2) {
+  roleName = "Sales Officer";
+} else if (roleId == 3) {
+  roleName = "ASM";
+} else {
+  roleName = "User";
+}
+
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -365,7 +377,7 @@ Widget _buildQuickActions(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$greeting,',
+                  '$greeting, $roleName',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.85),
                     fontSize: 14,

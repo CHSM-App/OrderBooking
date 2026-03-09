@@ -22,12 +22,14 @@ class EmployeeloginState {
   final String? companyId;
   final bool? isPhoneNoExists;
   final bool? mobileNoStatus;
+  final int? roleId;
 
   const EmployeeloginState({
     this.employeeVisitLocation = const AsyncValue.loading(),
     this.isLoading = false,
     this.error,
     this.empId,
+    this.roleId,
     this.companyId,
     this.isPhoneNoExists,
     this.mobileNoStatus,
@@ -50,6 +52,7 @@ class EmployeeloginState {
     AsyncValue<List<AttendanceReport>>? attendanceReport,
     String? companyId,
     int? empId,
+    int? roleId,
   }) {
     return EmployeeloginState(
       employeeVisitLocation:
@@ -64,6 +67,7 @@ class EmployeeloginState {
       attendanceReport: attendanceReport ?? this.attendanceReport,
       companyId: companyId ?? this.companyId,
       empId: empId ?? this.empId,
+      roleId: roleId ?? this.roleId,
     );
   }
 }
