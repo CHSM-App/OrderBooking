@@ -7,6 +7,7 @@ part of 'product_data.dart';
 // **************************************************************************
 
 ProductData _$ProductDataFromJson(Map<String, dynamic> json) => ProductData(
+  type: (json['type'] as num?)?.toInt(),
   productName: json['product_name'] as String,
   companyId: json['company_id'] as String?,
   itemTotalPrice: (json['item_total_price'] as num?)?.toDouble(),
@@ -27,4 +28,5 @@ Map<String, dynamic> _$ProductDataToJson(ProductData instance) =>
       'region_name': instance.regionName,
       'emp_name': instance.emp_name,
       'company_name': instance.companyName,
+      'type': instance.type,
     };

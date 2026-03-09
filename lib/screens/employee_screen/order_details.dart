@@ -459,7 +459,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> with TickerProvider
                           ],
                         ),
                         Text(
-                          item.productUnit,
+                          '${item.productUnit} ${item.measuringUnit ?? ''}'.trim(),
                           style: const TextStyle(
                             fontSize: 12, // Reduced from 13
                             fontWeight: FontWeight.w600,
@@ -561,6 +561,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> with TickerProvider
             children: [
               const Text(
                 'Subtotal',
+                
                 style: TextStyle(
                   fontSize: 13, // Reduced from 14
                   color: Colors.white,

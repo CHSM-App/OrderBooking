@@ -34,6 +34,7 @@ class OfflineOrderDao {
         'price': item.price,
         'quantity': item.quantity,
         'total_price': item.totalPrice,
+        'measuring_unit': item.measuringUnit,
       });
     }
 
@@ -134,6 +135,7 @@ class OfflineOrderDao {
         'price': item.price,
         'quantity': item.quantity,
         'total_price': item.totalPrice,
+        'measuring_unit': item.measuringUnit,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
 
@@ -212,6 +214,7 @@ class OfflineOrderDao {
             'price': item.price,
             'quantity': item.quantity,
             'total_price': item.totalPrice,
+            'measuring_unit': item.measuringUnit,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
@@ -258,7 +261,9 @@ class OfflineOrderDao {
       price: (row['price'] as num).toDouble(),
       quantity: row['quantity'] as int,
       totalPrice: (row['total_price'] as num).toDouble(),
+      measuringUnit: row['measuring_unit'] as String?,
     );
+
   }
 
   Future<void> markDeliveredByLocalIds(List<String> localOrderIds) async {

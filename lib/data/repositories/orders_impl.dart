@@ -36,6 +36,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
             productUnit: r['product_unit'],
             price: r['price'],
             quantity: r['quantity'],
+            measuringUnit: r['measuring_unit'],
           );
         }).toList();
 
@@ -93,6 +94,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
           productUnit: r['product_unit'],
           price: (r['price'] as num).toDouble(),
           quantity: r['quantity'],
+          measuringUnit: r['measuring_unit'],
         );
       }).toList();
 

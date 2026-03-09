@@ -203,7 +203,8 @@ class AppDatabase {
         product_unit TEXT,
         price REAL,
         quantity INTEGER,
-        total_price REAL
+        total_price REAL,
+        measuring_unit TEXT
       
     )
   ''');

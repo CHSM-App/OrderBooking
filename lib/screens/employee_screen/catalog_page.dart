@@ -124,7 +124,7 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
       backgroundColor: _kBackground,
       body: SafeArea(
         child: (state.isLoading && !hasProducts)
-            ? _buildLoading()
+            ? _wrapRefresh(_buildLoading())
             : (state.productList?.when(
                   data: (products) {
                     if (_filteredProducts.isEmpty &&
@@ -140,10 +140,10 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
                       ],
                     );
                   },
-                  loading: _buildLoading,
-                  error: (e, _) => _buildError(e.toString()),
+                  loading: () => _wrapRefresh(_buildLoading()),
+                  error: (e, _) => _wrapRefresh(_buildError(e.toString())),
                 ) ??
-                _buildLoading()),
+                _wrapRefresh(_buildLoading())),
       ),
     );
   }
@@ -179,8 +179,8 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
   // ── List ───────────────────────────────────────────────────────────────────
   Widget _buildList() {
     if (_filteredProducts.isEmpty) {
-      return Center(
-        child: Column(
+      return _wrapRefresh(
+        Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
@@ -221,6 +221,21 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
           typeIcon: _typeIcon,
           formatUnit: formatUnit,
         ),
+      ),
+    );
+  }
+
+  Widget _wrapRefresh(Widget child) {
+    return RefreshIndicator(
+      onRefresh: _refreshProducts,
+      color: _kPrimary,
+      backgroundColor: _kSurface,
+      strokeWidth: 2.5,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [SizedBox(height: 420, child: Center(child: child))],
       ),
     );
   }

@@ -625,20 +625,20 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
 
   Widget _buildBody(ordersState state) {
     final hasOrders = state.orders?.value != null;
-    if (state.isLoading && !hasOrders) return _buildLoading();
+    if (state.isLoading && !hasOrders) return _wrapRefresh(_buildLoading());
     if (state.errorMessage != null && !hasOrders) {
-      return _buildError(state.errorMessage!);
+      return _wrapRefresh(_buildError(state.errorMessage!));
     }
-    if (state.orders == null) return _buildEmpty();
+    if (state.orders == null) return _wrapRefresh(_buildEmpty());
 
     return state.orders!.when(
       data: (rawOrders) {
         final items = _buildItems(rawOrders);
-        if (items.isEmpty) return _buildEmpty();
+        if (items.isEmpty) return _wrapRefresh(_buildEmpty());
         return _buildList(items);
       },
-      loading: _buildLoading,
-      error: (e, _) => _buildError(e.toString()),
+      loading: () => _wrapRefresh(_buildLoading()),
+      error: (e, _) => _wrapRefresh(_buildError(e.toString())),
     );
   }
 
@@ -695,6 +695,22 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage>
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _wrapRefresh(Widget child) {
+    return RefreshIndicator(
+      color: _kPrimary,
+      backgroundColor: _kSurface,
+      strokeWidth: 2.5,
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [SizedBox(height: 400, child: Center(child: child))],
       ),
     );
   }
