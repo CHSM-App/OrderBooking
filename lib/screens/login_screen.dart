@@ -155,7 +155,7 @@ void initState() {
 
                 // Title
                 const Text(
-                  'Order Booking Portal',
+                  'Retail Pulse',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,

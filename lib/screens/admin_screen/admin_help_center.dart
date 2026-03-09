@@ -41,7 +41,7 @@ class _AdminHelpCenterPageState extends State<AdminHelpCenterPage> {
         _Faq(
           question: 'Can there be more than one admin for a company?',
           answer:
-              'No. Each company account has exactly one admin. The admin is the sole person who can manage employees, products, and view all reports. If you need to transfer admin access, contact our support team.',
+              'Yes. Each company account can have multiple admins. The company Owner can add multiple admins for the company. Excluding the add admins and delete employee, all rights will have to the newly added admins',
         ),
         _Faq(
           question: 'What is the GSTIN used for?',
