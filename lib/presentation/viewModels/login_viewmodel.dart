@@ -96,7 +96,8 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final name = await TokenStorage.getValue('name');
     final mobileNo = await TokenStorage.getValue('mobile_no');
     final email = await TokenStorage.getValue('email');
-    final roleId = await TokenStorage.getValue('role_id');
+    final  roleId = await TokenStorage.getValue('role_id');
+    print("RoleId: $roleId");
     final companyName = await TokenStorage.getValue('company_name');
     final token = await TokenStorage.getValue('token');
     final isCheckedIn = await TokenStorage.getValue('isCheckedIn');
@@ -107,9 +108,7 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
     final regionId = int.tryParse(regionIdStr ?? '');
     final joiningDate = await TokenStorage.getValue('joining_date');
     final isSuperadminStr = await TokenStorage.getValue('is_superadmin');
-    print("IS SUPERADMINSTR: $isSuperadminStr");
     final isSuperadmin = isSuperadminStr?.toString() == 'true';
-    print("IS SUPERADMIN: $isSuperadmin");
     state = state.copyWith(
       userId: userId,
       name: name,

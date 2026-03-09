@@ -428,7 +428,7 @@ class _AdminProfilePageState extends ConsumerState<AdminProfilePage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: MinimalTheme.cardWhite.withOpacity(0.1),
+                color: MinimalTheme.primaryOrange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(

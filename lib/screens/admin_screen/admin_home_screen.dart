@@ -136,106 +136,127 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
   }
 
   // ── Welcome / Header ────────────────────────────────────────────────────────
-  Widget _buildWelcomeSection() {
-    final companyName =
-        ref.read(adminloginViewModelProvider).companyName ?? 'Your Company';
-    final adminName =
-        ref.read(adminloginViewModelProvider).name ?? 'Admin';
+Widget _buildWelcomeSection() {
+  final adminData = ref.read(adminloginViewModelProvider);
 
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'Good Morning'
-        : hour < 17
-            ? 'Good Afternoon'
-            : 'Good Evening';
+  final companyName = adminData.companyName ?? 'Your Company';
+  final adminName = adminData.name ?? 'Admin';
+  // final roleId = adminData.roleId ?? '0';
+  final roleId = int.tryParse(adminData.roleId ?? '0') ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
+  final hour = DateTime.now().hour;
+  final greeting = hour < 12
+      ? 'Good Morning'
+      : hour < 17
+          ? 'Good Afternoon'
+          : 'Good Evening';
+
+
+
+String roleName;
+if (roleId == 1) {
+  roleName = "Admin";
+} else if (roleId == 2) {
+  roleName = "Sales Officer";
+} else if (roleId == 3) {
+  roleName = "ASM";
+} else {
+  roleName = "User";
+}
+
+
+
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFFF57C00).withOpacity(0.35),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF57C00).withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+      ],
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
           ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Icon badge
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.waving_hand_rounded,
-              color: Colors.white,
-              size: 32,
-            ),
+          child: const Icon(
+            Icons.waving_hand_rounded,
+            color: Colors.white,
+            size: 32,
           ),
-          const SizedBox(width: 16),
-          // Text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$greeting,',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+        ),
+        const SizedBox(width: 16),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Greeting + Role
+              Text(
+                '$greeting, $roleName',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  adminName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 4),
+
+              /// Person Name
+              Text(
+                adminName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.business_rounded,
-                      color: Colors.white70,
-                      size: 13,
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        companyName,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 6),
+
+              Row(
+                children: [
+                  const Icon(
+                    Icons.business_rounded,
+                    color: Colors.white70,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      companyName,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   // ── Stats Grid ───────────────────────────────────────────────────────────────
   Widget _buildStatsOverview() {
