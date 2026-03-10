@@ -314,7 +314,7 @@ Widget _buildQuickActions(BuildContext context) {
         : '';
 
     final userName = ref.read(adminloginViewModelProvider).name ?? '';
-    final roleId = employeeState.roleId ?? 0;
+    final roleId = ref.read(adminloginViewModelProvider).roleId ?? 0;
 
     final hour = DateTime.now().hour;
     final greeting = hour < 12
