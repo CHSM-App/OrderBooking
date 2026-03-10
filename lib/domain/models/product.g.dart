@@ -51,6 +51,7 @@ ProductSubType _$ProductSubTypeFromJson(Map<String, dynamic> json) =>
       measuringUnit: json['measuring_unit'] as String?,
       availableUnit: (json['available_unit'] as num?)?.toDouble(),
       price: (json['price'] as num?)?.toDouble(),
+      quantityPerBox: (json['quantity_per_box'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ProductSubTypeToJson(ProductSubType instance) =>
@@ -59,4 +60,5 @@ Map<String, dynamic> _$ProductSubTypeToJson(ProductSubType instance) =>
       'measuring_unit': instance.measuringUnit,
       'available_unit': instance.availableUnit,
       'price': instance.price,
+      'quantity_per_box': instance.quantityPerBox,
     };

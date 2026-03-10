@@ -37,18 +37,14 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   String? measuringUnit;
 
   late TextEditingController _nameCtrl;
-  final TextEditingController _unitCtrl  = TextEditingController();
- // final TextEditingController _priceCtrl = TextEditingController();
+  final TextEditingController _unitCtrl = TextEditingController();
+  final TextEditingController _qtyCtrl  = TextEditingController();
 
   List<ProductSubType> addedItems = [];
   final List<int> _pendingDeleteSubItemIds = [];
   bool _hasInitializedData = false;
 
-  // final List<String> _productTypes = [
-  //   'Beverage', 'Grocery', 'Ice Cream',
-  //   'Bakery & Snacks', 'Dairy', 'Personal & Home Care', 'Others',
-  // ];
-  final List<String> _units = ['Liter', 'ml', 'Box','Piece','Kilogram', 'gm'];
+  final List<String> _units = ['Liter', 'ml', 'Kilogram', 'gm'];
 
   bool get _isEdit => widget.initialProduct != null;
 
@@ -63,7 +59,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   void dispose() {
     _nameCtrl.dispose();
     _unitCtrl.dispose();
-   // _priceCtrl.dispose();
+    _qtyCtrl.dispose();
     super.dispose();
   }
 
@@ -73,14 +69,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     _hasInitializedData = true;
     productName = p.productName ?? '';
     _nameCtrl.text = productName;
-   // productType = p.productType;
     measuringUnit = p.subtypes?[0].measuringUnit;
     addedItems = _normalizeSubtypes(p.subtypes);
   }
 
   List<ProductSubType> _normalizeSubtypes(List? raw) {
     if (raw == null) return [];
-    return raw.map((item) { 
+    return raw.map((item) {
       if (item is ProductSubType) return item;
       if (item is Map) {
         return ProductSubType.fromJson(Map<String, dynamic>.from(item));
@@ -102,13 +97,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
       ]),
       backgroundColor: color,
       behavior: SnackBarBehavior.floating,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
       duration: const Duration(seconds: 3),
     ));
   }
 
+  // ── Add item ───────────────────────────────────────────────────────────────
   void _addItem() {
     if (productName.trim().isEmpty) {
       _snack('Enter product name first',
@@ -120,27 +115,32 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
           color: _kPrimary, icon: Icons.warning_amber_rounded);
       return;
     }
-    if (_unitCtrl.text.isEmpty ) {
-      _snack('Enter both unit value',
+    if (_unitCtrl.text.trim().isEmpty) {
+      _snack('Enter unit value',
           color: _kPrimary, icon: Icons.warning_amber_rounded);
       return;
     }
+
+    // quantityPerBox is optional — parse only if filled
+    final int? qtyPerBox = _qtyCtrl.text.trim().isNotEmpty
+        ? int.tryParse(_qtyCtrl.text.trim())
+        : null;
+
     setState(() {
       addedItems.add(ProductSubType(
         localId: const Uuid().v4(),
         subItemId: null,
         measuringUnit: measuringUnit!,
-        availableUnit: double.tryParse(_unitCtrl.text) ?? 0,
-      //  price: double.tryParse(_priceCtrl.text),
+        availableUnit: double.tryParse(_unitCtrl.text.trim()) ?? 0,
+        quantityPerBox: qtyPerBox,
       ));
       _unitCtrl.clear();
-     // _priceCtrl.clear();
+      _qtyCtrl.clear();
     });
   }
 
   Future<bool> _ensureOnline() async {
-    final ok =
-        await ref.read(networkServiceProvider).checkConnection();
+    final ok = await ref.read(networkServiceProvider).checkConnection();
     if (!ok) ref.invalidate(networkStatusProvider);
     return ok;
   }
@@ -157,8 +157,8 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             title: Column(
@@ -166,21 +166,20 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: BoxDecoration(
-                      color: _kRedLight, shape: BoxShape.circle),
-                  child:
-                      const Icon(Icons.warning_amber_rounded,
-                          color: _kRed, size: 26),
+                  decoration:
+                      const BoxDecoration(color: _kRedLight, shape: BoxShape.circle),
+                  child: const Icon(Icons.warning_amber_rounded,
+                      color: _kRed, size: 26),
                 ),
                 const SizedBox(height: 14),
                 const Text('No Units Added',
-                    style: TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700),
+                    style:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                     textAlign: TextAlign.center),
               ],
             ),
             content: const Text(
-              'There are no unit  entries for this product. '
+              'There are no unit entries for this product. '
               'Updating now may remove the product. Are you sure you want to continue?',
               style: TextStyle(
                   fontSize: 14, color: _kTextSecondary, height: 1.5),
@@ -212,7 +211,6 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
             ],
           ),
         );
-
         if (confirmed != true) return;
       } else {
         _snack('Add at least one unit',
@@ -226,11 +224,9 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
     final product = Product(
       productId: widget.initialProduct?.productId,
       productName: productName,
-   //   productType: productType!,
       createdBy: ref.read(adminloginViewModelProvider).userId,
       subtypes: addedItems,
-      companyId:
-          ref.read(adminloginViewModelProvider).companyId ?? '',
+      companyId: ref.read(adminloginViewModelProvider).companyId ?? '',
     );
 
     final productVM = ref.read(productViewModelProvider.notifier);
@@ -240,8 +236,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
 
       if (_isEdit && _pendingDeleteSubItemIds.isNotEmpty) {
         try {
-          await productVM
-              .deleteProductSubType(_pendingDeleteSubItemIds);
+          await productVM.deleteProductSubType(_pendingDeleteSubItemIds);
         } catch (e) {
           _snack('Updated, but failed to delete items: $e',
               color: _kRed, icon: Icons.error_outline_rounded);
@@ -252,9 +247,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
         ref.read(adminloginViewModelProvider).companyId ?? '',
       );
       _snack(
-        _isEdit
-            ? 'Product updated successfully'
-            : 'Product added successfully',
+        _isEdit ? 'Product updated successfully' : 'Product added successfully',
         color: _kGreen,
         icon: Icons.check_circle_outline_rounded,
       );
@@ -266,10 +259,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
   }
 
   // ── Input decoration helper ───────────────────────────────────────────────
-  InputDecoration _inputDec({
-    required String hint,
-    required IconData icon,
-  }) {
+  InputDecoration _inputDec({required String hint, required IconData icon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(
@@ -336,160 +326,126 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Product info card ────────────────────────────────────
+              // ── Product Information + Unit Section ───────────────────
               _SectionCard(
                 title: 'Product Information',
                 icon: Icons.inventory_2_outlined,
                 child: Column(
                   children: [
-                    // Product name
-                    _FieldLabel(
-                        label: 'Product Name',
-                        icon: Icons.shopping_bag_outlined),
+                    /// Product Name
+                    const _FieldLabel(
+                      label: 'Product Name',
+                      icon: Icons.shopping_bag_outlined,
+                    ),
                     const SizedBox(height: 6),
                     TextFormField(
                       controller: _nameCtrl,
-                      style: const TextStyle(
-                          fontSize: 14, color: _kTextPrimary),
+                      style: const TextStyle(fontSize: 14, color: _kTextPrimary),
                       decoration: _inputDec(
-                          hint: 'Enter product name',
-                          icon: Icons.shopping_bag_outlined),
-                      validator: (v) => (v == null || v.isEmpty)
-                          ? 'Enter product name'
-                          : null,
+                        hint: 'Enter product name',
+                        icon: Icons.shopping_bag_outlined,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Enter product name' : null,
                       onSaved: (v) => productName = v!,
                       onChanged: (v) => productName = v,
                     ),
-                    const SizedBox(height: 16),
 
-                    // // Product type
-                    // const _FieldLabel(
-                    //     label: 'Product Type',
-                    //     icon: Icons.category_outlined),
-                    // const SizedBox(height: 6),
-                    // DropdownButtonFormField2<String>(
-                    //   decoration: _inputDec(
-                    //       hint: 'Select type',
-                    //       icon: Icons.category_outlined),
-                    //   dropdownStyleData: DropdownStyleData(
-                    //     decoration: BoxDecoration(
-                    //         borderRadius: BorderRadius.circular(12),
-                    //         color: _kSurface),
-                    //     elevation: 4,
-                    //   ),
-                    //   items: _productTypes
-                    //       .map((t) => DropdownMenuItem(
-                    //           value: t,
-                    //           child: Text(t,
-                    //               style: const TextStyle(fontSize: 14))))
-                    //       .toList(),
-                    //   value: productType,
-                    //   onChanged: (v) =>
-                    //       setState(() => productType = v),
-                    //   validator: (v) =>
-                    //       (v == null || v.isEmpty)
-                    //           ? 'Select product type'
-                    //           : null,
-                    // ),
-                    // const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // Measuring unit
-                    const _FieldLabel(
-                        label: 'Measuring Unit',
-                        icon: Icons.straighten_outlined),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField2<String>(
-                      decoration: _inputDec(
-                          hint: 'Select unit',
-                          icon: Icons.straighten_outlined),
-                      dropdownStyleData: DropdownStyleData(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: _kSurface),
-                        elevation: 4,
-                      ),
-                      items: _units
-                          .map((u) => DropdownMenuItem(
-                              value: u,
-                              child: Text(u,
-                                  style: const TextStyle(fontSize: 14))))
-                          .toList(),
-                      value: measuringUnit,
-                      onChanged: (v) =>
-                          setState(() => measuringUnit = v),
-                      validator: (v) =>
-                          (v == null || v.isEmpty)
-                              ? 'Select measuring unit'
-                              : null,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // ── Add unit & price card ────────────────────────────────
-              _SectionCard(
-                title: 'Add Unit',
-                icon: Icons.add_shopping_cart_outlined,
-                child: Column(
-                  children: [
+                    /// Unit Value + Measuring Unit
                     Row(
                       children: [
-                        // Unit value
+                        // Unit Value
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const _FieldLabel(
-                                  label: 'Unit Value',
-                                  icon: Icons.scale_outlined),
+                                label: 'Unit Value',
+                                icon: Icons.scale_outlined,
+                              ),
                               const SizedBox(height: 6),
                               TextFormField(
                                 controller: _unitCtrl,
-                                keyboardType:
-                                    TextInputType.number,
+                                keyboardType: TextInputType.number,
                                 style: const TextStyle(
-                                    fontSize: 14,
-                                    color: _kTextPrimary),
+                                    fontSize: 14, color: _kTextPrimary),
                                 decoration: _inputDec(
-                                    hint: 'e.g. 0.5',
-                                    icon: Icons.scale_outlined),
+                                  hint: 'e.g. 0.5',
+                                  icon: Icons.scale_outlined,
+                                ),
                               ),
                             ],
                           ),
                         ),
+
                         const SizedBox(width: 12),
-                        // Price
-                        // Expanded(
-                        //   child: Column(
-                        //     crossAxisAlignment:
-                        //         CrossAxisAlignment.start,
-                        //     children: [
-                        //       const _FieldLabel(
-                        //           label: 'Price (₹)',
-                        //           icon: Icons
-                        //               .currency_rupee_rounded),
-                        //       const SizedBox(height: 6),
-                        //       TextFormField(
-                        //         controller: _priceCtrl,
-                        //         keyboardType:
-                        //             TextInputType.number,
-                        //         style: const TextStyle(
-                        //             fontSize: 14,
-                        //             color: _kTextPrimary),
-                        //         decoration: _inputDec(
-                        //             hint: 'e.g. 120',
-                        //             icon: Icons
-                        //                 .currency_rupee_rounded),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
+
+                        // Measuring Unit
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _FieldLabel(
+                                label: 'Measuring Unit',
+                                icon: Icons.straighten_outlined,
+                              ),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField2<String>(
+                                decoration: _inputDec(
+                                  hint: 'Select unit',
+                                  icon: Icons.straighten_outlined,
+                                ),
+                                dropdownStyleData: DropdownStyleData(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: _kSurface,
+                                  ),
+                                  elevation: 4,
+                                ),
+                                items: _units
+                                    .map((u) => DropdownMenuItem(
+                                          value: u,
+                                          child: Text(u,
+                                              style: const TextStyle(
+                                                  fontSize: 14)),
+                                        ))
+                                    .toList(),
+                                value: measuringUnit,
+                                onChanged: (v) =>
+                                    setState(() => measuringUnit = v),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Select measuring unit'
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+
+                    const SizedBox(height: 16),
+
+                    /// Quantity / Box
+                    const _FieldLabel(
+                      label: 'Quantity / Box',
+                      icon: Icons.inventory_2_outlined,
+                    ),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _qtyCtrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(fontSize: 14, color: _kTextPrimary),
+                      decoration: _inputDec(
+                        hint: 'Enter quantity per box',
+                        icon: Icons.inventory_2_outlined,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    /// Add Button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -498,16 +454,13 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
                         label: const Text(
                           'Add to List',
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                              fontWeight: FontWeight.w600, fontSize: 14),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: _kPrimary,
                           side: const BorderSide(color: _kPrimary, width: 1.5),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                              borderRadius: BorderRadius.circular(12)),
                           minimumSize: const Size.fromHeight(46),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
@@ -526,7 +479,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
                   iconColor: _kGreen,
                   child: Column(
                     children: addedItems.asMap().entries.map((e) {
-                      final i = e.key;
+                      final i    = e.key;
                       final item = e.value;
                       final isLast = i == addedItems.length - 1;
                       return Column(
@@ -534,13 +487,10 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
                           _AddedItemRow(
                             productName: productName,
                             item: item,
-                            onDelete: () =>
-                                _deleteItem(i, item),
-                                
+                            onDelete: () => _deleteItem(i, item),
                           ),
                           if (!isLast)
-                            const Divider(
-                                height: 1, color: _kDivider),
+                            const Divider(height: 1, color: _kDivider),
                         ],
                       );
                     }).toList(),
@@ -556,16 +506,12 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
                 height: 52,
                 child: ElevatedButton.icon(
                   onPressed: _submit,
-                  icon: const Icon(
-                      Icons.check_circle_outline_rounded,
+                  icon: const Icon(Icons.check_circle_outline_rounded,
                       size: 20),
                   label: Text(
-                    _isEdit
-                        ? 'Update Product'
-                        : 'Submit Product',
+                    _isEdit ? 'Update Product' : 'Submit Product',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15),
+                        fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kPrimary,
@@ -600,8 +546,7 @@ class _AddProductPageState extends ConsumerState<AddProductPage> {
       addedItems.removeAt(index);
     });
     _snack('Item removed (will delete on update)',
-        color: _kGreen,
-        icon: Icons.check_circle_outline_rounded);
+        color: _kGreen, icon: Icons.check_circle_outline_rounded);
   }
 }
 
@@ -634,7 +579,6 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -659,7 +603,6 @@ class _SectionCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, color: _kDivider),
-          // Content
           Padding(
             padding: const EdgeInsets.all(14),
             child: child,
@@ -694,6 +637,8 @@ class _FieldLabel extends StatelessWidget {
 }
 
 /// Row for a single added item
+/// Shows:  ProductName (unitValue measuringUnit)
+///         Qty / Box: X   (only if quantityPerBox is set)
 class _AddedItemRow extends StatelessWidget {
   final String productName;
   final ProductSubType item;
@@ -703,8 +648,34 @@ class _AddedItemRow extends StatelessWidget {
     required this.productName,
     required this.item,
     required this.onDelete,
-    
   });
+
+  // ── formatting helpers ────────────────────────────────────────────────────
+
+  /// "0.5 Liter"  →  "500 ml"  |  "1.5 Liter"  →  "1.5 L"  etc.
+  String _formatUnit(double? value, String? unit) {
+    if (value == null || unit == null) return '';
+    final u = unit.toLowerCase();
+    String clean(double v) =>
+        v % 1 == 0 ? v.toInt().toString() : v.toString();
+    if (u == 'liter' || u == 'litre' || u == 'l') {
+      return value < 1
+          ? '${(value * 1000).toInt()} ml'
+          : '${clean(value)} L';
+    }
+    if (u == 'kilogram' || u == 'kg') {
+      return value < 1
+          ? '${(value * 1000).toInt()} g'
+          : '${clean(value)} kg';
+    }
+    return '${clean(value)} $unit';
+  }
+
+  /// Title line: "Mango Juice (500 ml)"
+  String get _titleText {
+    final unitStr = _formatUnit(item.availableUnit, item.measuringUnit);
+    return unitStr.isEmpty ? productName : '$productName ($unitStr)';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -712,6 +683,7 @@ class _AddedItemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
+          // Icon badge
           Container(
             width: 36,
             height: 36,
@@ -722,13 +694,17 @@ class _AddedItemRow extends StatelessWidget {
             child: const Icon(Icons.inventory_outlined,
                 size: 18, color: _kPrimary),
           ),
+
           const SizedBox(width: 12),
+
+          // Text column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Line 1: ProductName (unitValue measuringUnit) ──────
                 Text(
-                  '$productName (${item.measuringUnit})',
+                  _titleText,
                   style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -736,36 +712,40 @@ class _AddedItemRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-  _formatUnit(item.availableUnit, item.measuringUnit),
 
-                      style: const TextStyle(
-                          fontSize: 11, color: _kTextSecondary),
-                    ),
-                    const SizedBox(width: 10),
-                    // Container(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 8, vertical: 2),
-                    //   decoration: BoxDecoration(
-                    //     color: _kGreenLight,
-                    //     borderRadius: BorderRadius.circular(20),
-                    //   ),
-                    //   child: Text(
-                    //     '₹${item.price}',
-                    //     style: const TextStyle(
-                    //         fontSize: 11,
-                    //         fontWeight: FontWeight.w700,
-                    //         color: _kGreen),
-                    //   ),
-                    // ),
-                  ],
-                ),
+                const SizedBox(height: 4),
+
+                // ── Line 2: Quantity per box ───────────────────────────
+                if (item.quantityPerBox != null)
+                  Row(
+                    children: [
+                      const Icon(Icons.inventory_2_outlined,
+                          size: 12, color: _kTextSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${item.quantityPerBox}/Box',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  )
+                else
+                  const Text(
+                    'No box qty set',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: _kTextSecondary,
+                        fontStyle: FontStyle.italic),
+                  ),
               ],
             ),
           ),
+
+          const SizedBox(width: 12),
+
+          // Delete button
           GestureDetector(
             onTap: onDelete,
             child: Container(
@@ -783,30 +763,4 @@ class _AddedItemRow extends StatelessWidget {
       ),
     );
   }
-  String _formatUnit(double? value, String? unit) {
-  if (value == null || unit == null) return '';
-
-  final u = unit.toLowerCase();
-
-  String clean(double v) {
-    // Remove .0 if whole number
-    return v % 1 == 0 ? v.toInt().toString() : v.toString();
-  }
-
-  if (u == 'liter' || u == 'litre' || u == 'l') {
-    return value < 1
-        ? '${(value * 1000).toInt()} ml'
-        : '${clean(value)} L';
-  }
-
-  if (u == 'kilogram' || u == 'kg') {
-    return value < 1
-        ? '${(value * 1000).toInt()} g'
-        : '${clean(value)} kg';
-  }
-
-  return '${clean(value)} $unit';
-}
-
-
 }

@@ -127,7 +127,7 @@ class Product {
 }
 
 @JsonSerializable()
-class ProductSubType {
+class  ProductSubType {
   // ===== SERVER FIELDS =====
   @JsonKey(name: 'sub_item_id')
   final int? subItemId;
@@ -140,6 +140,9 @@ class ProductSubType {
 
   @JsonKey(name: 'price')
   final double? price;
+
+  @JsonKey(name: 'quantity_per_box')
+  final int? quantityPerBox;
 
   // ===== LOCAL / UI ONLY =====
   @JsonKey(ignore: true)
@@ -159,6 +162,7 @@ class ProductSubType {
     this.measuringUnit,
     this.availableUnit,
     this.price,
+    this.quantityPerBox,
     this.total,
     this.localId,
     this.productLocalId,
@@ -175,6 +179,7 @@ class ProductSubType {
     String? measuringUnit,
     double? availableUnit,
     double? price,
+    int? quantityPerBox,
     int? total,
     String? localId,
     String? productLocalId,
@@ -185,6 +190,7 @@ class ProductSubType {
       measuringUnit: measuringUnit ?? this.measuringUnit,
       availableUnit: availableUnit ?? this.availableUnit,
       price: price ?? this.price,
+      quantityPerBox: quantityPerBox ?? this.quantityPerBox,
       total: total ?? this.total,
       localId: localId ?? this.localId,
       productLocalId: productLocalId ?? this.productLocalId,
