@@ -141,9 +141,7 @@ Widget _buildWelcomeSection() {
 
   final companyName = adminData.companyName ?? 'Your Company';
   final adminName = adminData.name ?? 'Admin';
-  // final roleId = adminData.roleId ?? '0';
-  final roleId = int.tryParse(adminData.roleId ?? '0') ?? 0;
-
+  
   final hour = DateTime.now().hour;
   final greeting = hour < 12
       ? 'Good Morning'
@@ -153,16 +151,7 @@ Widget _buildWelcomeSection() {
 
 
 
-String roleName;
-if (roleId == 1) {
-  roleName = "Admin";
-} else if (roleId == 2) {
-  roleName = "Sales Officer";
-} else if (roleId == 3) {
-  roleName = "ASM";
-} else {
-  roleName = "User";
-}
+
 
 
 
@@ -206,7 +195,7 @@ if (roleId == 1) {
             children: [
               /// Greeting + Role
               Text(
-                '$greeting, $roleName',
+                '$greeting, Admin',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 16,
