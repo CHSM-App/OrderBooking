@@ -370,7 +370,7 @@ class _ProductCardState extends State<_ProductCard>
           children: [
             // ── Header row ─────────────────────────────────────────────
             InkWell(
-              onTap: _toggle,
+              // onTap: _toggle,
               borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -420,8 +420,7 @@ class _ProductCardState extends State<_ProductCard>
                       ),
                     ),
 
-                    // Unit count pill
-                    if ((widget.product.subtypes ?? []).isNotEmpty)
+                    if ((widget.product.quantityPerBox ?? 0) > 0) ...[
                       Container(
                         margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(
@@ -432,23 +431,44 @@ class _ProductCardState extends State<_ProductCard>
                           border: Border.all(color: _kDivider),
                         ),
                         child: Text(
-                          '${widget.product.subtypes!.length} unit${widget.product.subtypes!.length == 1 ? '' : 's'}',
+                          '${widget.product.quantityPerBox} per box',
                           style: const TextStyle(
                               fontSize: 11,
                               color: _kTextSecondary,
-                              fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
+                    ],
+
+                    // Unit count pill
+                    // if ((widget.product.subtypes ?? []).isNotEmpty)
+                    //   Container(
+                    //     margin: const EdgeInsets.only(right: 8),
+                    //     padding: const EdgeInsets.symmetric(
+                    //         horizontal: 8, vertical: 3),
+                    //     decoration: BoxDecoration(
+                    //       color: _kBackground,
+                    //       borderRadius: BorderRadius.circular(20),
+                    //       border: Border.all(color: _kDivider),
+                    //     ),
+                    //     child: Text(
+                    //       '${widget.product.subtypes!.length} unit${widget.product.subtypes!.length == 1 ? '' : 's'}',
+                    //       style: const TextStyle(
+                    //           fontSize: 11,
+                    //           color: _kTextSecondary,
+                    //           fontWeight: FontWeight.w500),
+                    //     ),
+                    //   ),
 
                     // Chevron
-                    AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 250),
-                      child: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 20,
-                          color: _kTextSecondary),
-                    ),
+                    // AnimatedRotation(
+                    //   turns: _expanded ? 0.5 : 0,
+                    //   duration: const Duration(milliseconds: 250),
+                    //   child: const Icon(
+                    //       Icons.keyboard_arrow_down_rounded,
+                    //       size: 20,
+                    //       color: _kTextSecondary),
+                    // ),
                   ],
                 ),
               ),
@@ -471,7 +491,7 @@ class _ProductCardState extends State<_ProductCard>
   }
 
   Widget _buildUnits(Color color) {
-    final units = widget.product.subtypes;
+    final units = [];
 
     if (units == null || units.isEmpty) {
       return Padding(

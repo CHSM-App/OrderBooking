@@ -25,17 +25,21 @@ class _AppColors {
 
 class _ProductVariant {
   final Product product;
-  final ProductSubType subType;
   final String displayLabel;
+  final String unit;
+  final int subItemId;
+  final int? quantityPerBox;
 
   _ProductVariant({
     required this.product,
-    required this.subType,
     required this.displayLabel,
+    required this.unit,
+    required this.subItemId,
+    required this.quantityPerBox,
   });
 
   String get uniqueKey =>
-      '${product.productId}_${subType.subItemId}';
+      '${product.productId}_${subItemId}';
 }
 
 class _TempOrderItem {
@@ -111,35 +115,16 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  String _formatUnit(double? value, String? unit) {
-    if (value == null || unit == null) return '';
-    String fmt(double v) =>
-        v % 1 == 0 ? v.toStringAsFixed(0) : v.toString();
-    switch (unit.toLowerCase()) {
-      case 'liter':
-        return value >= 1
-            ? '${fmt(value)} L'
-            : '${(value * 1000).toStringAsFixed(0)} ml';
-      case 'kilogram':
-        return value >= 1
-            ? '${fmt(value)} kg'
-            : '${(value * 1000).toStringAsFixed(0)} g';
-      default:
-        return '${fmt(value)} $unit';
-    }
-  }
-
   List<_ProductVariant> _buildVariants(List<Product> products) {
     return [
       for (final p in products)
-        for (final s in p.subtypes ?? [])
-          _ProductVariant(
-            product: p,
-            subType: s,
-            displayLabel:
-                '${p.productName ?? ''} ${_formatUnit(s.availableUnit, s.measuringUnit)}'
-                    .trim(),
-          ),
+        _ProductVariant(
+          product: p,
+          displayLabel: p.productName ?? '',
+          unit: p.productUnit ?? '',
+          subItemId: 0,
+          quantityPerBox: p.quantityPerBox,
+        ),
     ];
   }
 
@@ -165,8 +150,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
         _orderItems[v.uniqueKey] = _TempOrderItem(
           productId: v.product.productId!,
           productName: v.displayLabel,
-          subItemId: v.subType.subItemId!,
-          unit: _formatUnit(v.subType.availableUnit, v.subType.measuringUnit),
+          subItemId: v.subItemId,
+          unit: v.unit,
         );
       }
     });
@@ -424,7 +409,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
 
   Widget _buildStep1BottomBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
       decoration: const BoxDecoration(
         color: _AppColors.white,
         border: Border(top: BorderSide(color: _AppColors.border)),
@@ -476,6 +461,8 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
             ),
           ],
         ),
+
+
       ),
     );
   }
@@ -549,7 +536,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
                       SizedBox(width: 8),
                       SizedBox(
                         width: 80,
-                        child: Text('Price (₹)',
+                        child: Text('Price per box',
                             style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -558,7 +545,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
                       SizedBox(width: 8),
                       SizedBox(
                         width: 70,
-                        child: Text('Qty',
+                        child: Text('Box Qty',
                             style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -601,7 +588,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen>
     final total = _calculateTotal();
     final isSubmitDisabled = _orderItems.isEmpty;
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
       decoration: const BoxDecoration(
         color: _AppColors.white,
         border: Border(top: BorderSide(color: _AppColors.border)),
@@ -839,6 +826,27 @@ class _ProductSelectRow extends StatelessWidget {
                     color: _AppColors.textDark),
               ),
             ),
+            if (variant.quantityPerBox != null &&
+                variant.quantityPerBox! > 0) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _AppColors.bgLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _AppColors.border),
+                ),
+                child: Text(
+                  '${variant.quantityPerBox} per box',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _AppColors.textGray,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

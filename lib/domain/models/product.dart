@@ -5,6 +5,10 @@ part 'product.g.dart';
 @JsonSerializable(explicitToJson: true)
 class Product {
   // ===== SERVER FIELDS =====
+
+  @JsonKey(name: 'quantity_per_box')
+  final int? quantityPerBox;
+
   @JsonKey(name: 'product_id')
   final int? productId;
 
@@ -19,10 +23,6 @@ class Product {
 
   @JsonKey(name: 'company_id')
   final String? companyId;
-
-  @JsonKey(name: 'subtypes')
-  final List<ProductSubType>? subtypes;
-
   // ===== OPTIONAL SERVER FIELDS =====
   @JsonKey(name: 'employee_id')
   final int? employeeId;
@@ -62,13 +62,13 @@ class Product {
 
   Product({
     this.orderDate,
+    this.quantityPerBox,
     this.itemTotalPrice,
     this.productId,
     this.productName,
     this.productType,
     this.createdBy,
     this.companyId,
-    this.subtypes,
     this.employeeId,
     this.adminId,
     this.totalPrice,
@@ -113,7 +113,6 @@ class Product {
       productType: productType ?? this.productType,
       createdBy: createdBy ?? this.createdBy,
       companyId: companyId ?? this.companyId,
-      subtypes: subtypes ?? this.subtypes,
       employeeId: employeeId ?? this.employeeId,
       adminId: adminId ?? this.adminId,
       totalPrice: totalPrice ?? this.totalPrice,

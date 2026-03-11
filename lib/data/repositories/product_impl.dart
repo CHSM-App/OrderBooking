@@ -44,13 +44,13 @@ Future<void> syncRemoteToLocal(String companyId) async {
         serverProductIds.add(product.productId!);
       }
 
-      if (product.subtypes != null) {
-        for (final sub in product.subtypes!) {
-          if (sub.subItemId != null) {
-            serverSubItemIds.add(sub.subItemId!);
-          }
-        }
-      }
+      // if (product.subtypes != null) {
+      //   for (final sub in product.subtypes!) {
+      //     if (sub.subItemId != null) {
+      //       serverSubItemIds.add(sub.subItemId!);
+      //     }
+      //   }
+      // }
     }
 
     // 1️⃣ Upsert everything

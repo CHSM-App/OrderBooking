@@ -439,35 +439,35 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> with TickerProvider
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.inventory_2_outlined, 
-                              size: 15, // Reduced from 16
-                              color: Colors.grey[700]
-                            ),
-                            const SizedBox(width: 6), // Reduced from 8
-                            Text(
-                              'Unit',
-                              style: TextStyle(
-                                fontSize: 12, // Reduced from 13
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '${item.productUnit} ${item.measuringUnit ?? ''}'.trim(),
-                          style: const TextStyle(
-                            fontSize: 12, // Reduced from 13
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6), // Reduced from 8
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //   children: [
+                    //     Row(
+                    //       children: [
+                    //         Icon(Icons.inventory_2_outlined, 
+                    //           size: 15, // Reduced from 16
+                    //           color: Colors.grey[700]
+                    //         ),
+                    //         const SizedBox(width: 6), // Reduced from 8
+                    //         Text(
+                    //           'Unit',
+                    //           style: TextStyle(
+                    //             fontSize: 12, // Reduced from 13
+                    //             color: Colors.grey[700],
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //     Text(
+                    //       '${item.productUnit} ${item.measuringUnit ?? ''}'.trim(),
+                    //       style: const TextStyle(
+                    //         fontSize: 12, // Reduced from 13
+                    //         fontWeight: FontWeight.w600,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    // const SizedBox(height: 6), // Reduced from 8
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

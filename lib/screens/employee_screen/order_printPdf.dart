@@ -69,11 +69,11 @@ class _OrderPrintPreviewPageState extends State<OrderPrintPreviewPage> {
           pw.Text('Total items: ${widget.order.items.length}'),
           pw.SizedBox(height: 16),
           pw.Table.fromTextArray(
-            headers: ['Product', 'Qty', 'Unit', 'Price', 'Total'],
+            headers: ['Product', 'Qty', 'Price', 'Total'],
             data: widget.order.items.map((item) => [
               item.productName ?? item.productId.toString(),
               item.quantity.toString(),
-              item.productUnit,
+              // item.productUnit,
               item.price.toStringAsFixed(2),
               item.totalPrice.toStringAsFixed(2),
             ]).toList(),
@@ -179,12 +179,12 @@ class _MultiOrderPrintPreviewPageState
               pw.Text('Total items: ${order.items.length}'),
               pw.SizedBox(height: 16),
               pw.Table.fromTextArray(
-                headers: ['Product', 'Qty', 'Unit', 'Price', 'Total'],
+                headers: ['Product', 'Qty', 'Price', 'Total'],
                 data: order.items
                     .map((item) => [
                           item.productName ?? item.productId.toString(),
                           item.quantity.toString(),
-                          item.productUnit,
+                          // item.productUnit,
                           item.price.toStringAsFixed(2),
                           item.totalPrice.toStringAsFixed(2),
                         ])

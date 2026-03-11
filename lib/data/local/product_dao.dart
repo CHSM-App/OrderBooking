@@ -22,7 +22,7 @@ class ProductDao {
           'local_id': localId,
           'product_id': product.productId,
           'product_name': product.productName,
-      
+          'quantity_per_box': product.quantityPerBox,
           'created_by': product.createdBy,
           'admin_id': product.adminId,
           'company_id': product.companyId,
@@ -34,28 +34,28 @@ class ProductDao {
         }, conflictAlgorithm: ConflictAlgorithm.replace);
 
         // 🔥 Always REPLACE subtypes
-        if (product.subtypes != null) {
-          for (final sub in product.subtypes!) {
-            // await txn.delete(
-            //   'product_subtypes',
-            //   where: 'server_product_id = ?',
-            //   whereArgs: [product.productId],
-            // );
-            batch.insert('product_subtypes', {
-              'local_id': sub.localId ?? const Uuid().v4(),
-              'product_local_id': localId,
-              'server_product_id': product.productId,
-              'sub_item_id': sub.subItemId, // must be UNIQUE
-              'measuring_unit': sub.measuringUnit,
-              'available_unit': sub.availableUnit,
+        // if (product.subtypes != null) {
+        //   for (final sub in product.subtypes!) {
+        //     // await txn.delete(
+        //     //   'product_subtypes',
+        //     //   where: 'server_product_id = ?',
+        //     //   whereArgs: [product.productId],
+        //     // );
+        //     batch.insert('product_subtypes', {
+        //       'local_id': sub.localId ?? const Uuid().v4(),
+        //       'product_local_id': localId,
+        //       'server_product_id': product.productId,
+        //       'sub_item_id': sub.subItemId, // must be UNIQUE
+        //       'measuring_unit': sub.measuringUnit,
+        //       'available_unit': sub.availableUnit,
             
-              'total': sub.total,
-              'is_synced': markSynced ? 1 : 0,
-              'is_deleted': 0,
-              'updated_at': product.updatedAt?.toIso8601String(),
-            }, conflictAlgorithm: ConflictAlgorithm.replace);
-          }
-        }
+        //       'total': sub.total,
+        //       'is_synced': markSynced ? 1 : 0,
+        //       'is_deleted': 0,
+        //       'updated_at': product.updatedAt?.toIso8601String(),
+        //     }, conflictAlgorithm: ConflictAlgorithm.replace);
+        //   }
+        // }
       }
 
       await batch.commit(noResult: true);
@@ -80,7 +80,7 @@ class ProductDao {
         Product(
           productId: serverProductId,
           productName: row['product_name'] as String?,
-       
+          quantityPerBox: row['quantity_per_box'] as int?,
           createdBy: row['created_by'] as int?,
           adminId: row['admin_id'] as int?,
           companyId: row['company_id'] as String?,
@@ -89,7 +89,7 @@ class ProductDao {
               ? (row['total_price'] as num).toDouble()
               : null,
           shopId: row['shop_id'] as int?,
-          subtypes: subtypes,
+          // subtypes: subtypes,
           localId: localId,
           isSynced: (row['is_synced'] ?? 0) == 1,
           updatedAt: row['updated_at'] != null

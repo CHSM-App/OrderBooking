@@ -92,6 +92,19 @@ class Order {
     normalized['is_delivered'] ??= json['isDelivered'];
     normalized['type'] ??= json['type'];
 
+    final items = normalized['items'];
+    if (items is List) {
+      normalized['items'] = items.map((e) {
+        if (e is Map<String, dynamic>) {
+          final item = Map<String, dynamic>.from(e);
+          final unit = item['product_unit'];
+          if (unit == null) item['product_unit'] = '';
+          return item;
+        }
+        return e;
+      }).toList();
+    }
+
     return _$OrderFromJson(normalized);
   }
 

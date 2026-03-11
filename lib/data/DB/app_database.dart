@@ -15,7 +15,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 9, // incremented version
+      version: 10, // incremented version
       onCreate: (db, _) async {
         await _createOfflineVisitsTable(db);
         await _createShopsTable(db);
@@ -29,7 +29,17 @@ class AppDatabase {
         await createEmployeeTable(db);
       },
 
-      onUpgrade: (db, oldVersion, newVersion) async {},
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 10) {
+          try {
+            await db.execute(
+              'ALTER TABLE products ADD COLUMN quantity_per_box INTEGER',
+            );
+          } catch (_) {
+            // Column may already exist; ignore.
+          }
+        }
+      },
     );
   }
 
@@ -105,7 +115,7 @@ class AppDatabase {
       local_id TEXT UNIQUE,
       product_id INTEGER UNIQUE,  -- ðŸ”¥ IMPORTANT
       product_name TEXT,
-   
+      quantity_per_box INTEGER,
       created_by INTEGER,
       admin_id INTEGER,
       company_id TEXT,

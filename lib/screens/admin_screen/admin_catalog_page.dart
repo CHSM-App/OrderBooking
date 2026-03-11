@@ -282,60 +282,12 @@ class _ProductCardState extends State<_ProductCard>
     _expanded ? _ctrl.forward() : _ctrl.reverse();
   }
 
-  Color _typeColor(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'beverage':
-        return const Color(0xFF0EA5E9);
-      case 'grocery':
-        return const Color(0xFFF59E0B);
-      case 'ice cream':
-        return const Color(0xFFEC4899);
-      case 'bakery & snacks':
-        return const Color(0xFFD97706);
-      case 'dairy':
-        return const Color(0xFF16A34A);
-      case 'personal & home care':
-        return const Color(0xFF7C3AED);
-      default:
-        return const Color(0xFF64748B);
-    }
-  }
 
-  IconData _typeIcon(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'beverage':
-        return Icons.local_drink_outlined;
-      case 'grocery':
-        return Icons.shopping_bag_outlined;
-      case 'ice cream':
-        return Icons.icecream_outlined;
-      case 'bakery & snacks':
-        return Icons.cookie_outlined;
-      case 'dairy':
-        return Icons.emoji_food_beverage_outlined;
-      case 'personal & home care':
-        return Icons.cleaning_services_outlined;
-      default:
-        return Icons.inventory_2_outlined;
-    }
-  }
-
-  String _formatUnit(double? value, String? unit) {
-    if (value == null || unit == null) return '';
-    final u = unit.toLowerCase();
-    if (u == 'liter' || u == 'litre' || u == 'l') {
-      return value < 1 ? '${(value * 1000).toInt()} ml' : '$value L';
-    }
-    if (u == 'kilogram' || u == 'kg') {
-      return value < 1 ? '${(value * 1000).toInt()} g' : '$value kg';
-    }
-    return '$value $unit';
-  }
 
   @override
   Widget build(BuildContext context) {
     //final color = _typeColor(widget.product.productType);
-    final units = widget.product.subtypes ?? [];
+    final units =  [];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -443,18 +395,6 @@ class _ProductCardState extends State<_ProductCard>
                     const SizedBox(width: 6),
 
                     // Expand chevron
-                    GestureDetector(
-                      onTap: _toggle,
-                      child: AnimatedRotation(
-                        turns: _expanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 250),
-                        child: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 22,
-                          color: _kTextSecondary,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -465,7 +405,7 @@ class _ProductCardState extends State<_ProductCard>
               child: Column(
                 children: [
                   const Divider(height: 1, color: _kDivider),
-                  _buildUnits(units),
+                  // _buildUnits(units),
                 ],
               ),
             ),
@@ -475,114 +415,4 @@ class _ProductCardState extends State<_ProductCard>
     );
   }
 
-  Widget _buildUnits(List<ProductSubType> units) {
-    if (units.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.info_outline_rounded, size: 16, color: _kTextSecondary),
-            SizedBox(width: 6),
-            Text(
-              'No units available',
-              style: TextStyle(fontSize: 13, color: _kTextSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section label
-          const Text(
-            'Available Units',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _kTextSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...units.asMap().entries.map((e) {
-            final isLast = e.key == units.length - 1;
-            final u = e.value;
-            return Column(
-              children: [
-                _UnitRow(
-                  label: _formatUnit(u.availableUnit, u.measuringUnit),
-                  price: '₹',
-                ),
-                if (!isLast) const Divider(height: 1, color: _kDivider),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Unit row ───────────────────────────────────────────────────────────────
-class _UnitRow extends StatelessWidget {
-  final String label;
-  final String? price;
-
-  const _UnitRow({required this.label, this.price});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: _kBackground,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _kDivider),
-            ),
-            child: const Icon(
-              Icons.straighten_outlined,
-              size: 16,
-              color: _kTextSecondary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _kTextPrimary,
-              ),
-            ),
-          ),
-          // Container(
-          //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          //   decoration: BoxDecoration(
-          //     color: _kGreenLight,
-          //     borderRadius: BorderRadius.circular(20),
-          //   ),
-          //   child: Text(
-          //     price,
-          //     style: const TextStyle(
-          //       fontSize: 13,
-          //       fontWeight: FontWeight.w700,
-          //       color: _kGreen,
-          //     ),
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
 }
