@@ -14,5 +14,9 @@ abstract class OrdersRepository {
 
   Future<List<Order>> getEmployeeOrders(int empId);
 
-  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds);
+  Future<void> markDeliveredByLocalIds(
+    List<String> localIds,
+    List<int> serverIds, {
+    DateTime? deliveredOn,
+  });
 }

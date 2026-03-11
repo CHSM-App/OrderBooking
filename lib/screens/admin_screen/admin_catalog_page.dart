@@ -375,6 +375,28 @@ class _ProductCardState extends State<_ProductCard>
                         ),
                       ),
 
+                    if ((widget.product.quantityPerBox ?? 0) > 0)
+                      Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kBackground,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: _kDivider),
+                        ),
+                        child: Text(
+                          '${widget.product.quantityPerBox} per box',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: _kTextSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
                     // Edit button
                     GestureDetector(
                       onTap: widget.onEdit,

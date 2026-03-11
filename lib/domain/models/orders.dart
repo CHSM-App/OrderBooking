@@ -51,9 +51,13 @@ class Order {
   final String? mobileNo;
   final String? status;  
 
+  @JsonKey(name: 'delivered_on')
+  final String? deliveredOn;
+
   final int? type;
 
   Order({
+    this.deliveredOn,
     this.type,
     this.isDelivered,
     this.mobileNo,
@@ -90,6 +94,7 @@ class Order {
     normalized['region_name'] ??= json['regionName'];
     normalized['mobile_no'] ??= json['mobileNo'];
     normalized['is_delivered'] ??= json['isDelivered'];
+    normalized['delivered_on'] ??= json['deliveredOn'];
     normalized['type'] ??= json['type'];
 
     final items = normalized['items'];

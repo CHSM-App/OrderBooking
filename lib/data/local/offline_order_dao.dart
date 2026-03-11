@@ -312,6 +312,16 @@ class OfflineOrderDao {
         .toList();
   }
 
+  Future<List<Map<String, dynamic>>> fetchPendingDeliveredOrders() async {
+    final db = await AppDatabase.database;
+    return db.query(
+      'delivered_orders',
+      columns: ['server_order_id', 'delivered_on'],
+      where: 'status = ?',
+      whereArgs: ['pending'],
+    );
+  }
+
   Future<void> markDeliveredSynced(List<int> serverOrderIds) async {
     if (serverOrderIds.isEmpty) return;
     final db = await AppDatabase.database;

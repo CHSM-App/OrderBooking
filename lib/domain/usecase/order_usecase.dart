@@ -37,7 +37,15 @@ class OrderUsecase {
     return ordersRepository.getEmployeeOrders(empId);
   }
 
-  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds) async {
-    return ordersRepository.markDeliveredByLocalIds(localIds, serverIds);
+  Future<void> markDeliveredByLocalIds(
+    List<String> localIds,
+    List<int> serverIds, {
+    DateTime? deliveredOn,
+  }) async {
+    return ordersRepository.markDeliveredByLocalIds(
+      localIds,
+      serverIds,
+      deliveredOn: deliveredOn,
+    );
   }
 }

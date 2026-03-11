@@ -173,16 +173,30 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
   Future<void> markDeliveredByLocalIds(
     List<String> localIds,
-    List<int> serverIds,
-  ) async {
+    List<int> serverIds, {
+    DateTime? deliveredOn,
+  }) async {
     await offlineOrderDao.markDeliveredByLocalIds(localIds);
-    await offlineOrderDao.insertDeliveredOrders(serverIds);
+    await offlineOrderDao.insertDeliveredOrders(
+      serverIds,
+      deliveredOn: deliveredOn,
+    );
   }
 
   Future<void> _syncDeliveredOrders() async {
-    final pendingIds = await offlineOrderDao.fetchPendingDeliveredServerIds();
-    if (pendingIds.isEmpty) return;
-    await _apiService.markDelivered(pendingIds);
+    final pendingRows = await offlineOrderDao.fetchPendingDeliveredOrders();
+    if (pendingRows.isEmpty) return;
+    final payload = pendingRows
+        .map((row) => {
+              'order_id': row['server_order_id'],
+              'delivered_on': row['delivered_on'],
+            })
+        .toList();
+    final pendingIds = pendingRows
+        .map((row) => row['server_order_id'])
+        .whereType<int>()
+        .toList();
+    await _apiService.markDelivered(payload);
     await offlineOrderDao.markDeliveredSynced(pendingIds);
   }
 

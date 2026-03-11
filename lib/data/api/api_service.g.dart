@@ -1188,11 +1188,11 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<dynamic> markDelivered(List<int> orderIds) async {
+  Future<dynamic> markDelivered(List<Map<String, dynamic>> payload) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    final _data = orderIds;
+    final _data = payload.map((e) => e).toList();
     final _options = _setStreamType<dynamic>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(

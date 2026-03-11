@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
+import 'package:order_booking_app/presentation/viewModels/orders_viewmodel.dart';
+import 'package:order_booking_app/presentation/viewModels/shop_visit.dart';
 import 'package:order_booking_app/screens/employee_screen/add_shop_screen.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -113,128 +115,90 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   Widget _buildStatsOverview() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 380;
-        final roleId = ref.watch(tokenProvider).roleId ?? 0;
-        final locationLabel = roleId == 3 ? 'Godown' : 'Shops';
+    final ordersState orders = ref.watch(ordersViewModelProvider);
+    final EmployeeVisitState  visits = ref.watch(visitViewModelProvider);
+    final roleId              = ref.watch(tokenProvider).roleId ?? 0;
+    final locationLabel       = roleId == 3 ? 'Godowns' : 'Shops';
 
-        final todayOrders = ref.watch(ordersViewModelProvider).todayOrdars ?? 0;
-        final todayRevenue = ref.watch(ordersViewModelProvider).todayRevenue ?? 0;
-        final todayVisitedShops =  ref.watch(visitViewModelProvider).visitedShops ?? 0;
-        final monthlyRevenue = ref.watch(ordersViewModelProvider).monthlyRevenue ?? 0;
+    final takenCount     = orders.todayOrdars     ?? 0;
+    final takenTotal     = orders.takenTotalPrice  ?? 0.0;
+    final delivCount     = orders.deliveredCount   ?? 0;
+    final delivRevenue   = orders.deliveredRevenue ?? 0.0;
+    final shopsVisited   = visits.visitedShops     ?? 0;
 
-        return Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: 'Orders',
-                    value: todayOrders.toString(),
-                    icon: Icons.shopping_bag_outlined,
-                    color: const Color(0xFF6C63FF),
-                    //  trend: '+12%',
-                    isSmall: isSmallScreen,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Revenue',
-                    value: '₹${todayRevenue.toStringAsFixed(2)}',
-                    icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF00C853),
-                    // trend: '+8%',
-                    isSmall: isSmallScreen,
-                  ),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Section header ──────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            "Today's Overview",
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF2D3142),
+              letterSpacing: 0.2,
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: locationLabel,
-                    value: todayVisitedShops.toString(),
-                    icon: Icons.store_outlined,
-                    color: const Color(0xFFFF6B6B),
-                    //  trend: '+5',
-                    isSmall: isSmallScreen,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'Products Revenue',
-                    value: '₹${monthlyRevenue.toStringAsFixed(2)}',
-                    icon: Icons.production_quantity_limits_sharp,
-                    color: const Color(0xFFFFA726),
-                    // trend: '-2',
-                    isSmall: isSmallScreen,
-                  ),
-                ),
-              ],
+          ),
+        ),
+
+        // ── Top summary card: Orders Taken ───────────────────────────────────
+        _SummaryCard(
+          label: 'Orders Taken',
+          count: takenCount,
+          totalLabel: 'Total Order Value',
+          totalValue: '₹${takenTotal.toStringAsFixed(2)}',
+          accentColor: const Color(0xFF6C63FF),
+          icon: Icons.receipt_long_rounded,
+        ),
+
+        const SizedBox(height: 10),
+
+        // ── Bottom row: 3 mini cards ─────────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _MiniStatCard(
+                label: 'Delivered',
+                value: delivCount.toString(),
+                sub: '₹${delivRevenue.toStringAsFixed(0)}',
+                icon: Icons.check_circle_outline_rounded,
+                color: const Color(0xFF00C853),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatCard(
+                label: 'Del. Revenue',
+                value: '₹${_compactAmount(delivRevenue)}',
+                sub: '$delivCount orders',
+                icon: Icons.payments_outlined,
+                color: const Color(0xFFFFA726),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatCard(
+                label: locationLabel,
+                value: shopsVisited.toString(),
+                sub: 'Visited',
+                icon: Icons.store_outlined,
+                color: const Color(0xFFFF6B6B),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 
-  // Widget _buildQuickActions(BuildContext context) {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Row(
-  //         children: [
-  //           Container(
-  //             padding: const EdgeInsets.all(8),
-  //             decoration: BoxDecoration(
-  //               color: const Color(0xFF7C6FDC).withOpacity(0.15),
-  //               borderRadius: BorderRadius.circular(10),
-  //             ),
-  //             child: const Icon(
-  //               Icons.flash_on_rounded,
-  //               color: Color(0xFF7C6FDC),
-  //               size: 20,
-  //             ),
-  //           ),
-  //           const SizedBox(width: 10),
-  //           const Text(
-  //             'Quick Actions',
-  //             style: TextStyle(
-  //               fontSize: 18,
-  //               fontWeight: FontWeight.bold,
-  //               color: Color(0xFF2D3142),
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //       const SizedBox(height: 16),
-  //       Row(
-  //         children: [
-  //           const SizedBox(width: 12),
-  //           Expanded(
-  //             child: _QuickActionButton(
-  //               icon: Icons.add_business_rounded,
-  //               label: 'Add Shop',
-  //               backgroundColor: const Color(0xFFD4F4E7),
-  //               iconColor: const Color(0xFF00C853),
-  //               onTap: () {
-  //                 Navigator.push(
-  //                   context,
-  //                   MaterialPageRoute(builder: (context) => AddShopScreen()),
-  //                 );
-  //               },
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     ],
-  //   );
-  // }
+  // Compact number formatter: 1200 → ₹1.2K, 150000 → ₹1.5L
+  String _compactAmount(double v) {
+    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000)   return '${(v / 1000).toStringAsFixed(1)}K';
+    return v.toStringAsFixed(0);
+  }
 Widget _buildQuickActions(BuildContext context) {
   final tokenState = ref.read(tokenProvider); // Get roleId
 
@@ -555,6 +519,210 @@ class _StatCard extends StatelessWidget {
               color: Color(0xFF757575),
               fontWeight: FontWeight.w500,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+// ─── Add these two widgets at the bottom of the file ─────────────────────────
+
+/// Large top card: order count + total value side by side
+class _SummaryCard extends StatelessWidget {
+  final String   label;
+  final int      count;
+  final String   totalLabel;
+  final String   totalValue;
+  final Color    accentColor;
+  final IconData icon;
+
+  const _SummaryCard({
+    required this.label,
+    required this.count,
+    required this.totalLabel,
+    required this.totalValue,
+    required this.accentColor,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon bubble
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: accentColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+
+          // Count + label
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF9E9E9E),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: const Color(0xFFEEEEEE),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+
+          // Total value + label
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                totalValue,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                totalLabel,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF9E9E9E),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact 3-column mini card
+class _MiniStatCard extends StatelessWidget {
+  final String   label;
+  final String   value;
+  final String   sub;
+  final IconData icon;
+  final Color    color;
+
+  const _MiniStatCard({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon + color dot
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const Spacer(),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A1A),
+              height: 1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: Color(0xFF9E9E9E),
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            sub,
+            style: TextStyle(
+              fontSize: 10,
+              color: color.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

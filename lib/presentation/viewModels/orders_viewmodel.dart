@@ -10,14 +10,24 @@ class ordersState {
   final AsyncValue<List<Order>>? orders;
   final String? companyId;
   final int? empId;
-  final double? todayRevenue;
-  final int? todayOrdars;
-  final double? monthlyRevenue;
+
+  // ── existing ──
+  final double? todayRevenue;   // keep if used elsewhere
+  final int?    todayOrdars;    // keep if used elsewhere
+  final double? monthlyRevenue; // keep if used elsewhere
+
+  // ── new ──
+  final int?    deliveredCount;
+  final double? deliveredRevenue;
+  final double? takenTotalPrice;
 
   const ordersState({
     this.todayOrdars,
     this.todayRevenue,
     this.monthlyRevenue,
+    this.deliveredCount,
+    this.deliveredRevenue,
+    this.takenTotalPrice,
     this.isLoading = false,
     this.isSuccess = false,
     this.errorMessage,
@@ -29,23 +39,30 @@ class ordersState {
   ordersState copyWith({
     double? todayRevenue,
     double? monthlyRevenue,
-    int? todayOrdars,
-    bool? isLoading,
+    int?    todayOrdars,
+    int?    deliveredCount,
+    double? deliveredRevenue,
+    double? takenTotalPrice,
+    bool?   isLoading,
     String? errorMessage,
-    bool? isSuccess,
+    bool?   isSuccess,
     final AsyncValue<List<Order>>? orders,
   }) {
     return ordersState(
-      todayOrdars: todayOrdars ?? this.todayOrdars,
-      todayRevenue: todayRevenue ?? this.todayRevenue,
-      monthlyRevenue: monthlyRevenue ?? this.monthlyRevenue,
-      orders: orders ?? this.orders,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-      isSuccess: isSuccess ?? this.isSuccess,
+      todayOrdars:     todayOrdars     ?? this.todayOrdars,
+      todayRevenue:    todayRevenue    ?? this.todayRevenue,
+      monthlyRevenue:  monthlyRevenue  ?? this.monthlyRevenue,
+      deliveredCount:  deliveredCount  ?? this.deliveredCount,
+      deliveredRevenue:deliveredRevenue?? this.deliveredRevenue,
+      takenTotalPrice: takenTotalPrice ?? this.takenTotalPrice,
+      orders:          orders          ?? this.orders,
+      isLoading:       isLoading       ?? this.isLoading,
+      errorMessage:    errorMessage,
+      isSuccess:       isSuccess       ?? this.isSuccess,
     );
   }
 }
+
 
 class ordersStateNotifier extends StateNotifier<ordersState> {
   final OrderUsecase usecase;
@@ -177,26 +194,33 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
+
   Future<void> countTodayOrders() async {
     final list =
-        state.orders?.maybeWhen(data: (value) => value, orElse: () => []) ?? [];
-    final todaysOrders = list
-        .where((order) => _isToday(order.orderDate))
-        .length;
-    final todaysRevenue = list
-        .where((order) => _isToday(order.orderDate))
-        .fold<double>(0.0, (sum, order) => sum + order.totalPrice);
+        state.orders?.maybeWhen(data: (v) => v, orElse: () => []) ?? [];
+
+    final todayList     = list.where((o) => _isToday(o.orderDate)).toList();
+    final deliveredList = todayList.where((o) => o.isDelivered == 1).toList();
+
+    final takenCount    = todayList.length;
+    final takenTotal    = todayList.fold<double>(0.0, (s, o) => s + o.totalPrice);
+    final delivCount    = deliveredList.length;
+    final delivRevenue  = deliveredList.fold<double>(0.0, (s, o) => s + o.totalPrice);
+
+    // monthly = all delivered this month (for Products Revenue card if still needed)
     final monthlyRevenue = list
-        .where((order) => _isThisMonth(order.orderDate))
-        .fold(0.0, (sum, order) => sum + order.totalPrice);
+        .where((o) => _isThisMonth(o.orderDate) && o.isDelivered == 1)
+        .fold<double>(0.0, (s, o) => s + o.totalPrice);
 
     state = state.copyWith(
-      todayOrdars: todaysOrders,
-      todayRevenue: todaysRevenue,
-      monthlyRevenue: monthlyRevenue,
+      todayOrdars:     takenCount,
+      todayRevenue:    takenTotal,      // repurposed: taken total price
+      deliveredCount:  delivCount,
+      deliveredRevenue:delivRevenue,
+      takenTotalPrice: takenTotal,
+      monthlyRevenue:  monthlyRevenue,
     );
   }
-
   bool _isToday(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return false;
     try {
@@ -221,11 +245,19 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-  Future<void> markDeliveredByLocalIds(List<String> localIds, List<int> serverIds) async {
+  Future<void> markDeliveredByLocalIds(
+    List<String> localIds,
+    List<int> serverIds, {
+    DateTime? deliveredOn,
+  }) async {
 
       state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
       try {
-        await usecase.markDeliveredByLocalIds(localIds, serverIds);
+        await usecase.markDeliveredByLocalIds(
+          localIds,
+          serverIds,
+          deliveredOn: deliveredOn,
+        );
         state = state.copyWith(isLoading: false, isSuccess: true);
       } catch (e) {
         state = state.copyWith(isLoading: false, errorMessage: e.toString(), isSuccess: false);
