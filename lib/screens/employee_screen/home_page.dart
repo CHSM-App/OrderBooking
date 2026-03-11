@@ -280,6 +280,8 @@ Widget _buildQuickActions(BuildContext context) {
     final userName = ref.read(adminloginViewModelProvider).name ?? '';
     final roleId = ref.read(adminloginViewModelProvider).roleId ?? 0;
 
+    print("roleId: $roleId, companyName: $companyName, userName: $userName");
+
     final hour = DateTime.now().hour;
     final greeting = hour < 12
         ? 'Good Morning'
@@ -289,9 +291,9 @@ Widget _buildQuickActions(BuildContext context) {
 
     
 String roleName;
- if (roleId == 2) {
+ if (roleId.toString() == "2") {
   roleName = "Sales Officer";
-} else if (roleId == 3) {
+} else if (roleId.toString() == "3") {
   roleName = "ASM";
 } else {
   roleName = "User";
