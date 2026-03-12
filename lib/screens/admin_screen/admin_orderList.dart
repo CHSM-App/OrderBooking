@@ -42,7 +42,7 @@ class _Responsive {
 // ── Order-type helpers ────────────────────────────────────────────────────────
 String _orderTypeLabel(int? type) {
   if (type == 1) return 'Shop';
-  if (type == 2) return 'Godown';
+  if (type == 2) return 'Distributer';
   return 'Unknown';
 }
 
@@ -1093,7 +1093,7 @@ class _OrderTypeTile extends StatelessWidget {
                       )),
                   const SizedBox(height: 2),
                   Text(
-                    type == 1 ? 'Orders at shop' : 'Orders at godown',
+                    type == 1 ? 'Orders at shop' : 'Orders at Distributer',
                     style: TextStyle(
                       fontSize: 11,
                       color: isSelected

@@ -661,7 +661,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
     }
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final shopState = ref.watch(shopViewModelProvider);
@@ -700,11 +700,12 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
   // ── Search bar ────────────────────────────────────────────────────────────
   Widget _buildSearchBar() {
+    final isGodownMode = (ref.read(tokenProvider).roleId ?? 0) == 3;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: AppSearchBar(
         controller: _searchController,
-        hintText: 'Search shops, owners…',
+        hintText: isGodownMode ? 'Search distributers, owners…' :  'Search shops, owners…',
       ),
     );
   }
@@ -712,7 +713,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
   // ── FAB ───────────────────────────────────────────────────────────────────
   Widget _buildFAB(ShopState shopState) {
     final isGodownMode = (ref.read(tokenProvider).roleId ?? 0) == 3;
-    final entityLabel = isGodownMode ? 'Godown' : 'Shop';
+    final entityLabel = isGodownMode ? 'Distributer' : 'Shop';
 
     return FloatingActionButton.extended(
       onPressed: () async {
@@ -755,6 +756,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
   // ── Body sliver ───────────────────────────────────────────────────────────
   Widget _buildBody(ShopState shopState) {
+    final isGodownMode = (ref.read(tokenProvider).roleId ?? 0) == 3;
     // Loading (initial)
     if (shopState.isLoading && shopState.shopList == null) {
       return SliverFillRemaining(
@@ -768,7 +770,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Loading shops…',
+                isGodownMode ? 'Loading distributers…' : 'Loading shops…',
                 style: TextStyle(
                   fontSize: 14,
                   color: _kTextSecondary.withOpacity(0.8),
@@ -816,6 +818,7 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
 
   // ── Empty ─────────────────────────────────────────────────────────────────
   Widget _buildEmptyState() {
+    final isGodownMode = (ref.read(tokenProvider).roleId ?? 0) == 3;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -835,7 +838,9 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            _searchQuery.isNotEmpty ? 'No shops found' : 'No shops yet',
+            _searchQuery.isNotEmpty
+                ? (isGodownMode ? 'No distributers found' : 'No shops found')
+                : (isGodownMode ? 'No distributers yet' : 'No shops yet'),
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -844,9 +849,12 @@ class _ShopListPageState extends ConsumerState<ShopListPage> {
           ),
           const SizedBox(height: 6),
           Text(
+
             _searchQuery.isNotEmpty
-                ? 'Try a different search'
-                : 'Tap + Add Shop to get started',
+                ? 'Try a different search term'
+                : (isGodownMode
+                    ? 'Tap + Add Distributer to get started'
+                    : 'Tap + Add Shop to get started'),
             style: const TextStyle(fontSize: 13, color: _kTextSecondary),
           ),
           if (_searchQuery.isNotEmpty) ...[

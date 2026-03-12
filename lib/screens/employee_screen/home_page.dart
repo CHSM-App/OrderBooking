@@ -118,7 +118,7 @@ class _HomePageState extends ConsumerState<HomePage>
     final ordersState orders = ref.watch(ordersViewModelProvider);
     final EmployeeVisitState  visits = ref.watch(visitViewModelProvider);
     final roleId              = ref.watch(tokenProvider).roleId ?? 0;
-    final locationLabel       = roleId == 3 ? 'Godowns' : 'Shops';
+    final locationLabel       = roleId == 3 ? 'Distributers' : 'Shops';
 
     final takenCount     = orders.todayOrdars     ?? 0;
     final takenTotal     = orders.takenTotalPrice  ?? 0.0;
@@ -252,7 +252,7 @@ Widget _buildQuickActions(BuildContext context) {
                 : tokenState.roleId == 3
                     ? _QuickActionButton(
                         icon: Icons.warehouse_rounded,
-                        label: 'Add Godown',
+                        label: 'Add Distributer',
                         backgroundColor: const Color(0xFFD4E7F4),
                         iconColor: const Color(0xFF2196F3),
                         onTap: () {

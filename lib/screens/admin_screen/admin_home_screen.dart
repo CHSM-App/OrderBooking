@@ -21,6 +21,9 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  final PageController _overviewPageController = PageController();
+  int _overviewPage = 0; // 0 = SO, 1 = ASM
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +52,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
   @override
   void dispose() {
     _animationController.dispose();
+    _overviewPageController.dispose();
     super.dispose();
   }
 
@@ -65,10 +69,6 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
     await ref
         .read(productViewModelProvider.notifier)
         .fetchProductList(companyId);
-  }
-
-  bool isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   String formatINR(num value) {
@@ -135,129 +135,124 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
     );
   }
 
-  // ── Welcome / Header ────────────────────────────────────────────────────────
-Widget _buildWelcomeSection() {
-  final adminData = ref.read(adminloginViewModelProvider);
+  // ── Welcome / Header ─────────────────────────────────────────────────────────
+  Widget _buildWelcomeSection() {
+    final adminData = ref.read(adminloginViewModelProvider);
+    final companyName = adminData.companyName ?? 'Your Company';
+    final adminName = adminData.name ?? 'Admin';
 
-  final companyName = adminData.companyName ?? 'Your Company';
-  final adminName = adminData.name ?? 'Admin';
-  
-  final hour = DateTime.now().hour;
-  final greeting = hour < 12
-      ? 'Good Morning'
-      : hour < 17
-          ? 'Good Afternoon'
-          : 'Good Evening';
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good Morning'
+        : hour < 17
+            ? 'Good Afternoon'
+            : 'Good Evening';
 
-
-
-
-
-
-
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF57C00), Color(0xFFFF9800)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF57C00).withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFFF57C00).withOpacity(0.35),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.waving_hand_rounded,
+              color: Colors.white,
+              size: 32,
+            ),
           ),
-          child: const Icon(
-            Icons.waving_hand_rounded,
-            color: Colors.white,
-            size: 32,
-          ),
-        ),
-        const SizedBox(width: 16),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// Greeting + Role
-              Text(
-                '$greeting, Admin',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              /// Person Name
-              Text(
-                adminName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.3,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              Row(
-                children: [
-                  const Icon(
-                    Icons.business_rounded,
-                    color: Colors.white70,
-                    size: 13,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$greeting, Admin',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: Text(
-                      companyName,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  adminName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.business_rounded,
+                      color: Colors.white70,
+                      size: 13,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        companyName,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-  // ── Stats Grid ───────────────────────────────────────────────────────────────
+  // ── Stats Overview with SO / ASM horizontal pager ────────────────────────────
   Widget _buildStatsOverview() {
     final employeeState = ref.watch(employeeloginViewModelProvider);
     final productState  = ref.watch(productViewModelProvider);
     final orderState    = ref.watch(ordersViewModelProvider);
 
-    // Active employees
-    final activeEmployeesCount = employeeState.employeeList.when(
+    // Active employees by role (roleId 2 = SO, roleId 3 = ASM)
+    final soActiveCount = employeeState.employeeList.when(
       loading: () => 0,
       error:   (_, __) => 0,
-      data:    (employees) => employees.where((e) => e.checkinStatus == 1).length,
+      data:    (employees) => employees
+          .where((e) => e.checkinStatus == 1 && e.roleId == 2)
+          .length,
+    );
+    final asmActiveCount = employeeState.employeeList.when(
+      loading: () => 0,
+      error:   (_, __) => 0,
+      data:    (employees) => employees
+          .where((e) => e.checkinStatus == 1 && e.roleId == 3)
+          .length,
     );
 
     // Total products
@@ -265,118 +260,119 @@ Widget _buildWelcomeSection() {
           loading: () => 0,
           error:   (_, __) => 0,
           data:    (products) => products.length,
-        ) ?? 0;
+        ) ??
+        0;
 
-    // Orders: type == 1 only, today
-    final today = DateTime.now();
+    // ── SO stats from ViewModel ──────────────────────────────────────────────
+    final soTakenCount      = orderState.soTakenCount      ?? 0;
+    final soTakenTotal      = orderState.soTakenTotal      ?? 0.0;
+    final soDeliveredCount  = orderState.soDeliveredCount  ?? 0;
+    final soDeliveredRev    = orderState.soDeliveredRevenue ?? 0.0;
 
-    final int takenCount = orderState.orders?.when(
-          loading: () => 0,
-          error:   (_, __) => 0,
-          data:    (orders) => orders
-              .where((o) => o.type == 1 && isSameDay(DateTime.parse(o.orderDate), today))
-              .length,
-        ) ?? 0;
-
-    final double takenTotal = orderState.orders?.when(
-          loading: () => 0.0,
-          error:   (_, __) => 0.0,
-          data:    (orders) => orders
-              .where((o) => o.type == 1 && isSameDay(DateTime.parse(o.orderDate), today))
-              .fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble()),
-        ) ?? 0.0;
-
-    final int delivCount = orderState.orders?.when(
-          loading: () => 0,
-          error:   (_, __) => 0,
-          data:    (orders) => orders
-              .where((o) =>
-                  o.type == 1 &&
-                  o.isDelivered == 1 &&
-                  isSameDay(DateTime.parse(o.orderDate), today))
-              .length,
-        ) ?? 0;
-
-    final double delivRevenue = orderState.orders?.when(
-          loading: () => 0.0,
-          error:   (_, __) => 0.0,
-          data:    (orders) => orders
-              .where((o) =>
-                  o.type == 1 &&
-                  o.isDelivered == 1 &&
-                  isSameDay(DateTime.parse(o.orderDate), today))
-              .fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble()),
-        ) ?? 0.0;
+    // ── ASM stats from ViewModel ─────────────────────────────────────────────
+    final asmTakenCount     = orderState.asmTakenCount     ?? 0;
+    final asmTakenTotal     = orderState.asmTakenTotal     ?? 0.0;
+    final asmDeliveredCount = orderState.asmDeliveredCount ?? 0;
+    final asmDeliveredRev   = orderState.asmDeliveredRevenue ?? 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Section header ────────────────────────────────────────────────
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text(
-            "Today's Overview",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2D3142),
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
-
-        // ── Top summary card: Orders Taken ────────────────────────────────
-        _SummaryCard(
-          label: 'Orders Taken',
-          count: takenCount,
-          totalLabel: 'Total Order Value',
-          totalValue: formatINR(takenTotal),
-          accentColor: const Color(0xFFF57C00),
-          icon: Icons.receipt_long_rounded,
-          onTap: () => widget.onNavigate(2, ordersTab: 1),
-        ),
-
-        const SizedBox(height: 10),
-
-        // ── Bottom row: 3 mini cards ──────────────────────────────────────
+        // ── Section header with tab indicators ──────────────────────────────
         Row(
           children: [
-            Expanded(
-              child: _MiniStatCard(
-                label: 'Delivered',
-                value: delivCount.toString(),
-                sub: formatINR(delivRevenue),
-                icon: Icons.check_circle_outline_rounded,
-                color: const Color(0xFF00897B),
+            const Text(
+              "Today's Overview",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF2D3142),
+                letterSpacing: 0.2,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _MiniStatCard(
-                label: 'Del. Revenue',
-                value: formatINR(delivRevenue),
-                sub: '$delivCount orders',
-                icon: Icons.payments_outlined,
-                color: const Color(0xFF1976D2),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _MiniStatCard(
-                label: 'Employees',
-                value: activeEmployeesCount.toString(),
-                sub: 'Active',
-                icon: Icons.people_rounded,
-                color: const Color(0xFF5E35B1),
-                onTap: () => widget.onNavigate(3),
-              ),
+            const Spacer(),
+            // SO / ASM pill tabs
+            _OverviewTabPills(
+              selectedIndex: _overviewPage,
+              onTap: (i) {
+                _overviewPageController.animateToPage(
+                  i,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
             ),
           ],
         ),
+        const SizedBox(height: 12),
 
-        const SizedBox(height: 10),
+        // ── Horizontal pager for SO / ASM overviews ──────────────────────────
+        SizedBox(
+          // Height must be fixed for PageView inside a ScrollView
+          height: 210,
+          child: PageView(
+            controller: _overviewPageController,
+            physics: const BouncingScrollPhysics(),
+            onPageChanged: (i) => setState(() => _overviewPage = i),
+            children: [
+              // ── SO page ───────────────────────────────────────────────────
+              _OverviewPage(
+                takenCount:      soTakenCount,
+                takenTotal:      formatINR(soTakenTotal),
+                delivCount:      soDeliveredCount,
+                delivRevenue:    formatINR(soDeliveredRev),
+                activeEmployees: soActiveCount,
+                accentColor:     const Color(0xFFF57C00),
+                typeLabel:       'SO',
+                onOrdersTap:     () => widget.onNavigate(2, ordersTab: 1),
+                onEmployeesTap:  () => widget.onNavigate(3),
+                formatINR:       formatINR,
+              ),
+              // ── ASM page ──────────────────────────────────────────────────
+              _OverviewPage(
+                takenCount:      asmTakenCount,
+                takenTotal:      formatINR(asmTakenTotal),
+                delivCount:      asmDeliveredCount,
+                delivRevenue:    formatINR(asmDeliveredRev),
+                activeEmployees: asmActiveCount,
+                accentColor:     const Color(0xFF1976D2),
+                typeLabel:       'ASM',
+                onOrdersTap:     () => widget.onNavigate(2, ordersTab: 2),
+                onEmployeesTap:  () => widget.onNavigate(3),
+                formatINR:       formatINR,
+              ),
+            ],
+          ),
+        ),
 
-        // ── Products full-width mini card ─────────────────────────────────
+        // ── Page dot indicator ───────────────────────────────────────────────
+        // const SizedBox(height: 5),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(2, (i) {
+              final active = i == _overviewPage;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width:  active ? 20 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: active
+                      ? (_overviewPage == 0
+                          ? const Color(0xFFF57C00)
+                          : const Color(0xFF1976D2))
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // ── Products full-width card (always visible) ────────────────────────
         _MiniStatCardWide(
           label: 'Total Products',
           value: totalProductCount.toString(),
@@ -388,8 +384,7 @@ Widget _buildWelcomeSection() {
     );
   }
 
-
-  // ── Quick Actions ────────────────────────────────────────────────────────────
+  // ── Quick Actions ─────────────────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,8 +424,7 @@ Widget _buildWelcomeSection() {
                 backgroundColor: const Color(0xFFFFECDC),
                 iconColor: const Color(0xFFF57C00),
                 onTap: () {
-                  final adminId =
-                      ref.read(adminloginViewModelProvider).userId;
+                  final adminId = ref.read(adminloginViewModelProvider).userId;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -452,10 +446,9 @@ Widget _buildWelcomeSection() {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ReportPage(
-                        companyId: ref
-                                .read(adminloginViewModelProvider)
-                                .companyId ??
-                            '',
+                        companyId:
+                            ref.read(adminloginViewModelProvider).companyId ??
+                                '',
                       ),
                     ),
                   );
@@ -504,91 +497,148 @@ Widget _buildWelcomeSection() {
   }
 }
 
-// ── Shared Stat Card ──────────────────────────────────────────────────────────
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final bool isSmall;
-  final VoidCallback? onTap;
+// ── Overview Tab Pills (SO / ASM) ─────────────────────────────────────────────
+class _OverviewTabPills extends StatelessWidget {
+  final int selectedIndex;
+  final void Function(int) onTap;
 
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-    this.isSmall = false,
-    this.onTap,
+  const _OverviewTabPills({
+    required this.selectedIndex,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: EdgeInsets.all(isSmall ? 14 : 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: isSmall ? 18 : 20),
+    const labels = ['SO', 'ASM'];
+    const activeColors = [Color(0xFFF57C00), Color(0xFF1976D2)];
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEEEEE),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(labels.length, (i) {
+          final active = i == selectedIndex;
+          return GestureDetector(
+            onTap: () => onTap(i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: active ? activeColors[i] : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: activeColors[i].withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : [],
+              ),
+              child: Text(
+                labels[i],
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: active ? Colors.white : const Color(0xFF9E9E9E),
                 ),
-                if (onTap != null)
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 12,
-                    color: Colors.grey[400],
-                  ),
-              ],
-            ),
-            SizedBox(height: isSmall ? 10 : 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: isSmall ? 22 : 24,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A1A1A),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF757575),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          );
+        }),
       ),
     );
   }
 }
 
-// ── Quick Action Button (matches employee HomePage style) ─────────────────────
+// ── Single overview page (SO or ASM) ─────────────────────────────────────────
+class _OverviewPage extends StatelessWidget {
+  final int    takenCount;
+  final String takenTotal;
+  final int    delivCount;
+  final String delivRevenue;
+  final int    activeEmployees;
+  final Color  accentColor;
+  final String typeLabel;
+  final VoidCallback? onOrdersTap;
+  final VoidCallback? onEmployeesTap;
+  final String Function(num) formatINR;
 
+  const _OverviewPage({
+    required this.takenCount,
+    required this.takenTotal,
+    required this.delivCount,
+    required this.delivRevenue,
+    required this.activeEmployees,
+    required this.accentColor,
+    required this.typeLabel,
+    required this.formatINR,
+    this.onOrdersTap,
+    this.onEmployeesTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── Top summary card ──────────────────────────────────────────────
+        _SummaryCard(
+          label: '$typeLabel Orders Taken',
+          count: takenCount,
+          totalLabel: 'Total Order Value',
+          totalValue: takenTotal,
+          accentColor: accentColor,
+          icon: Icons.receipt_long_rounded,
+          onTap: onOrdersTap,
+        ),
+        const SizedBox(height: 10),
+        // ── Bottom three mini cards ───────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _MiniStatCard(
+                label: 'Delivered',
+                value: delivCount.toString(),
+                sub: '',
+                icon: Icons.check_circle_outline_rounded,
+                color: const Color(0xFF00897B),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatCard(
+                label: 'Del. Revenue',
+                value: delivRevenue,
+                sub: '',
+                icon: Icons.payments_outlined,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MiniStatCard(
+                label: '$typeLabel Employees',
+                value: activeEmployees.toString(),
+                sub: 'Active',
+                icon: Icons.people_rounded,
+                color: const Color(0xFF5E35B1),
+                onTap: onEmployeesTap,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Quick Action Button ───────────────────────────────────────────────────────
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -653,15 +703,14 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-
-/// Large top card: order count + total value side by side
+// ── Summary Card ──────────────────────────────────────────────────────────────
 class _SummaryCard extends StatelessWidget {
-  final String    label;
-  final int       count;
-  final String    totalLabel;
-  final String    totalValue;
-  final Color     accentColor;
-  final IconData  icon;
+  final String label;
+  final int count;
+  final String totalLabel;
+  final String totalValue;
+  final Color accentColor;
+  final IconData icon;
   final VoidCallback? onTap;
 
   const _SummaryCard({
@@ -694,7 +743,6 @@ class _SummaryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon bubble
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -704,8 +752,6 @@ class _SummaryCard extends StatelessWidget {
               child: Icon(icon, color: accentColor, size: 22),
             ),
             const SizedBox(width: 14),
-
-            // Count + label
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -731,16 +777,12 @@ class _SummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Divider
             Container(
               width: 1,
               height: 40,
               color: const Color(0xFFEEEEEE),
               margin: const EdgeInsets.symmetric(horizontal: 16),
             ),
-
-            // Total value + label
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -763,10 +805,10 @@ class _SummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-
             if (onTap != null) ...[
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey[400]),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 12, color: Colors.grey[400]),
             ],
           ],
         ),
@@ -775,13 +817,13 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-/// Compact 3-column mini card
+// ── Mini Stat Card (3-col) ────────────────────────────────────────────────────
 class _MiniStatCard extends StatelessWidget {
-  final String    label;
-  final String    value;
-  final String    sub;
-  final IconData  icon;
-  final Color     color;
+  final String label;
+  final String value;
+  final String sub;
+  final IconData icon;
+  final Color color;
   final VoidCallback? onTap;
 
   const _MiniStatCard({
@@ -819,8 +861,10 @@ class _MiniStatCard extends StatelessWidget {
                 Icon(icon, color: color, size: 16),
                 const Spacer(),
                 Container(
-                  width: 6, height: 6,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  width: 6,
+                  height: 6,
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
               ],
             ),
@@ -865,12 +909,12 @@ class _MiniStatCard extends StatelessWidget {
   }
 }
 
-/// Full-width mini card for products
+// ── Mini Stat Card Wide ───────────────────────────────────────────────────────
 class _MiniStatCardWide extends StatelessWidget {
-  final String    label;
-  final String    value;
-  final IconData  icon;
-  final Color     color;
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
   final VoidCallback? onTap;
 
   const _MiniStatCardWide({
@@ -929,7 +973,8 @@ class _MiniStatCardWide extends StatelessWidget {
             ),
             const Spacer(),
             if (onTap != null)
-              Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey[400]),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 12, color: Colors.grey[400]),
           ],
         ),
       ),

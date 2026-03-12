@@ -11,17 +11,35 @@ class ordersState {
   final String? companyId;
   final int? empId;
 
-  // ── existing ──
-  final double? todayRevenue;   // keep if used elsewhere
-  final int?    todayOrdars;    // keep if used elsewhere
-  final double? monthlyRevenue; // keep if used elsewhere
+  // ── SO (type == 1) today stats ──
+  final int?    soTakenCount;
+  final double? soTakenTotal;
+  final int?    soDeliveredCount;
+  final double? soDeliveredRevenue;
 
-  // ── new ──
+  // ── ASM (type == 2) today stats ──
+  final int?    asmTakenCount;
+  final double? asmTakenTotal;
+  final int?    asmDeliveredCount;
+  final double? asmDeliveredRevenue;
+
+  // ── legacy fields (kept for backward compat) ──
+  final double? todayRevenue;
+  final int?    todayOrdars;
+  final double? monthlyRevenue;
   final int?    deliveredCount;
   final double? deliveredRevenue;
   final double? takenTotalPrice;
 
   const ordersState({
+    this.soTakenCount,
+    this.soTakenTotal,
+    this.soDeliveredCount,
+    this.soDeliveredRevenue,
+    this.asmTakenCount,
+    this.asmTakenTotal,
+    this.asmDeliveredCount,
+    this.asmDeliveredRevenue,
     this.todayOrdars,
     this.todayRevenue,
     this.monthlyRevenue,
@@ -37,6 +55,14 @@ class ordersState {
   });
 
   ordersState copyWith({
+    int?    soTakenCount,
+    double? soTakenTotal,
+    int?    soDeliveredCount,
+    double? soDeliveredRevenue,
+    int?    asmTakenCount,
+    double? asmTakenTotal,
+    int?    asmDeliveredCount,
+    double? asmDeliveredRevenue,
     double? todayRevenue,
     double? monthlyRevenue,
     int?    todayOrdars,
@@ -49,16 +75,24 @@ class ordersState {
     final AsyncValue<List<Order>>? orders,
   }) {
     return ordersState(
-      todayOrdars:     todayOrdars     ?? this.todayOrdars,
-      todayRevenue:    todayRevenue    ?? this.todayRevenue,
-      monthlyRevenue:  monthlyRevenue  ?? this.monthlyRevenue,
-      deliveredCount:  deliveredCount  ?? this.deliveredCount,
-      deliveredRevenue:deliveredRevenue?? this.deliveredRevenue,
-      takenTotalPrice: takenTotalPrice ?? this.takenTotalPrice,
-      orders:          orders          ?? this.orders,
-      isLoading:       isLoading       ?? this.isLoading,
-      errorMessage:    errorMessage,
-      isSuccess:       isSuccess       ?? this.isSuccess,
+      soTakenCount:     soTakenCount     ?? this.soTakenCount,
+      soTakenTotal:     soTakenTotal     ?? this.soTakenTotal,
+      soDeliveredCount: soDeliveredCount ?? this.soDeliveredCount,
+      soDeliveredRevenue: soDeliveredRevenue ?? this.soDeliveredRevenue,
+      asmTakenCount:    asmTakenCount    ?? this.asmTakenCount,
+      asmTakenTotal:    asmTakenTotal    ?? this.asmTakenTotal,
+      asmDeliveredCount: asmDeliveredCount ?? this.asmDeliveredCount,
+      asmDeliveredRevenue: asmDeliveredRevenue ?? this.asmDeliveredRevenue,
+      todayOrdars:      todayOrdars      ?? this.todayOrdars,
+      todayRevenue:     todayRevenue     ?? this.todayRevenue,
+      monthlyRevenue:   monthlyRevenue   ?? this.monthlyRevenue,
+      deliveredCount:   deliveredCount   ?? this.deliveredCount,
+      deliveredRevenue: deliveredRevenue ?? this.deliveredRevenue,
+      takenTotalPrice:  takenTotalPrice  ?? this.takenTotalPrice,
+      orders:           orders           ?? this.orders,
+      isLoading:        isLoading        ?? this.isLoading,
+      errorMessage:     errorMessage,
+      isSuccess:        isSuccess        ?? this.isSuccess,
     );
   }
 }
@@ -84,11 +118,9 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         errorMessage: e.toString(),
         isSuccess: false,
       );
-
     }
   }
 
-  //get Offline orders of that employee
   Future<void> getAllOrders(int empId) async {
     state = state.copyWith(
       isLoading: true,
@@ -114,7 +146,6 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-  //Get all orders by companyId
   Future<void> getOrderList(
     String companyId, {
     bool useCacheFirst = true,
@@ -126,9 +157,9 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         final cached = await usecase.getCachedOrderList(companyId);
         if (cached.isNotEmpty) {
           final hasDetailFields = cached.any((o) {
-            final empOk = (o.empName ?? '').trim().isNotEmpty;
+            final empOk  = (o.empName   ?? '').trim().isNotEmpty;
             final shopOk = (o.shopNamep ?? '').trim().isNotEmpty;
-            final addrOk = (o.address ?? '').trim().isNotEmpty;
+            final addrOk = (o.address   ?? '').trim().isNotEmpty;
             return empOk || shopOk || addrOk;
           });
           if (hasDetailFields) {
@@ -139,6 +170,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
               isSuccess: true,
               orders: AsyncValue.data(cached),
             );
+            await countTodayOrders();
           }
         }
       } catch (_) {}
@@ -158,6 +190,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         isSuccess: true,
         orders: AsyncValue.data(result),
       );
+      await countTodayOrders();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -167,7 +200,6 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-  //get all order for an employee(remote)
   Future<void> getEmployeeOrders(int empId) async {
     state = state.copyWith(
       isLoading: true,
@@ -181,7 +213,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
       state = state.copyWith(
         isLoading: false,
         isSuccess: true,
-        orders: result.length < 1
+        orders: result.isEmpty
             ? AsyncValue.data([])
             : AsyncValue.data(result),
       );
@@ -194,33 +226,54 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
-
   Future<void> countTodayOrders() async {
     final list =
         state.orders?.maybeWhen(data: (v) => v, orElse: () => []) ?? [];
 
-    final todayList     = list.where((o) => _isToday(o.orderDate)).toList();
-    final deliveredList = todayList.where((o) => o.isDelivered == 1).toList();
+    // ── SO (type == 1) ──────────────────────────────────────────────────────
+    final soToday     = list.where((o) => o.type == 1 && _isToday(o.orderDate)).toList();
+    final soDelivered = soToday.where((o) => o.isDelivered == 1).toList();
 
-    final takenCount    = todayList.length;
-    final takenTotal    = todayList.fold<double>(0.0, (s, o) => s + o.totalPrice);
-    final delivCount    = deliveredList.length;
-    final delivRevenue  = deliveredList.fold<double>(0.0, (s, o) => s + o.totalPrice);
+    final soTakenCount      = soToday.length;
+    final soTakenTotal      = soToday.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+    final soDeliveredCount  = soDelivered.length;
+    final soDeliveredRev    = soDelivered.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
 
-    // monthly = all delivered this month (for Products Revenue card if still needed)
+    // ── ASM (type == 2) ─────────────────────────────────────────────────────
+    final asmToday     = list.where((o) => o.type == 2 && _isToday(o.orderDate)).toList();
+    final asmDelivered = asmToday.where((o) => o.isDelivered == 1).toList();
+
+    final asmTakenCount     = asmToday.length;
+    final asmTakenTotal     = asmToday.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+    final asmDeliveredCount = asmDelivered.length;
+    final asmDeliveredRev   = asmDelivered.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+
+    // ── monthly revenue (all delivered this month) ───────────────────────────
     final monthlyRevenue = list
         .where((o) => _isThisMonth(o.orderDate) && o.isDelivered == 1)
-        .fold<double>(0.0, (s, o) => s + o.totalPrice);
+        .fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
 
     state = state.copyWith(
-      todayOrdars:     takenCount,
-      todayRevenue:    takenTotal,      // repurposed: taken total price
-      deliveredCount:  delivCount,
-      deliveredRevenue:delivRevenue,
-      takenTotalPrice: takenTotal,
-      monthlyRevenue:  monthlyRevenue,
+      // SO
+      soTakenCount:       soTakenCount,
+      soTakenTotal:       soTakenTotal,
+      soDeliveredCount:   soDeliveredCount,
+      soDeliveredRevenue: soDeliveredRev,
+      // ASM
+      asmTakenCount:      asmTakenCount,
+      asmTakenTotal:      asmTakenTotal,
+      asmDeliveredCount:  asmDeliveredCount,
+      asmDeliveredRevenue: asmDeliveredRev,
+      // legacy (SO values for backward compat)
+      todayOrdars:      soTakenCount,
+      todayRevenue:     soTakenTotal,
+      deliveredCount:   soDeliveredCount,
+      deliveredRevenue: soDeliveredRev,
+      takenTotalPrice:  soTakenTotal,
+      monthlyRevenue:   monthlyRevenue,
     );
   }
+
   bool _isToday(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return false;
     try {
@@ -250,18 +303,16 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     List<int> serverIds, {
     DateTime? deliveredOn,
   }) async {
-
-      state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
-      try {
-        await usecase.markDeliveredByLocalIds(
-          localIds,
-          serverIds,
-          deliveredOn: deliveredOn,
-        );
-        state = state.copyWith(isLoading: false, isSuccess: true);
-      } catch (e) {
-        state = state.copyWith(isLoading: false, errorMessage: e.toString(), isSuccess: false);
-      }
+    state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
+    try {
+      await usecase.markDeliveredByLocalIds(
+        localIds,
+        serverIds,
+        deliveredOn: deliveredOn,
+      );
+      state = state.copyWith(isLoading: false, isSuccess: true);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString(), isSuccess: false);
+    }
   }
 }
-
