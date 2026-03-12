@@ -96,11 +96,13 @@ class _DateGroup {
 // ─────────────────────────────────────────────────────────────────────────────
 class OrdersListPage extends ConsumerStatefulWidget {
   final OrdersFilterType? initialFilter;
+  final int? initialOrderType;
   final int filterRequestId;
 
   const OrdersListPage({
     Key? key,
     this.initialFilter,
+    this.initialOrderType,
     this.filterRequestId = 0,
   }) : super(key: key);
 
@@ -125,6 +127,9 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     if (widget.initialFilter != null) {
       _filter = _ActiveFilter(widget.initialFilter!);
     }
+    if (widget.initialOrderType != null) {
+      _selectedOrderType = widget.initialOrderType;
+    }
     Future.microtask(() {
       ref
           .read(ordersViewModelProvider.notifier)
@@ -143,7 +148,10 @@ class _OrdersListPageState extends ConsumerState<OrdersListPage> {
     super.didUpdateWidget(oldWidget);
     if (widget.filterRequestId != _lastAppliedRequestId &&
         widget.initialFilter != null) {
-      setState(() => _filter = _ActiveFilter(widget.initialFilter!));
+      setState(() {
+        _filter = _ActiveFilter(widget.initialFilter!);
+        _selectedOrderType = widget.initialOrderType;
+      });
       _lastAppliedRequestId = widget.filterRequestId;
     }
   }

@@ -25,6 +25,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   int _selectedIndex = 0;
   int _ordersFilterRequestId = 0;
   OrdersFilterType? _ordersInitialFilter;
+  int? _ordersInitialOrderType;
 
   // Nav items with icons + labels
   final List<_NavItem> _navItems = const [
@@ -70,6 +71,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     setState(() {
       if (index == 2 && ordersTab == 1) {
         _ordersInitialFilter = OrdersFilterType.today;
+        _ordersInitialOrderType = 1;
+        _ordersFilterRequestId++;
+      } else if (index == 2 && ordersTab == 2) {
+        _ordersInitialFilter = OrdersFilterType.today;
+        _ordersInitialOrderType = 2;
         _ordersFilterRequestId++;
       }
       _selectedIndex = index;
@@ -165,6 +171,7 @@ final adminName = ref.watch(
           const AdminCatalogPage(),
           OrdersListPage(
             initialFilter: _ordersInitialFilter,
+            initialOrderType: _ordersInitialOrderType,
             filterRequestId: _ordersFilterRequestId,
           ),
           const AdminEmployeesPage(),
