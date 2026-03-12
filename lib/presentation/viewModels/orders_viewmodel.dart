@@ -136,7 +136,7 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
         orders: AsyncValue.data(result),
       );
 
-      await countTodayOrders();
+      await countEmployeeOrders();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -217,6 +217,8 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
             ? AsyncValue.data([])
             : AsyncValue.data(result),
       );
+
+      await countEmployeeOrders();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -226,20 +228,21 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     }
   }
 
+  // ── Admin: counts split by type (SO = 1, ASM = 2) ──────────────────────────
   Future<void> countTodayOrders() async {
     final list =
         state.orders?.maybeWhen(data: (v) => v, orElse: () => []) ?? [];
 
-    // ── SO (type == 1) ──────────────────────────────────────────────────────
+    // SO (type == 1)
     final soToday     = list.where((o) => o.type == 1 && _isToday(o.orderDate)).toList();
     final soDelivered = soToday.where((o) => o.isDelivered == 1).toList();
 
-    final soTakenCount      = soToday.length;
-    final soTakenTotal      = soToday.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
-    final soDeliveredCount  = soDelivered.length;
-    final soDeliveredRev    = soDelivered.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+    final soTakenCount     = soToday.length;
+    final soTakenTotal     = soToday.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+    final soDeliveredCount = soDelivered.length;
+    final soDeliveredRev   = soDelivered.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
 
-    // ── ASM (type == 2) ─────────────────────────────────────────────────────
+    // ASM (type == 2)
     final asmToday     = list.where((o) => o.type == 2 && _isToday(o.orderDate)).toList();
     final asmDelivered = asmToday.where((o) => o.isDelivered == 1).toList();
 
@@ -248,28 +251,46 @@ class ordersStateNotifier extends StateNotifier<ordersState> {
     final asmDeliveredCount = asmDelivered.length;
     final asmDeliveredRev   = asmDelivered.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
 
-    // ── monthly revenue (all delivered this month) ───────────────────────────
     final monthlyRevenue = list
         .where((o) => _isThisMonth(o.orderDate) && o.isDelivered == 1)
         .fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
 
     state = state.copyWith(
-      // SO
-      soTakenCount:       soTakenCount,
-      soTakenTotal:       soTakenTotal,
-      soDeliveredCount:   soDeliveredCount,
-      soDeliveredRevenue: soDeliveredRev,
-      // ASM
-      asmTakenCount:      asmTakenCount,
-      asmTakenTotal:      asmTakenTotal,
-      asmDeliveredCount:  asmDeliveredCount,
+      soTakenCount:        soTakenCount,
+      soTakenTotal:        soTakenTotal,
+      soDeliveredCount:    soDeliveredCount,
+      soDeliveredRevenue:  soDeliveredRev,
+      asmTakenCount:       asmTakenCount,
+      asmTakenTotal:       asmTakenTotal,
+      asmDeliveredCount:   asmDeliveredCount,
       asmDeliveredRevenue: asmDeliveredRev,
-      // legacy (SO values for backward compat)
-      todayOrdars:      soTakenCount,
-      todayRevenue:     soTakenTotal,
-      deliveredCount:   soDeliveredCount,
-      deliveredRevenue: soDeliveredRev,
-      takenTotalPrice:  soTakenTotal,
+      monthlyRevenue:      monthlyRevenue,
+    );
+  }
+
+  // ── Employee: no type filter, just today's orders + delivered check ─────────
+  Future<void> countEmployeeOrders() async {
+    final list =
+        state.orders?.maybeWhen(data: (v) => v, orElse: () => []) ?? [];
+
+    final todayList     = list.where((o) => _isToday(o.orderDate)).toList();
+    final deliveredList = todayList.where((o) => o.isDelivered == 1).toList();
+
+    final takenCount   = todayList.length;
+    final takenTotal   = todayList.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+    final delivCount   = deliveredList.length;
+    final delivRevenue = deliveredList.fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+
+    final monthlyRevenue = list
+        .where((o) => _isThisMonth(o.orderDate) && o.isDelivered == 1)
+        .fold<double>(0.0, (s, o) => s + o.totalPrice.toDouble());
+
+    state = state.copyWith(
+      todayOrdars:      takenCount,
+      takenTotalPrice:  takenTotal,
+      todayRevenue:     takenTotal,
+      deliveredCount:   delivCount,
+      deliveredRevenue: delivRevenue,
       monthlyRevenue:   monthlyRevenue,
     );
   }

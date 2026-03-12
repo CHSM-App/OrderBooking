@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
+import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
@@ -60,6 +61,13 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
         ),
       );
       return;
+    }
+
+    // Clear local DB tables on successful login
+    try {
+      await LogoutDao().logout();
+    } catch (_) {
+      // Best-effort cleanup; continue login flow even if it fails.
     }
     final roleId = ref.read(tokenProvider).roleId ?? 0;
     // Redirect based on role

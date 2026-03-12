@@ -255,6 +255,7 @@ class AppDatabase {
       await txn.delete('offline_checkin_status');
       await txn.delete('shops');
       await txn.delete('offline_regions');
+      await txn.delete('delivered_orders');
       await txn.delete('employee');
     });
   }

@@ -479,7 +479,7 @@ class _AdminHomePageState extends ConsumerState<AdminHomePage>
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.store_outlined,
-                label: 'View Shops',
+                label: 'View Shops/Distributors',
                 backgroundColor: const Color(0xFFEDE7F6),
                 iconColor: const Color(0xFF5E35B1),
                 onTap: () {
