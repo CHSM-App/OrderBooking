@@ -5,6 +5,7 @@ import 'package:order_booking_app/screens/admin_screen/admin_signUp.dart';
 import 'package:order_booking_app/screens/otp_screen.dart';
 import 'package:order_booking_app/screens/theme.dart';
 import 'package:order_booking_app/presentation/viewModels/login_viewmodel.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -61,22 +62,42 @@ void initState() {
     final state = ref.watch(adminloginViewModelProvider);
 
     // Listen for phone check result
-    ref.listen<AdminloginState>(adminloginViewModelProvider, (prev, next) {
+    ref.listen<AdminloginState>(adminloginViewModelProvider, (prev, next) async {
       if (!_shouldReact) return;
 
       next.phoneCheckResult.whenOrNull(
         loading: () {
           // Optional: you can show a global loading overlay if needed
         },
-        data: (list) {
+        data: (list) async {
           _shouldReact = false;
           if (list.isNotEmpty) {
+            final mobileNo = _mobileController.text.trim();
+            final otpResponse = await ref
+                .read(adminloginViewModelProvider.notifier)
+                .sendOtp(OtpResponse(mobileNo: mobileNo));
+            if (!mounted) return;
+            if ((otpResponse.status ?? 0) != 1) {
+              final message =
+                  (otpResponse.message?.isNotEmpty ?? false)
+                      ? otpResponse.message!
+                      : 'Unable to send OTP. Please try again.';
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(message)),
+              );
+              return;
+            }else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('OTP sent successfully!')),
+              );
+            }
+
             final user = list.first; // LoginInfo object
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => OTPScreen(
-                  phoneNumber: _mobileController.text.trim(),
+                  phoneNumber: mobileNo,
                   loginInfo: user,
                 ),
               ),
@@ -248,25 +269,6 @@ void initState() {
                             ),
                             child: Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 18,
-                                  ),
-                                  child: const Text(
-                                    '+91',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 24,
-                                  color: Colors.grey[300],
-                                ),
                                 Expanded(
                                   child: Focus(
                                     onFocusChange: (hasFocus) {

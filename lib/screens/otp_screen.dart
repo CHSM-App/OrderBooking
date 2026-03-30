@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/network/token_provider.dart';
 import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 import 'package:order_booking_app/presentation/providers/viewModel_provider.dart';
 import 'package:order_booking_app/screens/admin_screen/admin_bottom_nav.dart';
@@ -44,13 +45,35 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate verification delay
-    await Future.delayed(const Duration(seconds: 1));
+    final verifyResponse = await ref
+        .read(adminloginViewModelProvider.notifier)
+        .verifyOtp(
+          OtpResponse(
+            mobileNo: widget.phoneNumber,
+            otp: otp,
+          ),
+        );
+    if (!mounted) return;
+    if ((verifyResponse.status ?? 0) != 1) {
+      setState(() => _isLoading = false);
+      final message =
+          (verifyResponse.message?.isNotEmpty ?? false)
+              ? verifyResponse.message!
+              : 'Invalid OTP. Please try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     final loginResponse = await ref
         .read(authViewModelProvider.notifier)
         .login(TokenResponse(mobile: widget.phoneNumber));
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (loginResponse == null || loginResponse.isEmpty) {

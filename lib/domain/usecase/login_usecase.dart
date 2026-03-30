@@ -1,5 +1,6 @@
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 import 'package:order_booking_app/domain/repository/login_repo.dart';
 
 
@@ -34,6 +35,12 @@ class AdminloginUsecase {
     return adminloginRepository.deleteAdmin(adminId);
   }
 
+  Future<OtpResponse> sendOtp(OtpResponse payload) {
+    return adminloginRepository.sendOtp(payload);
+  }
 
+  Future<OtpResponse> verifyOtp(OtpResponse payload) {
+    return adminloginRepository.verifyOtp(payload);
+  }
 
 }

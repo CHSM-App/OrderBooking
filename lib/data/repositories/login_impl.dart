@@ -3,6 +3,7 @@ import 'package:order_booking_app/data/api/api_service.dart';
 import 'package:order_booking_app/data/local/logout_dao.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 import 'package:order_booking_app/domain/models/token_response.dart';
 
 import 'package:order_booking_app/domain/repository/login_repo.dart';
@@ -21,6 +22,16 @@ class AdminloginImpl implements AdminloginRepository {
   @override
   Future<List<AdminLogin>> fetchAdminDetails(String mobileNo) {
     return apiService.fetchAdminDetails(mobileNo);
+  }
+
+  @override
+  Future<OtpResponse> sendOtp(OtpResponse payload) {
+    return apiService.sendOtp(payload);
+  }
+
+  @override
+  Future<OtpResponse> verifyOtp(OtpResponse payload) {
+    return apiService.verifyOtp(payload);
   }
 
   @override

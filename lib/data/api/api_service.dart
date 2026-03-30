@@ -10,6 +10,7 @@ import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
 import 'package:order_booking_app/domain/models/orders.dart';
 import 'package:order_booking_app/domain/models/employee_visit.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 import 'package:order_booking_app/domain/models/product.dart';
 // import 'package:order_booking_app/domain/models/product_details_response.dart';
 import 'package:order_booking_app/domain/models/product_response.dart';
@@ -92,6 +93,12 @@ abstract class ApiService {
 
   @POST("login/logout")
   Future<dynamic> logOut(@Body() TokenResponse tokenResponse);
+
+  @POST("login/send-otp")
+  Future<OtpResponse> sendOtp(@Body() OtpResponse otpRequest);
+
+  @POST("login/verify-otp")
+  Future<OtpResponse> verifyOtp(@Body() OtpResponse otpRequest);
 
   @POST("login/addAdminDetails")
   Future<dynamic> addAdminDetails(@Body() AdminLogin adminLogin);

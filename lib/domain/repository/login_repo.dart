@@ -1,5 +1,6 @@
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 
 abstract class AdminloginRepository {
 
@@ -14,6 +15,8 @@ abstract class AdminloginRepository {
 
   Future<dynamic> deleteAdmin(int adminId);
 
-
+  //send otp
+    Future<OtpResponse> sendOtp(OtpResponse payload);
+  Future<OtpResponse> verifyOtp(OtpResponse payload);
 
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order_booking_app/core/storage/token_storage.dart';
 import 'package:order_booking_app/domain/models/login_details.dart';
 import 'package:order_booking_app/domain/models/login_info.dart';
+import 'package:order_booking_app/domain/models/otp_response.dart';
 import 'package:order_booking_app/domain/usecase/login_usecase.dart';
 
 class AdminloginState {
@@ -136,6 +137,30 @@ class AdminloginViewModel extends StateNotifier<AdminloginState> {
         ),
       ]),
     );
+  }
+
+  Future<OtpResponse> sendOtp(OtpResponse payload) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await usecase.sendOtp(payload);
+      state = state.copyWith(isLoading: false);
+      return response;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return OtpResponse(status: 0, message: "Something went wrong");
+    }
+  }
+
+  Future<OtpResponse> verifyOtp(OtpResponse payload) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await usecase.verifyOtp(payload);
+      state = state.copyWith(isLoading: false);
+      return response;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return OtpResponse(status: 0, message: "Something went wrong");
+    }
   }
 
   Future<void> addAdminDetails(AdminLogin adminLogin) async {
