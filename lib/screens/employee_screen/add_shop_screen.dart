@@ -667,52 +667,52 @@ Future<void> _pickSelfieFromCamera() async {
                           keyboardType: TextInputType.number,
                           maxLength: 10,
                         ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _showOtpField = true;
-                                _otpSent = true;
-                              });
-                              _showErrorSnackbar('OTP sent (demo)');
-                            },
-                            icon: const Icon(Icons.sms_outlined, size: 16),
-                            label: const Text(
-                              "Send OTP",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AddShopTheme.primaryPink,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_showOtpField) ...[
-                          const SizedBox(height: 8),
-                          _buildTextField(
-                            controller: _otpController,
-                            label: "Enter OTP",
-                            keyboardType: TextInputType.number,
-                            maxLength: 6,
-                          ),
-                          if (_otpSent)
-                            const Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                "OTP sent",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AddShopTheme.textGray,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                        ],
+                        // const SizedBox(height: 10),
+                        // Align(
+                        //   alignment: Alignment.centerRight,
+                        //   child: TextButton.icon(
+                        //     onPressed: () {
+                        //       setState(() {
+                        //         _showOtpField = true;
+                        //         _otpSent = true;
+                        //       });
+                        //       _showErrorSnackbar('OTP sent (demo)');
+                        //     },
+                        //     icon: const Icon(Icons.sms_outlined, size: 16),
+                        //     label: const Text(
+                        //       "Send OTP",
+                        //       style: TextStyle(fontWeight: FontWeight.w600),
+                        //     ),
+                        //     style: TextButton.styleFrom(
+                        //       foregroundColor: AddShopTheme.primaryPink,
+                        //       padding: const EdgeInsets.symmetric(
+                        //         horizontal: 12,
+                        //         vertical: 6,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
+                        // if (_showOtpField) ...[
+                        //   const SizedBox(height: 8),
+                        //   _buildTextField(
+                        //     controller: _otpController,
+                        //     label: "Enter OTP",
+                        //     keyboardType: TextInputType.number,
+                        //     maxLength: 6,
+                        //   ),
+                        //   if (_otpSent)
+                        //     const Align(
+                        //       alignment: Alignment.centerRight,
+                        //       child: Text(
+                        //         "OTP sent",
+                        //         style: TextStyle(
+                        //           fontSize: 12,
+                        //           color: AddShopTheme.textGray,
+                        //           fontWeight: FontWeight.w500,
+                        //         ),
+                        //       ),
+                        //     ),
+                        // ],
                       ],
                     ),
 

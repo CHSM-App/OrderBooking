@@ -31,6 +31,49 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen on the first field for a pasted multi-character value
+    for (int i = 0; i < 6; i++) {
+      final index = i;
+      _otpControllers[index].addListener(() => _onControllerChanged(index));
+    }
+  }
+
+  /// Called whenever a controller's text changes.
+  /// If the text is longer than 1 char, treat it as a paste and distribute.
+  void _onControllerChanged(int index) {
+    final text = _otpControllers[index].text;
+    if (text.length > 1) {
+      _distributePastedOtp(text);
+    }
+  }
+
+  /// Distributes [pasted] digits across all 6 OTP fields starting from index 0.
+  void _distributePastedOtp(String pasted) {
+    // Keep only digits
+    final digits = pasted.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return;
+
+    for (int i = 0; i < 6; i++) {
+      if (i < digits.length) {
+        _otpControllers[i].text = digits[i];
+        // Move cursor to end
+        _otpControllers[i].selection = TextSelection.fromPosition(
+          TextPosition(offset: _otpControllers[i].text.length),
+        );
+      } else {
+        _otpControllers[i].clear();
+      }
+    }
+
+    // Focus the next empty field or the last field
+    final nextEmpty = digits.length < 6 ? digits.length : 5;
+    _focusNodes[nextEmpty].requestFocus();
+  }
+
   void _verifyOTP() async {
     String otp = _otpControllers.map((c) => c.text).join();
     if (otp.length != 6) {
@@ -102,22 +145,16 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       );
     } else if (roleId == 2) {
       // Employee
-      //  final allowLocation = await _showPermissionDialog();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
-    } 
-    else if (roleId == 3) {
-      // Employee
-      //  final allowLocation = await _showPermissionDialog();
+    } else if (roleId == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
-    } 
-    
-    else {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unknown role!'),
@@ -149,13 +186,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Align(
-                          alignment: Alignment.topLeft,
-                          // child: IconButton(
-                          //   icon: const Icon(Icons.arrow_back),
-                          //   onPressed: () => Navigator.pop(context),
-                          // ),
-                        ),
+                        const Align(alignment: Alignment.topLeft),
                         const SizedBox(height: 20),
                         Container(
                           padding: const EdgeInsets.all(20),
@@ -203,15 +234,14 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                     widget.phoneNumber,
                                     style: const TextStyle(
                                       fontSize: 16,
-                                      color: Colors
-                                          .orange, // 👈 highlighted to show it's tappable
+                                      color: Colors.orange,
                                       fontWeight: FontWeight.bold,
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   const Icon(
-                                    Icons.edit_rounded, // 👈 pencil icon
+                                    Icons.edit_rounded,
                                     size: 15,
                                     color: Colors.orange,
                                   ),
@@ -251,29 +281,33 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                         focusNode: _focusNodes[index],
                                         keyboardType: TextInputType.number,
                                         textAlign: TextAlign.center,
-                                        maxLength: 1,
+                                        // ── KEY CHANGE ──────────────────────────
+                                        // maxLength removed so paste can temporarily
+                                        // hold all 6 digits before _onControllerChanged
+                                        // distributes them. The listener handles trimming.
                                         inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
+                                          FilteringTextInputFormatter.digitsOnly,
                                         ],
                                         decoration: InputDecoration(
                                           counterText: '',
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                vertical: 15,
-                                              ),
+                                                  vertical: 15),
                                         ),
                                         onChanged: (value) {
-                                          if (value.isNotEmpty && index < 5) {
-                                            _focusNodes[index + 1]
-                                                .requestFocus();
-                                          }
-                                          if (value.isEmpty && index > 0) {
+                                          // Normal single-char typing (paste is
+                                          // already handled by the listener)
+                                          if (value.length == 1) {
+                                            if (index < 5) {
+                                              _focusNodes[index + 1]
+                                                  .requestFocus();
+                                            }
+                                          } else if (value.isEmpty &&
+                                              index > 0) {
                                             _focusNodes[index - 1]
                                                 .requestFocus();
                                           }
@@ -316,7 +350,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                 onPressed: () {},
                                 child: const Text(
                                   'Resend OTP',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
