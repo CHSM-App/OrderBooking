@@ -20,22 +20,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   late AnimationController _controller;
   bool _isFocused = false;
   bool _shouldReact = false;
- // To avoid multiple snackbars/navigation
-@override
-void initState() {
-  super.initState();
 
-  _controller = AnimationController(
-    duration: const Duration(milliseconds: 800),
-    vsync: this,
-  );
+  // Demo numbers — real API runs normally, only verifyOtp is skipped
+  static const Map<String, String> _demoAccounts = {
+    '9000000001': '123456', // Admin
+    '9000000002': '123456', // ASM
+    '9000000003': '123456', // Sales Officer
+    '9000000004': '123456', //staff_admin
+  };
 
-  _controller.forward();
 
-  /// OPTIONAL SAFETY
-  _shouldReact = false;
-}
-
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _controller.forward();
+    _shouldReact = false;
+  }
 
   @override
   void dispose() {
@@ -61,14 +65,11 @@ void initState() {
   Widget build(BuildContext context) {
     final state = ref.watch(adminloginViewModelProvider);
 
-    // Listen for phone check result
     ref.listen<AdminloginState>(adminloginViewModelProvider, (prev, next) async {
       if (!_shouldReact) return;
 
       next.phoneCheckResult.whenOrNull(
-        loading: () {
-          // Optional: you can show a global loading overlay if needed
-        },
+        loading: () {},
         data: (list) async {
           _shouldReact = false;
           if (list.isNotEmpty) {
@@ -86,26 +87,30 @@ void initState() {
                 SnackBar(content: Text(message)),
               );
               return;
-            }else {
+            } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('OTP sent successfully!')),
               );
             }
 
-            final user = list.first; // LoginInfo object
+            final user = list.first;
+            // Pass demoOtp only for demo numbers, null for real users
+            final demoOtp = _demoAccounts[mobileNo];
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => OTPScreen(
                   phoneNumber: mobileNo,
                   loginInfo: user,
+                  demoOtp: demoOtp,
                 ),
               ),
             );
           } else {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('User not found!')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('User not found!')),
+            );
           }
         },
         error: (e, _) {
@@ -139,7 +144,6 @@ void initState() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-               
                 const SizedBox(height: 24),
 
                 // Animated Circle Icon
@@ -361,7 +365,7 @@ void initState() {
                       const SizedBox(height: 16),
                       const SizedBox(height: 24),
 
-                      // Terms & Sign Up Row
+                      // Sign Up Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -371,12 +375,10 @@ void initState() {
                           ),
                           GestureDetector(
                             onTap: () {
-                              // Navigate to SignUp screen
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AdminSignup(), // Create this screen separately
+                                  builder: (context) => const AdminSignup(),
                                 ),
                               );
                             },

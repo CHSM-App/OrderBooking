@@ -14,10 +14,13 @@ import 'employee_screen/main_navigation_screen.dart';
 class OTPScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
   final LoginInfo loginInfo;
+  final String? demoOtp; // null for real users
+
   const OTPScreen({
     Key? key,
     required this.phoneNumber,
     required this.loginInfo,
+    this.demoOtp,
   }) : super(key: key);
 
   @override
@@ -35,15 +38,12 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen on the first field for a pasted multi-character value
     for (int i = 0; i < 6; i++) {
       final index = i;
       _otpControllers[index].addListener(() => _onControllerChanged(index));
     }
   }
 
-  /// Called whenever a controller's text changes.
-  /// If the text is longer than 1 char, treat it as a paste and distribute.
   void _onControllerChanged(int index) {
     final text = _otpControllers[index].text;
     if (text.length > 1) {
@@ -51,16 +51,13 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     }
   }
 
-  /// Distributes [pasted] digits across all 6 OTP fields starting from index 0.
   void _distributePastedOtp(String pasted) {
-    // Keep only digits
     final digits = pasted.replaceAll(RegExp(r'\D'), '');
     if (digits.isEmpty) return;
 
     for (int i = 0; i < 6; i++) {
       if (i < digits.length) {
         _otpControllers[i].text = digits[i];
-        // Move cursor to end
         _otpControllers[i].selection = TextSelection.fromPosition(
           TextPosition(offset: _otpControllers[i].text.length),
         );
@@ -69,7 +66,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       }
     }
 
-    // Focus the next empty field or the last field
     final nextEmpty = digits.length < 6 ? digits.length : 5;
     _focusNodes[nextEmpty].requestFocus();
   }
@@ -88,29 +84,41 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
 
     setState(() => _isLoading = true);
 
-    final verifyResponse = await ref
-        .read(adminloginViewModelProvider.notifier)
-        .verifyOtp(
-          OtpResponse(
-            mobileNo: widget.phoneNumber,
-            otp: otp,
+    // ── Demo: check static OTP locally, skip verifyOtp API only ───────────
+    if (widget.demoOtp != null) {
+      if (otp != widget.demoOtp) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid OTP. Please try again.'),
+            backgroundColor: Colors.redAccent,
           ),
         );
-    if (!mounted) return;
-    if ((verifyResponse.status ?? 0) != 1) {
-      setState(() => _isLoading = false);
-      final message =
-          (verifyResponse.message?.isNotEmpty ?? false)
-              ? verifyResponse.message!
-              : 'Invalid OTP. Please try again.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
+        return;
+      }
+      // Static OTP matched — fall through to login token API below
+    } else {
+      // ── Real user: call verifyOtp API normally ───────────────────────────
+      final verifyResponse = await ref
+          .read(adminloginViewModelProvider.notifier)
+          .verifyOtp(OtpResponse(mobileNo: widget.phoneNumber, otp: otp));
+
+      if (!mounted) return;
+      if ((verifyResponse.status ?? 0) != 1) {
+        setState(() => _isLoading = false);
+        final message = (verifyResponse.message?.isNotEmpty ?? false)
+            ? verifyResponse.message!
+            : 'Invalid OTP. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
     }
+    // ── Both demo and real users continue from here ────────────────────────
 
     final loginResponse = await ref
         .read(authViewModelProvider.notifier)
@@ -129,27 +137,17 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
       return;
     }
 
-    // Clear local DB tables on successful login
     try {
       await LogoutDao().logout();
-    } catch (_) {
-      // Best-effort cleanup; continue login flow even if it fails.
-    }
+    } catch (_) {}
+
     final roleId = ref.read(tokenProvider).roleId ?? 0;
-    // Redirect based on role
     if (roleId == 1) {
-      // Admin
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
       );
-    } else if (roleId == 2) {
-      // Employee
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      );
-    } else if (roleId == 3) {
+    } else if (roleId == 2 || roleId == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
@@ -167,9 +165,8 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    // Small devices friendly width
     double otpFieldWidth = (screenWidth - 80) / 8;
-    if (otpFieldWidth < 40) otpFieldWidth = 40; // Minimum width
+    if (otpFieldWidth < 40) otpFieldWidth = 40;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -251,6 +248,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                           ],
                         ),
                         const SizedBox(height: 32),
+
                         // OTP Card
                         Container(
                           padding: const EdgeInsets.all(24),
@@ -281,10 +279,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                         focusNode: _focusNodes[index],
                                         keyboardType: TextInputType.number,
                                         textAlign: TextAlign.center,
-                                        // ── KEY CHANGE ──────────────────────────
-                                        // maxLength removed so paste can temporarily
-                                        // hold all 6 digits before _onControllerChanged
-                                        // distributes them. The listener handles trimming.
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly,
                                         ],
@@ -299,8 +293,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                                   vertical: 15),
                                         ),
                                         onChanged: (value) {
-                                          // Normal single-char typing (paste is
-                                          // already handled by the listener)
                                           if (value.length == 1) {
                                             if (index < 5) {
                                               _focusNodes[index + 1]
@@ -317,7 +309,6 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                                   );
                                 }),
                               ),
-
                               const SizedBox(height: 24),
                               SizedBox(
                                 width: double.infinity,
